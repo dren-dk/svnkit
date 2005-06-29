@@ -11,7 +11,7 @@
  */
 package org.tmatesoft.svn.examples.wc;
 
-import org.tmatesoft.svn.core.io.SVNLock;
+import org.tmatesoft.svn.core.SVNLock;
 import org.tmatesoft.svn.core.wc.ISVNStatusHandler;
 import org.tmatesoft.svn.core.wc.SVNStatus;
 import org.tmatesoft.svn.core.wc.SVNStatusType;

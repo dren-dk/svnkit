@@ -16,12 +16,12 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.tmatesoft.svn.core.io.ISVNEditor;
-import org.tmatesoft.svn.core.io.SVNException;
 
 
 /**
  * @author TMate Software Ltd.
- */
+ * @deprecated
+*/
 public interface ISVNEntry {
 
     public String getPath();

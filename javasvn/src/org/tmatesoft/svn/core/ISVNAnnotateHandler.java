@@ -1,9 +1,11 @@
 /*
  * Created on Mar 3, 2005
  */
-package org.tmatesoft.svn.core.io;
+package org.tmatesoft.svn.core;
 
 import java.util.Date;
+
+import org.tmatesoft.svn.core.io.SVNRepository;
 
 /**
  * This is an interface for a handler that is to be invoked on each delta line

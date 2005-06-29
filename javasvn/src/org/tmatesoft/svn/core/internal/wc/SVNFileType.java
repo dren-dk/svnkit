@@ -3,7 +3,7 @@ package org.tmatesoft.svn.core.internal.wc;
 import java.io.File;
 import java.io.IOException;
 
-import org.tmatesoft.svn.core.io.SVNNodeKind;
+import org.tmatesoft.svn.core.SVNNodeKind;
 
 /**
  * Created by IntelliJ IDEA.

@@ -1,9 +1,11 @@
 /*
  * Created on 22.04.2005
  */
-package org.tmatesoft.svn.core.io;
+package org.tmatesoft.svn.core;
 
 import java.util.Date;
+
+import org.tmatesoft.svn.core.io.SVNRepository;
 
 
 /**

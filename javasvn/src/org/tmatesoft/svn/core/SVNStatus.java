@@ -12,10 +12,10 @@
 
 package org.tmatesoft.svn.core;
 
-import org.tmatesoft.svn.core.io.SVNLock;
 
 /**
  * @author TMate Software Ltd.
+ * @deprecated
  */
 public class SVNStatus {
     

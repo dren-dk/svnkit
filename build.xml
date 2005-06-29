@@ -58,8 +58,10 @@
 			classpathref="examples.classpath"
 		/>
 	</target>
-    
+
+	<echo message="eclipse.present=${eclipse.present}"/>
 	<target name="compile-eclipse" depends="init-environment,compile-library" if="eclipse.present">
+        <echo message="compile eclipse!!!"/>
         <mkdir dir="javasvn-eclipse/bin" />
 
         <path id="eclipse.classpath">
@@ -293,7 +295,7 @@
                 <exclude name="svn" />
             </zipfileset>
             <zipfileset file="build/lib/svn" filemode="555" prefix="javasvn-${javasvn.version}" />
-            <zipfileset dir="build/doc" prefix="javasvn-${javasvn.version}/doc" />
+            <!--zipfileset dir="build/doc" prefix="javasvn-${javasvn.version}/doc" /-->
         </zip>
     </target>
 
@@ -317,11 +319,11 @@
                 <exclude name="www/**" />
                 <exclude name="**/.svn" />
             </zipfileset>
-            <zipfileset dir="build/doc" prefix="javasvn-src-${javasvn.version}/doc" />
+            <!--zipfileset dir="build/doc" prefix="javasvn-src-${javasvn.version}/doc" /-->
         </zip>
     </target>
 
-    <target name="deploy" depends="clean,deploy-library,deploy-eclipse,deploy-snapshot" />
+    <target name="deploy" depends="clean,build-doc,deploy-library,deploy-eclipse,deploy-snapshot" />
 
     <target name="test-java" depends="init-environment,compile-tests">
         <copy file="javasvn-test/test.${os}.properties"

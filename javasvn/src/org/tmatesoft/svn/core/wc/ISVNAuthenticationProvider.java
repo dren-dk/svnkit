@@ -1,5 +1,8 @@
 package org.tmatesoft.svn.core.wc;
 
+import org.tmatesoft.svn.core.ISVNAuthenticationManager;
+import org.tmatesoft.svn.core.SVNAuthentication;
+
 /**
  * Created by IntelliJ IDEA.
  * User: alex

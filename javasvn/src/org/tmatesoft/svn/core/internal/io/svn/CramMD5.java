@@ -12,7 +12,7 @@
 
 package org.tmatesoft.svn.core.internal.io.svn;
 
-import org.tmatesoft.svn.core.wc.SVNAuthentication;
+import org.tmatesoft.svn.core.SVNAuthentication;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

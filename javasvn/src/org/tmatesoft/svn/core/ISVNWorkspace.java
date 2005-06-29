@@ -17,14 +17,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.tmatesoft.svn.core.io.ISVNCredentialsProvider;
-import org.tmatesoft.svn.core.io.ISVNLogEntryHandler;
-import org.tmatesoft.svn.core.io.SVNException;
-import org.tmatesoft.svn.core.io.SVNLock;
-import org.tmatesoft.svn.core.io.SVNRepositoryLocation;
 import org.tmatesoft.svn.core.progress.ISVNProgressViewer;
 
 /**
  * @author TMate Software Ltd.
+ * @deprecated
  */
 public interface ISVNWorkspace {
     

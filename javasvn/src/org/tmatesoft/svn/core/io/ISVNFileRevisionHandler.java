@@ -12,6 +12,8 @@
 
 package org.tmatesoft.svn.core.io;
 
+import org.tmatesoft.svn.core.SVNException;
+
 
 
 /**

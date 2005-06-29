@@ -3,7 +3,7 @@
  */
 package org.tmatesoft.svn.core.wc;
 
-import org.tmatesoft.svn.core.io.SVNCancelException;
+import org.tmatesoft.svn.core.SVNCancelException;
 
 public interface ISVNEventHandler {
     

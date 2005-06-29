@@ -12,8 +12,8 @@
 
 package org.tmatesoft.svn.cli;
 
+import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.internal.wc.SVNOptions;
-import org.tmatesoft.svn.core.io.SVNException;
 import org.tmatesoft.svn.core.wc.ISVNOptions;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.util.DebugLog;

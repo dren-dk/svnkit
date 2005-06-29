@@ -12,13 +12,13 @@
 
 package org.tmatesoft.svn.core.internal.io.dav;
 
+import org.tmatesoft.svn.core.ISVNAuthenticationManager;
+import org.tmatesoft.svn.core.SVNAuthentication;
+import org.tmatesoft.svn.core.SVNCancelException;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNRepositoryLocation;
 import org.tmatesoft.svn.core.io.SVNAuthenticationException;
-import org.tmatesoft.svn.core.io.SVNCancelException;
-import org.tmatesoft.svn.core.io.SVNException;
 import org.tmatesoft.svn.core.io.SVNRepository;
-import org.tmatesoft.svn.core.io.SVNRepositoryLocation;
-import org.tmatesoft.svn.core.wc.ISVNAuthenticationManager;
-import org.tmatesoft.svn.core.wc.SVNAuthentication;
 import org.tmatesoft.svn.util.Base64;
 import org.tmatesoft.svn.util.DebugLog;
 import org.tmatesoft.svn.util.LoggingInputStream;

@@ -1,6 +1,8 @@
-package org.tmatesoft.svn.core.wc;
+package org.tmatesoft.svn.core;
 
 import java.util.Map;
+
+import org.tmatesoft.svn.core.wc.ISVNAuthenticationProvider;
 
 /**
  * Created by IntelliJ IDEA.

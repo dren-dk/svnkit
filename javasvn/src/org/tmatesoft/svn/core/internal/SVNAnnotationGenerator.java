@@ -2,10 +2,10 @@ package org.tmatesoft.svn.core.internal;
 
 import org.tmatesoft.svn.core.io.ISVNFileRevisionHandler;
 import org.tmatesoft.svn.core.io.SVNFileRevision;
-import org.tmatesoft.svn.core.io.SVNException;
-import org.tmatesoft.svn.core.io.ISVNAnnotateHandler;
 import org.tmatesoft.svn.core.diff.SVNDiffWindow;
 import org.tmatesoft.svn.core.diff.ISVNRAData;
+import org.tmatesoft.svn.core.ISVNAnnotateHandler;
+import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNProperty;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;

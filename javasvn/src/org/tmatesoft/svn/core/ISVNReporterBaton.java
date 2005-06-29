@@ -10,7 +10,9 @@
  * ====================================================================
  */
 
-package org.tmatesoft.svn.core.io;
+package org.tmatesoft.svn.core;
+
+import org.tmatesoft.svn.core.io.SVNRepository;
 
 /**
  * This interface is provided when manipulating with a working copy (updating it,

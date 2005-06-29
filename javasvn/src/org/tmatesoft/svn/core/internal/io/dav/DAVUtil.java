@@ -12,7 +12,7 @@
 
 package org.tmatesoft.svn.core.internal.io.dav;
 
-import org.tmatesoft.svn.core.io.SVNException;
+import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.util.PathUtil;
 import org.tmatesoft.svn.util.DebugLog;
 

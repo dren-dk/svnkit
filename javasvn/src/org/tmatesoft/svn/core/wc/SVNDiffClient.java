@@ -3,6 +3,10 @@
  */
 package org.tmatesoft.svn.core.wc;
 
+import org.tmatesoft.svn.core.ISVNReporter;
+import org.tmatesoft.svn.core.ISVNReporterBaton;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNProperty;
 import org.tmatesoft.svn.core.internal.wc.SVNDiffEditor;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
@@ -13,10 +17,6 @@ import org.tmatesoft.svn.core.internal.wc.SVNMerger;
 import org.tmatesoft.svn.core.internal.wc.SVNRemoteDiffEditor;
 import org.tmatesoft.svn.core.internal.wc.SVNReporter;
 import org.tmatesoft.svn.core.internal.wc.SVNWCAccess;
-import org.tmatesoft.svn.core.io.ISVNReporter;
-import org.tmatesoft.svn.core.io.ISVNReporterBaton;
-import org.tmatesoft.svn.core.io.SVNException;
-import org.tmatesoft.svn.core.io.SVNNodeKind;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.util.DebugLog;
 import org.tmatesoft.svn.util.PathUtil;

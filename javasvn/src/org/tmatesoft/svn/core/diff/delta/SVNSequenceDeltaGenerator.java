@@ -8,11 +8,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.diff.ISVNDeltaConsumer;
 import org.tmatesoft.svn.core.diff.ISVNRAData;
 import org.tmatesoft.svn.core.diff.SVNDiffInstruction;
 import org.tmatesoft.svn.core.diff.SVNDiffWindow;
-import org.tmatesoft.svn.core.io.SVNException;
 import org.tmatesoft.svn.util.FileTypeUtil;
 import org.tmatesoft.svn.util.SVNAssert;
 

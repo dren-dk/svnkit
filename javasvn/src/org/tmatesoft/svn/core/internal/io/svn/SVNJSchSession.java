@@ -5,9 +5,10 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SocketFactory;
 import com.jcraft.jsch.UserInfo;
+
+import org.tmatesoft.svn.core.SVNAuthentication;
+import org.tmatesoft.svn.core.SVNRepositoryLocation;
 import org.tmatesoft.svn.core.io.SVNAuthenticationException;
-import org.tmatesoft.svn.core.io.SVNRepositoryLocation;
-import org.tmatesoft.svn.core.wc.SVNAuthentication;
 import org.tmatesoft.svn.util.DebugLog;
 
 import java.io.IOException;

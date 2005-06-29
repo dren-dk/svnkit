@@ -5,7 +5,7 @@ package org.tmatesoft.svn.core.wc;
 
 import java.io.File;
 
-import org.tmatesoft.svn.core.io.SVNException;
+import org.tmatesoft.svn.core.SVNException;
 
 public interface ISVNPropertyHandler {
 

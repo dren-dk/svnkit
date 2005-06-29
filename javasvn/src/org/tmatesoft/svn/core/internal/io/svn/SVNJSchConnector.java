@@ -3,11 +3,12 @@ package org.tmatesoft.svn.core.internal.io.svn;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
+
+import org.tmatesoft.svn.core.ISVNAuthenticationManager;
+import org.tmatesoft.svn.core.SVNAuthentication;
+import org.tmatesoft.svn.core.SVNCancelException;
+import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.io.SVNAuthenticationException;
-import org.tmatesoft.svn.core.io.SVNException;
-import org.tmatesoft.svn.core.io.SVNCancelException;
-import org.tmatesoft.svn.core.wc.ISVNAuthenticationManager;
-import org.tmatesoft.svn.core.wc.SVNAuthentication;
 import org.tmatesoft.svn.util.DebugLog;
 
 import java.io.FilterInputStream;

@@ -26,6 +26,7 @@ import java.util.StringTokenizer;
 import org.tmatesoft.svn.core.ISVNDirectoryEntry;
 import org.tmatesoft.svn.core.ISVNEntryContent;
 import org.tmatesoft.svn.core.ISVNFileEntry;
+import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNProperty;
 import org.tmatesoft.svn.core.SVNStatus;
 import org.tmatesoft.svn.core.diff.ISVNRAData;
@@ -34,7 +35,6 @@ import org.tmatesoft.svn.core.diff.delta.ISVNDeltaGenerator;
 import org.tmatesoft.svn.core.diff.delta.SVNAllDeltaGenerator;
 import org.tmatesoft.svn.core.diff.delta.SVNSequenceDeltaGenerator;
 import org.tmatesoft.svn.core.io.ISVNEditor;
-import org.tmatesoft.svn.core.io.SVNException;
 import org.tmatesoft.svn.util.DebugLog;
 import org.tmatesoft.svn.util.TimeUtil;
 

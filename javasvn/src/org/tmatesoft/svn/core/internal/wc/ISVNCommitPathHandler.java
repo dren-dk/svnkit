@@ -1,7 +1,7 @@
 package org.tmatesoft.svn.core.internal.wc;
 
+import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.io.ISVNEditor;
-import org.tmatesoft.svn.core.io.SVNException;
 
 /**
  * Created by IntelliJ IDEA.

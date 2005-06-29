@@ -10,9 +10,12 @@
  * ====================================================================
  */
 
-package org.tmatesoft.svn.core.io;
+package org.tmatesoft.svn.core;
 
 import java.util.Collection;
+
+import org.tmatesoft.svn.core.io.SVNAuthenticationException;
+import org.tmatesoft.svn.core.io.SVNError;
 
 /**
  * A basic exeption class that provides information on errors/specific situations

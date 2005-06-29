@@ -10,12 +10,14 @@
  * ====================================================================
  */
 
-package org.tmatesoft.svn.core.io;
+package org.tmatesoft.svn.core;
 
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import org.tmatesoft.svn.core.io.SVNRepository;
 
 /**
  * <code>SVNRepositoryFactory</code> is an abstract class that is responsible

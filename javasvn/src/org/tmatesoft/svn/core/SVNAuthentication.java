@@ -1,4 +1,4 @@
-package org.tmatesoft.svn.core.wc;
+package org.tmatesoft.svn.core;
 
 import java.io.File;
 

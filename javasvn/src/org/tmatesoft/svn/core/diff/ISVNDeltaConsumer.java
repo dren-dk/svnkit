@@ -2,7 +2,7 @@ package org.tmatesoft.svn.core.diff;
 
 import java.io.OutputStream;
 
-import org.tmatesoft.svn.core.io.SVNException;
+import org.tmatesoft.svn.core.SVNException;
 
 /**
  * @author Marc Strapetz

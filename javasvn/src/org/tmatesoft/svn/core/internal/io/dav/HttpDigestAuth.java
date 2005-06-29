@@ -3,8 +3,8 @@
  */
 package org.tmatesoft.svn.core.internal.io.dav;
 
+import org.tmatesoft.svn.core.SVNAuthentication;
 import org.tmatesoft.svn.core.io.SVNAuthenticationException;
-import org.tmatesoft.svn.core.wc.SVNAuthentication;
 
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;

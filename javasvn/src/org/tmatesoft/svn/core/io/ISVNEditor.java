@@ -12,6 +12,9 @@
 
 package org.tmatesoft.svn.core.io;
 
+import org.tmatesoft.svn.core.ISVNReporterBaton;
+import org.tmatesoft.svn.core.SVNCommitInfo;
+import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.diff.ISVNDeltaConsumer;
 
 /**

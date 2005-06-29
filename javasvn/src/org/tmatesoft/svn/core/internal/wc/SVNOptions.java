@@ -1,9 +1,9 @@
 package org.tmatesoft.svn.core.internal.wc;
 
+import org.tmatesoft.svn.core.SVNAuthentication;
+import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.wc.ISVNOptions;
-import org.tmatesoft.svn.core.wc.SVNAuthentication;
 import org.tmatesoft.svn.core.wc.ISVNAuthenticationProvider;
-import org.tmatesoft.svn.core.io.SVNException;
 import org.tmatesoft.svn.core.internal.io.svn.SVNJSchSession;
 import org.tmatesoft.svn.util.DebugLog;
 

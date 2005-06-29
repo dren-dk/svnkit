@@ -16,12 +16,12 @@ import java.io.File;
 import java.util.StringTokenizer;
 
 import org.tmatesoft.svn.core.ISVNWorkspace;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNRepositoryFactory;
+import org.tmatesoft.svn.core.SVNRepositoryLocation;
 import org.tmatesoft.svn.core.SVNWorkspaceManager;
 import org.tmatesoft.svn.core.internal.ws.fs.FSUtil;
-import org.tmatesoft.svn.core.io.SVNException;
 import org.tmatesoft.svn.core.io.SVNRepository;
-import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
-import org.tmatesoft.svn.core.io.SVNRepositoryLocation;
 
 /**
  * @author TMate Software Ltd.

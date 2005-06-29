@@ -2,6 +2,8 @@ package org.tmatesoft.svn.core.wc;
 
 import java.util.Map;
 
+import org.tmatesoft.svn.core.ISVNAuthenticationManager;
+
 /**
  * Created by IntelliJ IDEA.
  * User: alex

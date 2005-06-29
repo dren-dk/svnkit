@@ -1,16 +1,16 @@
 package org.tmatesoft.svn.core.wc;
 
+import org.tmatesoft.svn.core.ISVNAnnotateHandler;
+import org.tmatesoft.svn.core.ISVNDirEntryHandler;
+import org.tmatesoft.svn.core.ISVNLogEntryHandler;
+import org.tmatesoft.svn.core.SVNDirEntry;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.internal.SVNAnnotationGenerator;
 import org.tmatesoft.svn.core.internal.wc.SVNEntry;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNPathUtil;
-import org.tmatesoft.svn.core.io.ISVNAnnotateHandler;
-import org.tmatesoft.svn.core.io.ISVNDirEntryHandler;
-import org.tmatesoft.svn.core.io.ISVNLogEntryHandler;
-import org.tmatesoft.svn.core.io.SVNDirEntry;
-import org.tmatesoft.svn.core.io.SVNException;
-import org.tmatesoft.svn.core.io.SVNNodeKind;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.util.DebugLog;
 import org.tmatesoft.svn.util.PathUtil;
