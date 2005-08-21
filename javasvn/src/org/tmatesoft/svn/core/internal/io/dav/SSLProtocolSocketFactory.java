@@ -16,15 +16,14 @@ public class SSLProtocolSocketFactory implements SecureProtocolSocketFactory {
 
     private SSLContext sslcontext = null;
 
-    public SSLProtocolSocketFactory() {
-        super();
-    }
-
+    /**
+     * Constructor for EasySSLProtocolSocketFactory.
+     */
     public SSLProtocolSocketFactory(SSLContext context) {
         super();
-        sslcontext = context;
+        this.sslcontext = context;
     }
-    
+
     private SSLContext getSSLContext() {
         return this.sslcontext;
     }
