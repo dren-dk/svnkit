@@ -84,6 +84,8 @@ javasvn/src/org/tmatesoft/svn/core/SVNURL.java -text
 javasvn/src/org/tmatesoft/svn/core/auth/package.html -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/dav/BasicHttpMethod.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/dav/HttpConnection.java -text
+javasvn/src/org/tmatesoft/svn/core/internal/io/dav/HttpConnectionFactory.java -text
+javasvn/src/org/tmatesoft/svn/core/internal/io/dav/IHttpConnection.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/dav/SSLProtocolSocketFactory.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/util/DefaultSVNDebugFormatter.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/util/DefaultSVNDebugLogger.java -text
