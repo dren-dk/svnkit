@@ -79,6 +79,7 @@ javasvn/cli/svn eol=lf
 javasvn/cli/svn.bat eol=crlf
 javasvn/src/org/tigris/subversion/javahl/JavaHLObjectFactory.java -text
 javasvn/src/org/tigris/subversion/javahl/SVNClient.java -text
+javasvn/src/org/tmatesoft/svn/core/SVNAnnotationGenerator.java -text
 javasvn/src/org/tmatesoft/svn/core/SVNURL.java -text
 javasvn/src/org/tmatesoft/svn/core/auth/package.html -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/dav/BasicHttpMethod.java -text
