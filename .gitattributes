@@ -61,6 +61,7 @@ javasvn/src/org/tmatesoft/svn/core/SVNURL.java -text
 javasvn/src/org/tmatesoft/svn/core/auth/package.html -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSRepository.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSRepositoryFactory.java -text
+javasvn/src/org/tmatesoft/svn/core/internal/io/fs/SVNRevFileReader.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/util/DefaultSVNDebugFormatter.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/util/DefaultSVNDebugLogger.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/util/SVNEncodingUtil.java -text
