@@ -63,6 +63,7 @@ javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSRepository.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSRepositoryFactory.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/SVNFSReader.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/SVNID.java -text
+javasvn/src/org/tmatesoft/svn/core/internal/io/fs/SVNRepEntry.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/SVNRepresentation.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/SVNRevisionNode.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/util/DefaultSVNDebugFormatter.java -text
