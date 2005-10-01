@@ -59,6 +59,7 @@ javasvn/cli/svn.bat eol=crlf
 javasvn/src/org/tigris/subversion/javahl/SVNClient.java -text
 javasvn/src/org/tmatesoft/svn/core/SVNURL.java -text
 javasvn/src/org/tmatesoft/svn/core/auth/package.html -text
+javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSHooks.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSID.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSReader.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSRepEntry.java -text
