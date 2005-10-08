@@ -2,6 +2,9 @@
 /.options eol=lf
 /COPYING eol=lf
 /changelog.txt eol=lf
+contrib/ganymed/GANYMED-LICENSE -text
+contrib/ganymed/ganymed.jar -text
+contrib/ganymed/ganymedsrc.zip -text
 contrib/httpclient/HTTPCLIENT-LICENSE eol=lf
 contrib/httpclient/commons-codec-1.3.jar -text
 contrib/httpclient/commons-httpclient-3.0-rc3.jar -text
@@ -46,7 +49,6 @@ javasvn-eclipse/org.tmatesoft.javasvn.feature/feature.xml eol=lf
 javasvn-eclipse/org.tmatesoft.javasvn/.options eol=lf
 javasvn-eclipse/org.tmatesoft.javasvn/plugin.xml eol=lf
 javasvn-eclipse/site.xml eol=lf
-javasvn-test/PythonTests.xsl -text
 javasvn-test/apache/python.template.conf eol=lf
 javasvn-test/apache/users eol=lf
 javasvn-test/logging.properties -text
@@ -90,7 +92,6 @@ javasvn/src/org/tmatesoft/svn/core/wc/ISVNMergerFactory.java -text
 javasvn/src/org/tmatesoft/svn/core/wc/package.html -text
 javasvn/src/org/tmatesoft/svn/util/ISVNDebugLogger.java -text
 javasvn/src/org/tmatesoft/svn/util/SVNDebugLog.java -text
-/plugin.xml -text
 www/css/home.css -text
 www/download/.htaccess -text
 www/download/PythonTests.xsl -text
