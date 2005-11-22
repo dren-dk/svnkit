@@ -64,8 +64,11 @@ javasvn/src/org/tmatesoft/svn/core/auth/package.html -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/DefaultFSDeltaCollector.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/DiffWindowsIOStream.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSConstants.java -text
+javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSDAGNode.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSHooks.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSID.java -text
+javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSNodeHistory.java -text
+javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSParentPath.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSReader.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSRepository.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSRepositoryFactory.java -text
