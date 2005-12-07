@@ -65,6 +65,7 @@ javasvn/src/org/tmatesoft/svn/core/internal/io/fs/DESCRIPTION.txt -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/DefaultFSDeltaCollector.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/DefaultFSRevisionNodePool.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/DiffWindowsIOStream.java -text
+javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSCommitEditor.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSConstants.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSDAGNode.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSHooks.java -text
