@@ -86,6 +86,7 @@ javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSTransactionInfo.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSTransactionKind.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSWriter.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/IFSDeltaCollector.java -text
+javasvn/src/org/tmatesoft/svn/core/internal/io/fs/IFSLockHandler.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/PathInfo.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/REMARKS.txt -text
 javasvn/src/org/tmatesoft/svn/core/internal/util/DefaultSVNDebugFormatter.java -text
