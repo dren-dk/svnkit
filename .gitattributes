@@ -70,6 +70,7 @@ javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSCommitEditor.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSConstants.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSHooks.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSID.java -text
+javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSKeyGenerator.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSNodeHistory.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSParentPath.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSReader.java -text
