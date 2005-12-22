@@ -82,6 +82,7 @@ javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSRepository.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSRepositoryFactory.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSRepositoryUtil.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSRepresentation.java -text
+javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSRepresentationState.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSRevisionNode.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSRevisionNodePool.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSRoot.java -text
