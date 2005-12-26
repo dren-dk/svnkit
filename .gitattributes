@@ -62,7 +62,6 @@ javasvn/src/org/tigris/subversion/javahl/SVNClient.java -text
 javasvn/src/org/tmatesoft/svn/core/SVNURL.java -text
 javasvn/src/org/tmatesoft/svn/core/auth/package.html -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/DESCRIPTION.txt -text
-javasvn/src/org/tmatesoft/svn/core/internal/io/fs/DefaultFSDeltaCollector.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/DefaultFSRevisionNodePool.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/DiffWindowsIOStream.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSChange.java -text
@@ -92,7 +91,6 @@ javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSTransaction.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSTransactionInfo.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSTransactionKind.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSWriter.java -text
-javasvn/src/org/tmatesoft/svn/core/internal/io/fs/IFSDeltaCollector.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/IFSLockHandler.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/PathInfo.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/REMARKS.txt -text
