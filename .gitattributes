@@ -63,9 +63,9 @@ javasvn/src/org/tmatesoft/svn/core/SVNURL.java -text
 javasvn/src/org/tmatesoft/svn/core/auth/package.html -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/DESCRIPTION.txt -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/DefaultFSRevisionNodePool.java -text
-javasvn/src/org/tmatesoft/svn/core/internal/io/fs/DiffWindowsIOStream.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSChange.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSClosestCopy.java -text
+javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSCommitDeltaProcessor.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSCommitEditor.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSConstants.java -text
 javasvn/src/org/tmatesoft/svn/core/internal/io/fs/FSEntry.java -text
@@ -106,10 +106,9 @@ javasvn/src/org/tmatesoft/svn/core/internal/wc/config/README.txt eol=lf
 javasvn/src/org/tmatesoft/svn/core/internal/wc/config/config eol=lf
 javasvn/src/org/tmatesoft/svn/core/internal/wc/config/servers eol=lf
 javasvn/src/org/tmatesoft/svn/core/io/ISVNSession.java -text
-javasvn/src/org/tmatesoft/svn/core/io/diff/ISVNInputStream.java -text
-javasvn/src/org/tmatesoft/svn/core/io/diff/SVNDeltaStream.java -text
+javasvn/src/org/tmatesoft/svn/core/io/diff/SVNDeltaChunksGenerator.java -text
 javasvn/src/org/tmatesoft/svn/core/io/diff/SVNDiffWindowApplyBaton.java -text
-javasvn/src/org/tmatesoft/svn/core/io/diff/SVNRAStreamData.java -text
+javasvn/src/org/tmatesoft/svn/core/io/diff/SVNRABufferData.java -text
 javasvn/src/org/tmatesoft/svn/core/io/diff/package.html -text
 javasvn/src/org/tmatesoft/svn/core/io/package.html -text
 javasvn/src/org/tmatesoft/svn/core/javahl/package.html -text
