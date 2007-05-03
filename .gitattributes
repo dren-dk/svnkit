@@ -1,6 +1,7 @@
 * text=auto !eol
 /.options eol=lf
 /COPYING eol=lf
+/REMARKS.txt -text
 /changelog.txt eol=lf
 contrib/ganymed/GANYMED-LICENSE -text
 contrib/ganymed/ganymed.jar -text
