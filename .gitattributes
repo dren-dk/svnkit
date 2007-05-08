@@ -182,6 +182,7 @@ svnkit/src/org/tmatesoft/svn/core/wc/DefaultSVNCommitParameters.java -text
 svnkit/src/org/tmatesoft/svn/core/wc/ISVNCommitParameters.java -text
 svnkit/src/org/tmatesoft/svn/core/wc/ISVNMerger.java -text
 svnkit/src/org/tmatesoft/svn/core/wc/ISVNMergerFactory.java -text
+svnkit/src/org/tmatesoft/svn/core/wc/SVNCopySource.java -text
 svnkit/src/org/tmatesoft/svn/core/wc/package.html -text
 svnkit/src/org/tmatesoft/svn/core/wc/xml/SVNXMLInfoHandler.java -text
 svnkit/src/org/tmatesoft/svn/core/wc/xml/package.html -text
