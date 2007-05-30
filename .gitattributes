@@ -130,6 +130,7 @@ svnkit/cli/logging.properties.disabled -text
 svnkit/src/org/tigris/subversion/javahl/SVNClient.java -text
 svnkit/src/org/tmatesoft/svn/cli/command/SVNAdminListLocksCommand.java -text
 svnkit/src/org/tmatesoft/svn/cli/command/SVNAdminRemoveLocksCommand.java -text
+svnkit/src/org/tmatesoft/svn/cli/command/SVNChangelistCommand.java -text
 svnkit/src/org/tmatesoft/svn/cli/command/SVNPropeditCommand.java -text
 svnkit/src/org/tmatesoft/svn/core/SVNDepth.java -text
 svnkit/src/org/tmatesoft/svn/core/SVNURL.java -text
@@ -180,9 +181,12 @@ svnkit/src/org/tmatesoft/svn/core/package.html -text
 svnkit/src/org/tmatesoft/svn/core/replicator/SVNReplicationEditor.java -text
 svnkit/src/org/tmatesoft/svn/core/replicator/SVNRepositoryReplicator.java -text
 svnkit/src/org/tmatesoft/svn/core/wc/DefaultSVNCommitParameters.java -text
+svnkit/src/org/tmatesoft/svn/core/wc/ISVNChangelistHandler.java -text
 svnkit/src/org/tmatesoft/svn/core/wc/ISVNCommitParameters.java -text
 svnkit/src/org/tmatesoft/svn/core/wc/ISVNMerger.java -text
 svnkit/src/org/tmatesoft/svn/core/wc/ISVNMergerFactory.java -text
+svnkit/src/org/tmatesoft/svn/core/wc/SVNChangeList.java -text
+svnkit/src/org/tmatesoft/svn/core/wc/SVNChangelistClient.java -text
 svnkit/src/org/tmatesoft/svn/core/wc/SVNCopySource.java -text
 svnkit/src/org/tmatesoft/svn/core/wc/package.html -text
 svnkit/src/org/tmatesoft/svn/core/wc/xml/SVNXMLInfoHandler.java -text
