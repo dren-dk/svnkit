@@ -195,6 +195,7 @@ svnkit/src/org/tmatesoft/svn/core/wc/SVNChangelistClient.java -text
 svnkit/src/org/tmatesoft/svn/core/wc/SVNCompositePathList.java -text
 svnkit/src/org/tmatesoft/svn/core/wc/SVNCopySource.java -text
 svnkit/src/org/tmatesoft/svn/core/wc/SVNPathList.java -text
+svnkit/src/org/tmatesoft/svn/core/wc/SVNResolveAccept.java -text
 svnkit/src/org/tmatesoft/svn/core/wc/package.html -text
 svnkit/src/org/tmatesoft/svn/core/wc/xml/SVNXMLInfoHandler.java -text
 svnkit/src/org/tmatesoft/svn/core/wc/xml/package.html -text
