@@ -15,6 +15,7 @@ svnkit-test/python-tests-log.xml
 svnkit-test/python.log.html
 svnkit-test/test.properties
 svnkit/bin
+svnkit/src/org/tmatesoft/svn/core/internal/wc/admin3/SVNAdminTest.java
 svnkit/src/org/tmatesoft/svn/examples
 svnkit/src/org/tmatesoft/svn/util/SVNTest.java
 www/download/results.html
