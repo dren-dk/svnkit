@@ -150,8 +150,19 @@ svnkit/src/org/tmatesoft/svn/core/internal/wc/db/SVNWorkQueue.java -text
 svnkit/src/org/tmatesoft/svn/core/internal/wc/db/SVNWorkingCopyDB17.java -text
 svnkit/src/org/tmatesoft/svn/core/internal/wc/db/SVNWorkingNode.java -text
 svnkit/src/org/tmatesoft/svn/core/internal/wc/db/wc-metadata.sql -text
+svnkit/src/org/tmatesoft/svn/core/internal/wc16/SVNBasicDelegate.java -text svneol=native#unset
+svnkit/src/org/tmatesoft/svn/core/internal/wc16/SVNChangelistClient16.java -text svneol=native#unset
+svnkit/src/org/tmatesoft/svn/core/internal/wc16/SVNCommitClient16.java -text svneol=native#unset
+svnkit/src/org/tmatesoft/svn/core/internal/wc16/SVNCopyClient16.java -text svneol=native#unset
+svnkit/src/org/tmatesoft/svn/core/internal/wc16/SVNDiffClient16.java -text svneol=native#unset
+svnkit/src/org/tmatesoft/svn/core/internal/wc16/SVNLogClient16.java -text svneol=native#unset
+svnkit/src/org/tmatesoft/svn/core/internal/wc16/SVNMoveClient16.java -text svneol=native#unset
+svnkit/src/org/tmatesoft/svn/core/internal/wc16/SVNStatusClient16.java -text svneol=native#unset
+svnkit/src/org/tmatesoft/svn/core/internal/wc16/SVNUpdateClient16.java -text svneol=native#unset
+svnkit/src/org/tmatesoft/svn/core/internal/wc16/SVNWCClient16.java -text svneol=native#unset
 svnkit/src/org/tmatesoft/svn/core/io/repository/template.jar -text
 svnkit/src/org/tmatesoft/svn/core/wc/ISVNFileFilter.java -text
+svnkit/src/org/tmatesoft/svn/core/wc/admin/SVNAdminBasicClient.java -text svneol=native#unset
 www/favicon.ico -text
 www/feed/feedcreator.class.php eol=lf
 www/feed/lgpl.txt eol=lf
