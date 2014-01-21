@@ -546,10 +546,11 @@ public class SVNStatusEditor17 {
                 return patterns;
             }
         }
-        for (Structure<InheritedProperties> element : inheritedProps) {
-            final SVNProperties inherited = element.get(InheritedProperties.properties);
-            SvnNgPropertiesManager.splitAndAppend(patterns, inherited.getStringValue(SVNProperty.INHERITABLE_IGNORES));
-            
+        if (inheritedProps != null) {
+            for (Structure<InheritedProperties> element : inheritedProps) {
+                final SVNProperties inherited = element.get(InheritedProperties.properties);
+                SvnNgPropertiesManager.splitAndAppend(patterns, inherited.getStringValue(SVNProperty.INHERITABLE_IGNORES));
+            }
         }
         return patterns;
     }
