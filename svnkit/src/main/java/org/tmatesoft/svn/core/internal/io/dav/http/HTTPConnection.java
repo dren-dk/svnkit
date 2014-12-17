@@ -41,6 +41,8 @@ import java.util.zip.GZIPInputStream;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
 import javax.xml.parsers.FactoryConfigurationError;
 import javax.xml.parsers.ParserConfigurationException;
@@ -123,6 +125,7 @@ public class HTTPConnection implements IHTTPConnection {
     private SVNRepository myRepository;
     private boolean myIsSecured;
     private boolean myIsProxied;
+    private boolean myLogSSLParams;
     private SVNAuthentication myLastValidAuth;
     private HTTPAuthentication myChallengeCredentials;
     private HTTPAuthentication myProxyAuthentication;
@@ -278,6 +281,7 @@ public class HTTPConnection implements IHTTPConnection {
                 mySocket = myIsSecured ? 
                         SVNSocketFactory.createSSLSocket(keyManager != null ? new KeyManager[] { keyManager } : new KeyManager[0], trustManager, host, port, connectTimeout, readTimeout, myRepository.getCanceller()) :
                         SVNSocketFactory.createPlainSocket(host, port, connectTimeout, readTimeout, myRepository.getCanceller());
+	              myLogSSLParams = true;
             }
         }
     }
@@ -459,7 +463,14 @@ public class HTTPConnection implements IHTTPConnection {
                             request.setCookies(cookieHeader);
                         }
                     }
-                    try {                        
+                    if (mySocket instanceof SSLSocket && myLogSSLParams) {
+                      final SSLSession session = ((SSLSocket)mySocket).getSession();
+                      if (session != null) {
+                        myRepository.getDebugLog().logFine(SVNLogType.NETWORK, "Connected to " + myRepository.getLocation() + " using " + session.getProtocol());
+	                      myLogSSLParams = false;
+                      }
+                    }
+                    try {
                         request.dispatch(method, path, header, ok1, ok2, context);
                         break;
                     } catch (EOFException pe) {
