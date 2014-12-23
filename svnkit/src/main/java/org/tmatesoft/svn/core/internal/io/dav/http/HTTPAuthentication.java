@@ -190,7 +190,7 @@ abstract class HTTPAuthentication {
             } else if ("NTLM".equalsIgnoreCase(method)) {
                 HTTPNTLMAuthentication ntlmAuth = null;
                 if (source.length() == 0) {
-                    String ntlmImpl = System.getProperty("svnkit.http.ntlm", "jna");
+                    String ntlmImpl = System.getProperty("svnkit.http.ntlm", "java:apache");
                     if ("jna".equalsIgnoreCase(ntlmImpl)) {
                         ntlmAuth = HTTPNativeNTLMAuthentication.newInstance(charset);
                         if (ntlmAuth != null) {
