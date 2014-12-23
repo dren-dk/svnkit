@@ -1,3 +1,9 @@
+== version 1.8.7 ==
+
++ Checkout operation performance improved.
++ NTLM implementation improvements.
++ Numerous bugfixes.
+
 == version 1.8.6 ==
 
 + Dependency on JNA set to 4.1.0 version, JNA is bundled under Apache 2.0 License.
