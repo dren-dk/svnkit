@@ -1,5 +1,5 @@
 group = 'org.tmatesoft.svnkit'
-version = '1.8.7'
+version = '1.8.8'
 
 project.ext {
    release = false
