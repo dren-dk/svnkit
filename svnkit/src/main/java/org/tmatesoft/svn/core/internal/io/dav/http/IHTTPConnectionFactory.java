@@ -27,7 +27,13 @@ public interface IHTTPConnectionFactory {
         public IHTTPConnection createHTTPConnection(SVNRepository repository) throws SVNException {
             final String charset = System.getProperty("svnkit.http.encoding", "UTF-8");
             final String spoolPath = System.getProperty("svnkit.http.spoolDirectory", null);
-            final File spoolDirectory = spoolPath != null ? new File(spoolPath) : null;
+            File spoolDirectory = spoolPath != null ? new File(spoolPath) : null;
+            if (spoolDirectory != null) {
+                spoolDirectory.mkdirs();
+                if (!spoolDirectory.isDirectory()) {
+                    spoolDirectory = null;
+                }
+            }
             return new HTTPConnection(repository, charset, spoolDirectory, spoolDirectory != null);
         }
 
