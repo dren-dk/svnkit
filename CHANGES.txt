@@ -1,3 +1,10 @@
+== version 1.8.8 ==
+
++ OSGi package included wrong version of the Sequence Library, fixed.
++ System property support added to control whether to use spooling 
+  for all HTTP operations:
+  -Dsvnkit.http.spoolDirectory=/path/to/spool/directory
+
 == version 1.8.7 ==
 
 + Checkout operation performance improved.
