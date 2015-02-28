@@ -118,7 +118,7 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
             matchedAuth = (SVNPasswordAuthentication) matchedAuths.get(realm);
         }
         if (matchedAuth != null) {
-            return new SVNPasswordAuthentication("", matchedAuth.getPassword(), storageAllowed, url, false);
+            return SVNPasswordAuthentication.newInstance("", matchedAuth.getPasswordValue(), storageAllowed, url, false);
         }
         return null;
     }
@@ -145,7 +145,8 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
         } else {
             passphrase = SVNPropertyValue.getPropertyAsString(values.getSVNPropertyValue("passphrase"));
         }
-        return new SVNPasswordAuthentication(storedRealm, passphrase, false, null, false);
+        final char[] passphraseValue = passphrase != null ? passphrase.toCharArray() : null; 
+        return SVNPasswordAuthentication.newInstance(storedRealm, passphraseValue, false, null, false);
     }
     
     private String readPassword(String realm, String userName, IPasswordStorage passwordStorage, SVNProperties authValues) throws SVNException {
@@ -178,17 +179,18 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
                     if (sslClientCert.lastIndexOf(';') > 0) {
                         alias = sslClientCert.substring(sslClientCert.lastIndexOf(';') + 1);
                     }
-                    return new SVNSSLAuthentication(SVNSSLAuthentication.MSCAPI, alias, authMayBeStored, url, false);
+                    return SVNSSLAuthentication.newInstance(SVNSSLAuthentication.MSCAPI, alias, authMayBeStored, url, false);
                 }
 
                 String sslClientCertPassword = hostOptions.getSSLClientCertPassword();
                 File clientCertFile = sslClientCert != null ? new File(sslClientCert) : null;
-                SVNSSLAuthentication sslAuth = new SVNSSLAuthentication(clientCertFile, sslClientCertPassword, authMayBeStored, url, false);
+                final char[] passwordValue = sslClientCertPassword != null ? sslClientCertPassword.toCharArray() : null;
+                SVNSSLAuthentication sslAuth = SVNSSLAuthentication.newInstance(clientCertFile, passwordValue, authMayBeStored, url, false);
                 if (sslClientCertPassword == null || "".equals(sslClientCertPassword)) {
                     // read from cache at once.
                     SVNPasswordAuthentication passphrase = readSSLPassphrase(kind, sslClientCert, authMayBeStored, url);
-                    if (passphrase != null && passphrase.getPassword() != null) {
-                        sslAuth = new SVNSSLAuthentication(clientCertFile, passphrase.getPassword(), authMayBeStored, url, false);
+                    if (passphrase != null && passphrase.getPasswordValue() != null) {
+                        sslAuth = SVNSSLAuthentication.newInstance(clientCertFile, passphrase.getPasswordValue(), authMayBeStored, url, false);
                     }
                 }
                 sslAuth.setCertificatePath(sslClientCert);
@@ -234,10 +236,11 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
 
                 if (ISVNAuthenticationManager.PASSWORD.equals(kind)) {
                     String password = readPassword(realm, userName, passwordStorage, values);
+                    final char[] passwordValue = password != null ? password.toCharArray() : null;
                     if (password == null) {
-                        return new SVNPasswordAuthentication(userName, password, authMayBeStored, null, true);
+                        return SVNPasswordAuthentication.newInstance(userName, passwordValue, authMayBeStored, null, true);
                     }
-                    return new SVNPasswordAuthentication(userName, password, authMayBeStored, url, false);
+                    return SVNPasswordAuthentication.newInstance(userName, passwordValue, authMayBeStored, url, false);
                 } else if (ISVNAuthenticationManager.SSH.equals(kind)) {
                     // get port from config file or system property?
                     int portNumber;
@@ -248,25 +251,28 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
                     }
                     if (path != null) {
                         String passphrase = readPassphrase(storedRealm, passwordStorage, values);
-                        return new SVNSSHAuthentication(userName, new File(path), passphrase, portNumber, authMayBeStored, url, false);
+                        final char[] passphraseValue = passphrase != null ? passphrase.toCharArray() : null;
+                        return SVNSSHAuthentication.newInstance(userName, new File(path), passphraseValue, portNumber, authMayBeStored, url, false);
                     }
                     String password = readPassword(realm, userName, passwordStorage, values);
                     if (password != null) {
-                        return new SVNSSHAuthentication(userName, password, portNumber, authMayBeStored, url, false);
+                        final char[] passwordValue = password.toCharArray();
+                        return SVNSSHAuthentication.newInstance(userName, passwordValue, portNumber, authMayBeStored, url, false);
                     }
                 } else if (ISVNAuthenticationManager.USERNAME.equals(kind)) {
                     return new SVNUserNameAuthentication(userName, authMayBeStored, url, false);
                 } else if (ISVNAuthenticationManager.SSL.equals(kind)) {
                     if (isMSCapi(sslKind)) {                        
                         final String alias = SVNPropertyValue.getPropertyAsString(values.getSVNPropertyValue("alias"));
-                        return new SVNSSLAuthentication(SVNSSLAuthentication.MSCAPI, alias, authMayBeStored, url, false);
+                        return SVNSSLAuthentication.newInstance(SVNSSLAuthentication.MSCAPI, alias, authMayBeStored, url, false);
                     }
                     String passphrase = readPassphrase(storedRealm, passwordStorage, values);
-                    SVNSSLAuthentication sslAuth = new SVNSSLAuthentication(new File(path), passphrase, authMayBeStored, url, false);
+                    final char[] passphraseValue = passphrase != null ? passphrase.toCharArray() : null;
+                    SVNSSLAuthentication sslAuth = SVNSSLAuthentication.newInstance(new File(path), passphraseValue, authMayBeStored, url, false);
                     if (passphrase == null || "".equals(passphrase)) {
                         SVNPasswordAuthentication passphraseAuth = readSSLPassphrase(kind, path, authMayBeStored, url);
-                        if (passphraseAuth != null && passphraseAuth.getPassword() != null) {
-                            sslAuth = new SVNSSLAuthentication(new File(path), passphraseAuth.getPassword(), authMayBeStored, url, false);
+                        if (passphraseAuth != null && passphraseAuth.getPasswordValue() != null) {
+                            sslAuth = SVNSSLAuthentication.newInstance(new File(path), passphraseAuth.getPasswordValue(), authMayBeStored, url, false);
                         }
                     }
                     sslAuth.setCertificatePath(path);

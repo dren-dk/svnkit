@@ -58,6 +58,7 @@ import org.tmatesoft.svn.core.auth.BasicAuthenticationManager;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManagerExt;
 import org.tmatesoft.svn.core.auth.ISVNProxyManager;
+import org.tmatesoft.svn.core.auth.ISVNProxyManagerEx;
 import org.tmatesoft.svn.core.auth.SVNAuthentication;
 import org.tmatesoft.svn.core.auth.SVNPasswordAuthentication;
 import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVErrorHandler;
@@ -250,8 +251,8 @@ public class HTTPConnection implements IHTTPConnection {
                             }
 
                             if (!credentialsUsed) {
-                                myProxyAuthentication.setCredentials(new SVNPasswordAuthentication(proxyManager.getProxyUserName(), 
-                                        proxyManager.getProxyPassword(), false, myRepository.getLocation(), false));
+                                myProxyAuthentication.setCredentials(SVNPasswordAuthentication.newInstance(proxyManager.getProxyUserName(), 
+                                        getProxyPasswordValue(proxyManager), false, myRepository.getLocation(), false));
                                 debugLog.logFine(SVNLogType.NETWORK, "explicit credentials set");
                                 credentialsUsed = true;
                             } else {
@@ -269,10 +270,10 @@ public class HTTPConnection implements IHTTPConnection {
                             SVNErrorManager.error(err, connectRequest.getErrorMessage(), SVNLogType.NETWORK);
                         }
                     }
-                } else if (proxyManager.getProxyUserName() != null && proxyManager.getProxyPassword() != null ){
+                } else if (proxyManager.getProxyUserName() != null && getProxyPasswordValue(proxyManager) != null ){
                     myProxyAuthentication = new HTTPBasicAuthentication("UTF-8");
-                    myProxyAuthentication.setCredentials(new SVNPasswordAuthentication(proxyManager.getProxyUserName(), 
-                            proxyManager.getProxyPassword(), false, myRepository.getLocation(), false));
+                    myProxyAuthentication.setCredentials(SVNPasswordAuthentication.newInstance(proxyManager.getProxyUserName(), 
+                            getProxyPasswordValue(proxyManager), false, myRepository.getLocation(), false));
                     debugLog.logFine(SVNLogType.NETWORK, "explicit credentials set");
                 }
             } else {
@@ -283,6 +284,20 @@ public class HTTPConnection implements IHTTPConnection {
                         SVNSocketFactory.createPlainSocket(host, port, connectTimeout, readTimeout, myRepository.getCanceller());
 	              myLogSSLParams = true;
             }
+        }
+    }
+    
+    private char[] getProxyPasswordValue(ISVNProxyManager proxyManager) {
+        if (proxyManager == null) {
+            return null;
+        } else if (proxyManager instanceof ISVNProxyManagerEx) {
+            return ((ISVNProxyManagerEx) proxyManager).getProxyPasswordValue();
+        } else {
+            final String password = proxyManager.getProxyPassword();
+            if (password == null) {
+                return null;
+            }
+            return password.toCharArray();
         }
     }
     

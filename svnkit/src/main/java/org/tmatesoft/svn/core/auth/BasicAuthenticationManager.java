@@ -46,7 +46,7 @@ import org.tmatesoft.svn.core.io.SVNRepository;
  * @since   1.2
  * @see     ISVNAuthenticationProvider
  */
-public class BasicAuthenticationManager implements ISVNAuthenticationManager, ISVNProxyManager, ISVNSSHHostVerifier {
+public class BasicAuthenticationManager implements ISVNAuthenticationManager, ISVNProxyManagerEx, ISVNSSHHostVerifier {
 
     public static BasicAuthenticationManager newInstance(String userName, char[] password) {
         return new BasicAuthenticationManager(new SVNAuthentication[] {
@@ -85,7 +85,7 @@ public class BasicAuthenticationManager implements ISVNAuthenticationManager, IS
     private String myProxyHost;
     private int myProxyPort;
     private String myProxyUserName;
-    private String myProxyPassword;
+    private char[] myProxyPassword;
     private boolean myIsAuthenticationForced;
     
     /**
@@ -163,12 +163,26 @@ public class BasicAuthenticationManager implements ISVNAuthenticationManager, IS
     /**
      * Sets a proxy server context to this manager.
      * 
+     * @deprecated
+     * 
      * @param proxyHost        a proxy server hostname
      * @param proxyPort        a proxy server port
      * @param proxyUserName    a username to supply to a proxy machine
      * @param proxyPassword    a password to supply to a proxy machine
      */
     public void setProxy(String proxyHost, int proxyPort, String proxyUserName, String proxyPassword) {
+        setProxy(proxyHost, proxyPort, proxyUserName, proxyPassword != null ? proxyPassword.toCharArray() : null);
+    }
+
+    /**
+     * Sets a proxy server context to this manager.
+     * 
+     * @param proxyHost        a proxy server hostname
+     * @param proxyPort        a proxy server port
+     * @param proxyUserName    a username to supply to a proxy machine
+     * @param proxyPassword    a password to supply to a proxy machine
+     */
+    public void setProxy(String proxyHost, int proxyPort, String proxyUserName, char[] proxyPassword) {
         myProxyHost = proxyHost;
         myProxyPort = proxyPort >= 0 ? proxyPort : 3128;
         myProxyUserName = proxyUserName;
@@ -353,6 +367,10 @@ public class BasicAuthenticationManager implements ISVNAuthenticationManager, IS
      *         method 
      */
     public String getProxyPassword() {
+        return myProxyPassword != null ? new String(myProxyPassword) : null;
+    }
+    
+    public char[] getProxyPasswordValue() {
         return myProxyPassword;
     }
     

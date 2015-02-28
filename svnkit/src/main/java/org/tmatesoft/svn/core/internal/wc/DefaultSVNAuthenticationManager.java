@@ -57,13 +57,21 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
     private SVNAuthentication myLastLoadedAuth;
     private boolean myIsAuthenticationForced;
 
+    /**
+     * @deprecated
+     */
     public DefaultSVNAuthenticationManager(File configDirectory, boolean storeAuth, String userName, String password) {
-        this(configDirectory, storeAuth, userName, password, null, null);
+        this(configDirectory, storeAuth, userName, password != null ? password.toCharArray() : null, null, null);
     }
 
+    /**
+     * @deprecated
+     */
     public DefaultSVNAuthenticationManager(File configDirectory, boolean storeAuth, String userName, String password, File privateKey, String passphrase) {
-        //password = password == null ? "" : password;
+        this(configDirectory, storeAuth, userName, password != null ? password.toCharArray() : null, privateKey, passphrase != null ? passphrase.toCharArray() : null);
+    }
 
+    public DefaultSVNAuthenticationManager(File configDirectory, boolean storeAuth, String userName, char[] password, File privateKey, char[] passphrase) {
         myIsStoreAuth = storeAuth;
         myConfigDirectory = configDirectory;
         if (myConfigDirectory == null) {
@@ -248,13 +256,13 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
                 DumbAuthenticationProvider authProvider = (DumbAuthenticationProvider) myProviders[0];
                 // for user name has to be user
                 String userName = authProvider.myUserName;
-                String password = authProvider.myPassword;
+                char[] password = authProvider.myPassword;
                 if (ISVNAuthenticationManager.USERNAME.equals(kind)) {
                     return userName != null && !"".equals(userName);
                 }
                 // do not look into cache when both password and user name specified
                 // if only username is specified, then do look, but only for that username
-                return password != null && !"".equals(password) && userName != null && !"".equals(userName);
+                return password != null && password.length > 0 && userName != null && !"".equals(userName);
             }
         }
         return false;
@@ -299,14 +307,14 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
         String passphrase = getDefaultOptions().getDefaultSSHPassphrase();
 
         if (userName != null && password != null) {
-            return new SVNSSHAuthentication(userName, password, port, getHostOptionsProvider().getHostOptions(url).isAuthStorageEnabled(), url, false);
+            return SVNSSHAuthentication.newInstance(userName, password.toCharArray(), port, getHostOptionsProvider().getHostOptions(url).isAuthStorageEnabled(), url, false);
         } else if (userName != null && keyFile != null) {
-            return new SVNSSHAuthentication(userName, new File(keyFile), passphrase, port, getHostOptionsProvider().getHostOptions(url).isAuthStorageEnabled(), url, false);
+            return SVNSSHAuthentication.newInstance(userName, new File(keyFile), passphrase.toCharArray(), port, getHostOptionsProvider().getHostOptions(url).isAuthStorageEnabled(), url, false);
         }
         return null;
     }
     
-    protected ISVNAuthenticationProvider createDefaultAuthenticationProvider(String userName, String password, File privateKey, String passphrase, boolean allowSave) {
+    protected ISVNAuthenticationProvider createDefaultAuthenticationProvider(String userName, char[] password, File privateKey, char[] passphrase, boolean allowSave) {
         return new DumbAuthenticationProvider(userName, password, privateKey, passphrase, allowSave);
     }
 
@@ -345,12 +353,12 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
     protected class DumbAuthenticationProvider implements ISVNAuthenticationProvider {
         
         private String myUserName;
-        private String myPassword;
+        private char[] myPassword;
         private boolean myIsStore;
-        private String myPassphrase;
+        private char[] myPassphrase;
         private File myPrivateKey;
 
-        public DumbAuthenticationProvider(String userName, String password, File privateKey, String passphrase, boolean store) {
+        public DumbAuthenticationProvider(String userName, char[] password, File privateKey, char[] passphrase, boolean store) {
             myUserName = userName;
             myPassword = password;
             myPrivateKey = privateKey;
@@ -367,26 +375,26 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
                         return sshAuth;
                     }
                     if (myPrivateKey != null) {
-                        return new SVNSSHAuthentication(myUserName, myPrivateKey, myPassphrase, sshAuth != null ? sshAuth.getPortNumber() : -1, 
+                        return SVNSSHAuthentication.newInstance(myUserName, myPrivateKey, myPassphrase, sshAuth != null ? sshAuth.getPortNumber() : -1, 
                                 myIsStore, url, false);
                     }
-                    return new SVNSSHAuthentication(myUserName, myPassword, sshAuth != null ? sshAuth.getPortNumber() : -1, myIsStore, url, false);
+                    return SVNSSHAuthentication.newInstance(myUserName, myPassword, sshAuth != null ? sshAuth.getPortNumber() : -1, myIsStore, url, false);
                 } else if (ISVNAuthenticationManager.PASSWORD.equals(kind)) {
                     if (myUserName == null || "".equals(myUserName.trim())) {
                         String defaultUserName = getHostOptionsProvider().getHostOptions(url).getUserName();
                         defaultUserName = defaultUserName == null ? System.getProperty("user.name") : defaultUserName; 
                         if (defaultUserName != null) {
                             //return new SVNUserNameAuthentication(defaultUserName, false);
-                            SVNPasswordAuthentication partialAuth = new SVNPasswordAuthentication(defaultUserName, null, false, url, true);
+                            SVNPasswordAuthentication partialAuth = SVNPasswordAuthentication.newInstance(defaultUserName, null, false, url, true);
                             return partialAuth;
                         } 
                         return null;
                     }
                     
                     if (myPassword == null) {
-                        return new SVNPasswordAuthentication(myUserName, null, false, url, true);
+                        return SVNPasswordAuthentication.newInstance(myUserName, null, false, url, true);
                     }
-                    return new SVNPasswordAuthentication(myUserName, myPassword, myIsStore, url, false);
+                    return SVNPasswordAuthentication.newInstance(myUserName, myPassword, myIsStore, url, false);
                 } else if (ISVNAuthenticationManager.USERNAME.equals(kind)) {
                     if (myUserName == null || "".equals(myUserName)) {
                         String userName = System.getProperty("svnkit.ssh2.author", System.getProperty("javasvn.ssh2.author"));
