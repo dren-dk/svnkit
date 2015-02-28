@@ -48,6 +48,21 @@ import org.tmatesoft.svn.core.io.SVNRepository;
  */
 public class BasicAuthenticationManager implements ISVNAuthenticationManager, ISVNProxyManager, ISVNSSHHostVerifier {
 
+    public static BasicAuthenticationManager newInstance(String userName, char[] password) {
+        return new BasicAuthenticationManager(new SVNAuthentication[] {
+            SVNPasswordAuthentication.newInstance(userName, password, false, null, false),
+            SVNSSHAuthentication.newInstance(userName, password, -1, false, null, false),
+            SVNUserNameAuthentication.newInstance(userName, false, null, false),
+        });        
+    }
+    
+    public static BasicAuthenticationManager newInstance(String userName, File keyFile, char[] passphrase, int portNumber) {
+        return new BasicAuthenticationManager(new SVNAuthentication[] {
+            SVNSSHAuthentication.newInstance(userName, keyFile, passphrase, portNumber, false, null, false),
+            SVNUserNameAuthentication.newInstance(userName, false, null, false),
+        });        
+    }
+
 	public static void acknowledgeAuthentication(boolean accepted, String kind, String realm, SVNErrorMessage errorMessage, SVNAuthentication authentication, SVNURL accessedURL, ISVNAuthenticationManager authManager) throws SVNException {
 		if (authManager instanceof ISVNAuthenticationManagerExt) {
 			((ISVNAuthenticationManagerExt)authManager).acknowledgeAuthentication(accepted, kind, realm, errorMessage, authentication, accessedURL);
@@ -77,6 +92,8 @@ public class BasicAuthenticationManager implements ISVNAuthenticationManager, IS
      * Creates an auth manager given a user credential - a username 
      * and password. 
      * 
+     * @deprecated
+     * 
      * @param userName  a username
      * @param password  a password
      */
@@ -90,7 +107,9 @@ public class BasicAuthenticationManager implements ISVNAuthenticationManager, IS
     
     /**
      * Creates an auth manager given a user credential - a username and 
-     * an ssh private key.  
+     * an ssh private key.
+     * 
+     * @deprecated
      * 
      * @param userName    a username
      * @param keyFile     a private key file

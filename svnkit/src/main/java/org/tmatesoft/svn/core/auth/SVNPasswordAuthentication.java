@@ -28,8 +28,12 @@ import org.tmatesoft.svn.core.SVNURL;
  * @since   1.2
  */
 public class SVNPasswordAuthentication extends SVNAuthentication {
+    
+    public static SVNPasswordAuthentication newInstance(String userName, char[] password, boolean storageAllowed, SVNURL url, boolean isPartial) {
+        return new SVNPasswordAuthentication(userName, password, storageAllowed, url, isPartial);
+    }
 
-    private String myPassword;
+    private char[] myPassword;
     
     /**
      * Creates a password user credential object given a username and password. 
@@ -43,11 +47,13 @@ public class SVNPasswordAuthentication extends SVNAuthentication {
      *                         global auth cache, otherwise not
      */
     public SVNPasswordAuthentication(String userName, String password, boolean storageAllowed) {
-        this(userName, password, storageAllowed, null, false);
+        this(userName, password == null ? new char[0] : password.toCharArray(), storageAllowed, null, false);
     }
 
     /**
-     * Creates a password user credential object given a username and password. 
+     * Creates a password user credential object given a username and password.
+     * 
+     * @deprecated
      * 
      * @param userName         the name of a user to authenticate 
      * @param password         the user's password
@@ -58,16 +64,25 @@ public class SVNPasswordAuthentication extends SVNAuthentication {
      * @since 1.3.1
      */
     public SVNPasswordAuthentication(String userName, String password, boolean storageAllowed, SVNURL url, boolean isPartial) {
+        this(userName, password == null ? new char[0] : password.toCharArray(), storageAllowed, url, isPartial);
+    }
+
+    private SVNPasswordAuthentication(String userName, char[] password, boolean storageAllowed, SVNURL url, boolean isPartial) {
         super(ISVNAuthenticationManager.PASSWORD, userName, storageAllowed, url, isPartial);
-        myPassword = password == null ? "" : password;
+        myPassword = password == null ? new char[0] : password;
     }
 
     /**
      * Returns this user credential's password. 
-     * 
+     *
+     * @deprecated
      * @return the user's password
      */
     public String getPassword() {
+        return new String(myPassword);
+    }
+    
+    public char[] getPasswordValue() {
         return myPassword;
     }
 }

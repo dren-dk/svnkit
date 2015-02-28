@@ -12,6 +12,7 @@
 package org.tmatesoft.svn.core.auth;
 
 import com.trilead.ssh2.auth.AgentProxy;
+
 import org.tmatesoft.svn.core.SVNURL;
 
 import java.io.File;
@@ -33,8 +34,24 @@ import java.io.File;
  */
 public class SVNSSHAuthentication extends SVNAuthentication {
 
-    private String myPassword;
-    private String myPassphrase;
+    public static SVNSSHAuthentication newInstance(String userName, char[] password, int portNumber, boolean storageAllowed, SVNURL url, boolean isPartial) {
+        return new SVNSSHAuthentication(userName, password, null, null, null, null, portNumber, storageAllowed, url, isPartial);
+    }
+    
+    public static SVNSSHAuthentication newInstance(String userName, File keyFile, char[] passphrase, int portNumber, boolean storageAllowed, SVNURL url, boolean isPartial) {
+        return new SVNSSHAuthentication(userName, null, keyFile, null, passphrase, null, portNumber, storageAllowed, url, isPartial);
+    }
+
+    public static SVNSSHAuthentication newInstance(String userName, char[] keyValue, char[] passphrase, int portNumber, boolean storageAllowed, SVNURL url, boolean isPartial) {
+        return new SVNSSHAuthentication(userName, null, null, keyValue, passphrase, null, portNumber, storageAllowed, url, isPartial);
+    }
+
+    public static SVNSSHAuthentication newInstance(String userName, AgentProxy agentProxy, int portNumber, SVNURL url, boolean isPartial) {
+        return new SVNSSHAuthentication(userName, null, null, null, null, agentProxy, portNumber, false, url, isPartial);
+    }
+
+    private char[] myPassword;
+    private char[] myPassphrase;
     private File myPrivateKeyFile;
     private AgentProxy myAgentProxy;
     private int myPortNumber;
@@ -55,13 +72,15 @@ public class SVNSSHAuthentication extends SVNAuthentication {
      *                         global auth cache, otherwise not
      */
     public SVNSSHAuthentication(String userName, String password, int portNumber, boolean storageAllowed) {
-        this(userName, password, portNumber, storageAllowed, null, false);
+        this(userName, password == null ? new char[0] : password.toCharArray(), null, null, null, null, portNumber, storageAllowed, null, false);
     }
 
     /**
      * Creates a user credential object for authenticating over an ssh tunnel. 
      * This kind of credentials is used when an ssh connection requires 
      * a user password instead of an ssh private key.
+     * 
+     * @deprecated
      * 
      * @param userName         the name of a user to authenticate 
      * @param password         the user's password
@@ -73,8 +92,7 @@ public class SVNSSHAuthentication extends SVNAuthentication {
      * @since 1.3.1
      */
     public SVNSSHAuthentication(String userName, String password, int portNumber, boolean storageAllowed, SVNURL url, boolean isPartial) {
-        this(userName, portNumber, storageAllowed, url, isPartial);
-        myPassword = password;
+        this(userName, password == null ? new char[0] : password.toCharArray(), null, null, null, null, portNumber, storageAllowed, url, isPartial);
     }
 
     /**
@@ -93,13 +111,15 @@ public class SVNSSHAuthentication extends SVNAuthentication {
      *                         global auth cache, otherwise not
      */
     public SVNSSHAuthentication(String userName, File keyFile, String passphrase, int portNumber, boolean storageAllowed) {
-        this(userName, keyFile, passphrase, portNumber, storageAllowed, null, false);
+        this(userName, null, keyFile, passphrase != null ? passphrase.toCharArray() : null, null, null, portNumber, storageAllowed, null, false);
     }
 
     /**
      * Creates a user credential object for authenticating over an ssh tunnel. 
      * This kind of credentials is used when an ssh connection requires 
      * an ssh private key.
+     *
+     * @deprecated
      * 
      * @param userName         the name of a user to authenticate 
      * @param keyFile          the user's ssh private key file 
@@ -112,9 +132,7 @@ public class SVNSSHAuthentication extends SVNAuthentication {
      * @since 1.3.1
      */
     public SVNSSHAuthentication(String userName, File keyFile, String passphrase, int portNumber, boolean storageAllowed, SVNURL url, boolean isPartial) {
-        this(userName, portNumber, storageAllowed, url, isPartial);
-        myPrivateKeyFile = keyFile;
-        myPassphrase = passphrase;
+        this(userName, null, keyFile, null, passphrase != null ? passphrase.toCharArray() : null, null, portNumber, storageAllowed, url, isPartial);
     }
     
     /**
@@ -133,13 +151,15 @@ public class SVNSSHAuthentication extends SVNAuthentication {
      *                         global auth cache, otherwise not
      */
     public SVNSSHAuthentication(String userName, char[] privateKey, String passphrase, int portNumber, boolean storageAllowed) {
-        this(userName, privateKey, passphrase, portNumber, storageAllowed, null, false);
+        this(userName, null, null, privateKey, passphrase != null ? passphrase.toCharArray() : null, null, portNumber, storageAllowed, null, false);
     }
 
     /**
      * Creates a user credential object for authenticating over an ssh tunnel. 
      * This kind of credentials is used when an ssh connection requires 
      * an ssh private key.
+     *
+     * @deprecated
      * 
      * @param userName         the name of a user to authenticate 
      * @param privateKey       the user's ssh private key 
@@ -152,28 +172,35 @@ public class SVNSSHAuthentication extends SVNAuthentication {
      * @since 1.3.1
      */
     public SVNSSHAuthentication(String userName, char[] privateKey, String passphrase, int portNumber, boolean storageAllowed, SVNURL url, boolean isPartial) {
-        this(userName, portNumber, storageAllowed, url, isPartial);
-        myPrivateKeyValue = privateKey;
-        myPassphrase = passphrase;
-    }
-
-    private SVNSSHAuthentication(String userName, int portNumber, boolean storageAllowed, SVNURL url, boolean isPartial) {
-        super(ISVNAuthenticationManager.SSH, userName, storageAllowed, url, isPartial);
-        myPortNumber = portNumber;
+        this(userName, null, null, privateKey, passphrase != null ? passphrase.toCharArray() : null, null, portNumber, storageAllowed, url, isPartial);
     }
 
     public SVNSSHAuthentication(String userName, AgentProxy agentProxy, int portNumber, SVNURL url, boolean isPartial) {
-        this(userName, portNumber, false, url, isPartial);
+        this(userName, null, null, null, null, agentProxy, portNumber, false, url, isPartial);
+    }
+
+    private SVNSSHAuthentication(String userName, char[] password, File keyFile, char[] keyValue, char[] passphrase, AgentProxy agentProxy, int portNumber, boolean storageAllowed, SVNURL url, boolean isPartial) {
+        super(ISVNAuthenticationManager.SSH, userName, storageAllowed, url, isPartial);
         myAgentProxy = agentProxy;
+        myPassword = password;
+        myPassphrase = passphrase;
+        myPrivateKeyFile = keyFile;
+        myPrivateKeyValue = keyValue;
+        myPortNumber = portNumber;
     }
 
     /**
      * Returns the user account's password. This is used when an  
      * ssh private key is not used. 
-     * 
+     *
+     * @deprecated
      * @return the user's password
      */
     public String getPassword() {
+        return myPassword != null ? new String(myPassword) : null;
+    }
+    
+    public char[] getPasswordValue() {
         return myPassword;
     }
     
@@ -184,7 +211,11 @@ public class SVNSSHAuthentication extends SVNAuthentication {
      * @see    #getPrivateKeyFile()
      */
     public String getPassphrase() {
-        return myPassphrase;
+        return myPassphrase != null ? new String(myPassphrase) : null;
+    }
+
+    public char[] getPassphraseValue() {
+        return myPassword;
     }
     
     /**
