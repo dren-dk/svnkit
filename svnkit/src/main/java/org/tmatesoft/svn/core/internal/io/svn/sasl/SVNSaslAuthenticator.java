@@ -422,8 +422,8 @@ public class SVNSaslAuthenticator extends SVNAuthenticator {
                     String userName = myAuthentication.getUserName();
                     ((NameCallback) callback).setName(userName != null ? userName : "");
                 } else if (callback instanceof PasswordCallback) {
-                    String password = ((SVNPasswordAuthentication) myAuthentication).getPassword();
-                    ((PasswordCallback) callback).setPassword(password != null ? password.toCharArray() : new char[0]);
+                    final char[] password = ((SVNPasswordAuthentication) myAuthentication).getPasswordValue();
+                    ((PasswordCallback) callback).setPassword(password != null ? password : new char[0]);
                 } else if (callback instanceof RealmCallback) {
                     ((RealmCallback) callback).setText(myRealm);
                 } else {

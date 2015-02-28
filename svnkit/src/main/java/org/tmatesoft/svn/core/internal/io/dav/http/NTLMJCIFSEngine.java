@@ -16,7 +16,7 @@ public class NTLMJCIFSEngine implements INTLMEngine {
 
     public static boolean isAvailable() {
         try {
-            final Class clazz = Class.forName("jcifs.ntlmssp.NtlmFlags");
+            final Class<?> clazz = Class.forName("jcifs.ntlmssp.NtlmFlags");
             return clazz != null;
         } catch (ClassNotFoundException e) {
             //
@@ -37,7 +37,7 @@ public class NTLMJCIFSEngine implements INTLMEngine {
         }
     }
 
-    public String generateType3Msg(String userName, String password, String domain, String ws, String token) throws NTLMEngineException {
+    public String generateType3Msg(String userName, char[] password, String domain, String ws, String token) throws NTLMEngineException {
         final byte[] buffer = new byte[token.length()];
         final int length = SVNBase64.base64ToByteArray(new StringBuffer(token), buffer);
         final byte[] tokenBytes = new byte[length];
@@ -56,7 +56,7 @@ public class NTLMJCIFSEngine implements INTLMEngine {
                     & (~(0x00010000 /*NtlmFlags.NTLMSSP_TARGET_TYPE_DOMAIN*/ |
                          0x00020000 /*NtlmFlags.NTLMSSP_TARGET_TYPE_SERVER*/));
             final Object type3MessageObject = type3Constructor.newInstance(type2MessageObject,
-                    password, domain, userName, ws, type3Flags);
+                    new String(password), domain, userName, ws, type3Flags);
 
             final Method toByteArray = type3MessageClass.getMethod("toByteArray");
             final byte[] message = (byte[]) toByteArray.invoke(type3MessageObject);

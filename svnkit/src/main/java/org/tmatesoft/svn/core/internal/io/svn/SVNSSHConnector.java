@@ -90,16 +90,16 @@ public class SVNSSHConnector implements ISVNConnector {
                         if (privateKey == null && authentication.getPrivateKeyFile() != null) {
                             privateKey = SVNSSHPrivateKeyUtil.readPrivateKey(authentication.getPrivateKeyFile());
                         }
-                        char[] passphrase = authentication.getPassphrase() != null ? authentication.getPassphrase().toCharArray() : null;
+                        char[] passphrase = authentication.getPassphraseValue();
                         if (passphrase != null && passphrase.length == 0) {
                             passphrase = null;
                         }
-                        char[] password = authentication.getPassword() != null ? authentication.getPassword().toCharArray() : null;
+                        char[] password = authentication.getPasswordValue();
                         if (password != null && password.length == 0) {
                             password = null;
                         }
                         AgentProxy agentProxy = authentication.getAgentProxy();
-                        if (privateKey != null && !SVNSSHPrivateKeyUtil.isValidPrivateKey(privateKey, authentication.getPassphrase())) {
+                        if (privateKey != null && !SVNSSHPrivateKeyUtil.isValidPrivateKey(privateKey, authentication.getPassphraseValue())) {
                             if (password == null) {
                                 SVNErrorMessage error = SVNErrorMessage.create(SVNErrorCode.RA_NOT_AUTHORIZED, "File ''{0}'' is not valid OpenSSH DSA or RSA private key file", authentication.getPrivateKeyFile());
                                 SVNErrorManager.error(error, SVNLogType.NETWORK);

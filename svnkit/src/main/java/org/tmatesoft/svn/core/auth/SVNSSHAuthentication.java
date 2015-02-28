@@ -205,7 +205,9 @@ public class SVNSSHAuthentication extends SVNAuthentication {
     }
     
     /**
-     * Returns the password to the ssh private key. 
+     * Returns the password to the ssh private key.
+     *  
+     * @deprecated
      * 
      * @return the password to the private key
      * @see    #getPrivateKeyFile()

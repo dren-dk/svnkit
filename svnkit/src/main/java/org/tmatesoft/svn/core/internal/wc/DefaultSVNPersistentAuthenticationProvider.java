@@ -425,7 +425,9 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
         if (storePasswords) {
             for (int i = 0; i < myPasswordStorages.length; i++) {
                 IPasswordStorage passwordStorage = myPasswordStorages[i];
-                boolean saved = passwordStorage.savePassword(realm, sshAuth.getPassword(), auth, values);
+                final char[] password = sshAuth.getPasswordValue();
+                
+                boolean saved = passwordStorage.savePassword(realm, password == null ? null : new String(password), auth, values);
                 if (saved) {
                     values.put("passtype", passwordStorage.getPassType());
                     storage = passwordStorage;
@@ -463,9 +465,9 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
         boolean storePassphrases = myHostOptionsProvider.getHostOptions(auth.getURL()).isStoreSSLClientCertificatePassphrases();
         boolean modified = false;
         
-        String passphrase;
+        final char[] passphrase;
         if (auth instanceof SVNPasswordAuthentication) {
-            passphrase = ((SVNPasswordAuthentication) auth).getPassword();
+            passphrase = ((SVNPasswordAuthentication) auth).getPasswordValue();
         } else {
             if (myAuthOptions.isSSLPassphrasePromptSupported()) {
                 // do not save passphrase, it have to be saved already.
@@ -473,7 +475,7 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
             } else if (auth instanceof SVNSSLAuthentication) {
                 // otherwise we're in the old-school mode and will save passpharse for host realm,
                 // as we used to do before.
-                passphrase = ((SVNSSLAuthentication) auth).getPassword();
+                passphrase = ((SVNSSLAuthentication) auth).getPasswordValue();
             } else {
                 passphrase = null;
             }
@@ -482,7 +484,7 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
 
             for (int i = 0; i < myPasswordStorages.length; i++) {
                 IPasswordStorage passwordStorage = myPasswordStorages[i];
-                boolean saved = passwordStorage.savePassphrase(realm, passphrase, auth, values, false);
+                boolean saved = passwordStorage.savePassphrase(realm, new String(passphrase), auth, values, false);
                 if (saved) {
                     values.put("passtype", passwordStorage.getPassType());
                     modified = true;

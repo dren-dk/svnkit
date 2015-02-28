@@ -65,10 +65,17 @@ public class SVNSSHPrivateKeyUtil {
         }
         return buffer.toString().toCharArray();
     }
-    
+
+    /**
+     * @deprecated
+     */
     public static boolean isValidPrivateKey(char[] privateKey, String passphrase) {
+        return isValidPrivateKey(privateKey, passphrase != null ? passphrase.toCharArray() : null);
+    }
+    
+    public static boolean isValidPrivateKey(char[] privateKey, char[] passphrase) {
         try {
-            PEMDecoder.decode(privateKey, passphrase);
+            PEMDecoder.decode(privateKey, passphrase != null ? new String(passphrase) : null);
         } catch (IOException e) {
             SVNDebugLog.getDefaultLog().logFine(SVNLogType.NETWORK, e);
             return false;
