@@ -338,4 +338,9 @@ public class SVNPropertyValue implements Serializable {
 
         return Arrays.equals(propertyValueBytes1, propertyValueBytes2);
     }
+
+    public void clear() {
+        SVNEncodingUtil.clearArray(myData);
+        myValue = null;
+    }
 }

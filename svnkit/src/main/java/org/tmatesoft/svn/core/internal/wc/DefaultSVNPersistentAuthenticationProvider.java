@@ -126,27 +126,33 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
 
     private SVNPasswordAuthentication readSSLPassphrase(String expectedCertificatePath, SVNWCProperties props) throws SVNException {
         SVNProperties values = props.asMap();
-        String storedRealm = values.getStringValue("svn:realmstring");
-        if (storedRealm == null || !SVNSSLAuthentication.isCertificatePath(storedRealm)) {
-            return null;
+        try {
+            String storedRealm = values.getStringValue("svn:realmstring");
+            if (storedRealm == null || !SVNSSLAuthentication.isCertificatePath(storedRealm)) {
+                return null;
+            }
+            File expectedPath = new File(expectedCertificatePath.replace(File.separatorChar, '/')).getAbsoluteFile();
+            File storedPath = new File(storedRealm.replace(File.separatorChar, '/')).getAbsoluteFile();        
+            if (!expectedPath.equals(storedPath)) {
+                return null;
+            }
+            String passType = SVNPropertyValue.getPropertyAsString(values.getSVNPropertyValue("passtype"));
+            IPasswordStorage passwordStorage = getPasswordStorage(passType);
+            if (passType != null && passwordStorage == null) {
+                return null;
+            }
+            char[] passphrase;
+            if (passwordStorage != null) {
+                passphrase = passwordStorage.readPassphrase(storedRealm, values);
+            } else {
+                passphrase = SVNPropertyValue.getPropertyAsChars(values.getSVNPropertyValue("passphrase"));
+            }
+            return SVNPasswordAuthentication.newInstance(storedRealm, passphrase, false, null, false);
+        } finally {
+            if (values != null) {
+                values.clear();
+            }
         }
-        File expectedPath = new File(expectedCertificatePath.replace(File.separatorChar, '/')).getAbsoluteFile();
-        File storedPath = new File(storedRealm.replace(File.separatorChar, '/')).getAbsoluteFile();        
-        if (!expectedPath.equals(storedPath)) {
-            return null;
-        }
-        String passType = SVNPropertyValue.getPropertyAsString(values.getSVNPropertyValue("passtype"));
-        IPasswordStorage passwordStorage = getPasswordStorage(passType);
-        if (passType != null && passwordStorage == null) {
-            return null;
-        }
-        char[] passphrase;
-        if (passwordStorage != null) {
-            passphrase = passwordStorage.readPassphrase(storedRealm, values);
-        } else {
-            passphrase = SVNPropertyValue.getPropertyAsChars(values.getSVNPropertyValue("passphrase"));
-        }
-        return SVNPasswordAuthentication.newInstance(storedRealm, passphrase, false, null, false);
     }
     
     private char[] readPassword(String realm, String userName, IPasswordStorage passwordStorage, SVNProperties authValues) throws SVNException {
@@ -207,8 +213,9 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
         File authFile = new File(dir, fileName);
         if (authFile.exists()) {
             SVNWCProperties props = new SVNWCProperties(authFile, "");
+            SVNProperties values = null;
             try {
-                SVNProperties values = props.asMap();
+                values = props.asMap();
                 String storedRealm = values.getStringValue("svn:realmstring");
                 String passType = SVNPropertyValue.getPropertyAsString(values.getSVNPropertyValue("passtype"));
                 IPasswordStorage passwordStorage = getPasswordStorage(passType);
@@ -278,6 +285,10 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
                 }
             } catch (SVNException e) {
                 //
+            } finally {
+                if (values != null) {
+                    values.dispose();
+                }
             }
         }
         return null;

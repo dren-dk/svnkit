@@ -503,4 +503,12 @@ public class SVNProperties implements Cloneable, Serializable {
         return "";
     }
 
+    public void dispose() {
+        if (myProperties != null) {
+            for (SVNPropertyValue value : myProperties.values()) {
+                value.clear();
+            }
+        }
+    }
+
 }
