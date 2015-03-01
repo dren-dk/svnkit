@@ -980,6 +980,8 @@ public class HTTPConnection implements IHTTPConnection {
     public void close() {
         if (isClearCredentialsOnClose(myChallengeCredentials)) {
             clearAuthenticationCache();
+        } else {
+            clearLastValidAuth();
         }
         if (mySocket != null) {
             if (myInputStream != null) {
