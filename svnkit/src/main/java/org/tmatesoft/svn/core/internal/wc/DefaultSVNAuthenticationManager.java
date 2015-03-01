@@ -13,6 +13,7 @@ package org.tmatesoft.svn.core.internal.wc;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.net.ssl.TrustManager;
@@ -30,7 +31,6 @@ import org.tmatesoft.svn.core.auth.SVNAuthentication;
 import org.tmatesoft.svn.core.auth.SVNPasswordAuthentication;
 import org.tmatesoft.svn.core.auth.SVNSSHAuthentication;
 import org.tmatesoft.svn.core.auth.SVNUserNameAuthentication;
-import org.tmatesoft.svn.core.internal.util.SVNHashMap;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.SVNWCUtil;
 import org.tmatesoft.svn.util.SVNLogType;
@@ -189,7 +189,7 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
         // report something default.
         if (ISVNAuthenticationManager.USERNAME.equals(kind)) {
             // user auth shouldn't be null.
-            return new SVNUserNameAuthentication("", getHostOptionsProvider().getHostOptions(url).isAuthStorageEnabled(), url, false);
+            return SVNUserNameAuthentication.newInstance("", getHostOptionsProvider().getHostOptions(url).isAuthStorageEnabled(), url, false);
         }
         SVNErrorManager.authenticationFailed("Authentication required for ''{0}''", realm);
         return null;
@@ -229,6 +229,8 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
 
     public void acknowledgeAuthentication(boolean accepted, String kind, String realm, SVNErrorMessage errorMessage, SVNAuthentication authentication) throws SVNException {
         if (!accepted) {
+            // authentication sensitive data will not be reused.
+            authentication.dismissSensitiveData();
             myPreviousErrorMessage = errorMessage;
             myPreviousAuthentication = authentication;
             myLastLoadedAuth = null;
@@ -244,6 +246,9 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
         if (!hasExplicitCredentials(kind)) {
             // do not cache explicit credentials in runtime cache?
             ((CacheAuthenticationProvider) myProviders[1]).saveAuthentication(authentication, realm);
+        } else {
+            // credentials are not cached, will be refetched or recreated.
+            authentication.dismissSensitiveData();
         }
     }
 
@@ -281,16 +286,7 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
     
     protected ISVNAuthenticationStorage getRuntimeAuthStorage() {
         if (myRuntimeAuthStorage == null) {
-            myRuntimeAuthStorage = new ISVNAuthenticationStorage() {
-                private Map myData = new SVNHashMap(); 
-
-                public void putData(String kind, String realm, Object data) {
-                    myData.put(kind + "$" + realm, data);
-                }
-                public Object getData(String kind, String realm) {
-                    return myData.get(kind + "$" + realm);
-                }
-            };
+            myRuntimeAuthStorage = new RuntimeStorage();
         }
         return myRuntimeAuthStorage;
     }
@@ -598,6 +594,12 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
         }
         return true;
     }
+    
+    public void dismissSensitiveData() {
+        if (myRuntimeAuthStorage instanceof RuntimeStorage) {
+            ((RuntimeStorage) myRuntimeAuthStorage).clear();
+        }
+    }
 
     public boolean isSSLPassphrasePromtSupported() {
         if (getAuthenticationProvider() == null) {
@@ -607,4 +609,23 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
         }
         return false;
      }
+    
+    private static class RuntimeStorage implements ISVNAuthenticationStorage {
+        private Map<String, Object> myData = new HashMap<String, Object>(); 
+
+        public void putData(String kind, String realm, Object data) {
+            myData.put(kind + "$" + realm, data);
+        }
+        public void clear() {
+            for (Object auth : myData.values()) {
+                if (auth instanceof SVNAuthentication) {
+                    ((SVNAuthentication) auth).dismissSensitiveData();
+                }
+            }
+            myData.clear();
+        }
+        public Object getData(String kind, String realm) {
+            return myData.get(kind + "$" + realm);
+        }
+    }
 }

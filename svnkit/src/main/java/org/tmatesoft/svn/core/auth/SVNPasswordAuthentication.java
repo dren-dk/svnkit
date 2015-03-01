@@ -12,6 +12,7 @@
 package org.tmatesoft.svn.core.auth;
 
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.util.SVNEncodingUtil;
 
 /**
  * The <b>SVNPasswordAuthentication</b> class represents a simple 
@@ -84,5 +85,15 @@ public class SVNPasswordAuthentication extends SVNAuthentication {
     
     public char[] getPasswordValue() {
         return myPassword;
+    }
+
+    @Override
+    public void dismissSensitiveData() {
+        super.dismissSensitiveData();
+        SVNEncodingUtil.clearArray(myPassword);
+    }
+
+    public SVNAuthentication copy() {
+        return new SVNPasswordAuthentication(getUserName(), copyOf(myPassword), isStorageAllowed(), getURL(), isPartial());
     }
 }

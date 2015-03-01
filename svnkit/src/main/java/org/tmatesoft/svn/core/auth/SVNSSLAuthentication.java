@@ -14,6 +14,7 @@ package org.tmatesoft.svn.core.auth;
 import java.io.File;
 
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.util.SVNEncodingUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNFileType;
 
 /**
@@ -144,4 +145,15 @@ public class SVNSSLAuthentication extends SVNAuthentication {
     public static boolean isCertificatePath(String path) {
         return SVNFileType.getType(new File(path)) == SVNFileType.FILE;
     }
+
+    @Override
+    public void dismissSensitiveData() {
+        super.dismissSensitiveData();
+        SVNEncodingUtil.clearArray(myPassword);
+    }
+    
+    public SVNAuthentication copy() {
+        return new SVNSSLAuthentication(mySSLKind, myAlias, myCertificate, copyOf(myPassword), isStorageAllowed(), getURL(), isPartial());
+    }
+    
 }

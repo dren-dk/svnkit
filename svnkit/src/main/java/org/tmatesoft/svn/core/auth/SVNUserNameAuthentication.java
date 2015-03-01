@@ -57,5 +57,8 @@ public class SVNUserNameAuthentication extends SVNAuthentication {
     public SVNUserNameAuthentication(String userName, boolean storageAllowed, SVNURL url, boolean isPartial) {
         super(ISVNAuthenticationManager.USERNAME, userName, storageAllowed, url, isPartial);
     }
-
+    
+    public SVNAuthentication copy() {
+        return new SVNUserNameAuthentication(getUserName(), isStorageAllowed(), getURL(), isPartial());
+    }
 }

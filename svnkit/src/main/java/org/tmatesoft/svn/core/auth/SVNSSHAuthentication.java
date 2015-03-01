@@ -14,6 +14,7 @@ package org.tmatesoft.svn.core.auth;
 import com.trilead.ssh2.auth.AgentProxy;
 
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.util.SVNEncodingUtil;
 
 import java.io.File;
 
@@ -266,5 +267,23 @@ public class SVNSSHAuthentication extends SVNAuthentication {
      */
     public AgentProxy getAgentProxy() {
         return myAgentProxy;
-    };
+    }
+
+    @Override
+    public void dismissSensitiveData() {
+        super.dismissSensitiveData();
+        SVNEncodingUtil.clearArray(myPassphrase);
+        SVNEncodingUtil.clearArray(myPassword);
+        SVNEncodingUtil.clearArray(myPrivateKeyValue);
+    }
+
+    public SVNAuthentication copy() {
+        return new SVNSSHAuthentication(getUserName(), 
+                copyOf(myPassword), myPrivateKeyFile, 
+                copyOf(myPrivateKeyValue), 
+                copyOf(myPassphrase), 
+                myAgentProxy, myPortNumber, isStorageAllowed(), getURL(), isPartial());
+    }
+    
+    
 }

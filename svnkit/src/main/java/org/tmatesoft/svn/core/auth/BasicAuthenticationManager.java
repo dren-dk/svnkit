@@ -138,10 +138,13 @@ public class BasicAuthenticationManager implements ISVNAuthenticationManager, IS
      * @param authentications user credentials
      */
     public void setAuthentications(SVNAuthentication[] authentications) {
+        dismissSensitiveData();
+
         myPasswordAuthentications = new ArrayList<SVNAuthentication>();
         mySSHAuthentications = new ArrayList<SVNAuthentication>();
         myUserNameAuthentications = new ArrayList<SVNAuthentication>();
         mySSLAuthentications = new ArrayList<SVNAuthentication>();
+        
         myPasswordIndex = 0;
         mySSHIndex = 0;
         mySSLIndex = 0;
@@ -424,6 +427,28 @@ public class BasicAuthenticationManager implements ISVNAuthenticationManager, IS
     }
 
     public void verifyHostKey(String hostName, int port, String keyAlgorithm, byte[] hostKey) throws SVNException {
+    }
+
+    public void dismissSensitiveData() {
+        dismissSensitiveData(myPasswordAuthentications);
+        dismissSensitiveData(mySSHAuthentications);
+        dismissSensitiveData(myUserNameAuthentications);
+        dismissSensitiveData(mySSLAuthentications);
+
+        myPasswordIndex = 0;
+        mySSHIndex = 0;
+        mySSLIndex = 0;
+        myUserNameIndex = 0;
+    }
+    
+    private void dismissSensitiveData(List<SVNAuthentication> auths) {
+        if (auths == null) {
+            return;
+        }
+        for (SVNAuthentication auth : auths) {
+            auth.dismissSensitiveData();
+        }
+        auths.clear();
     }
 
 }

@@ -366,12 +366,20 @@ public class HTTPConnection implements IHTTPConnection {
     }
     
     public void clearAuthenticationCache() {
-        myLastValidAuth = null;
+        clearLastValidAuth();
+        
         myTrustManager = null;
         myKeyManager = null;
         myChallengeCredentials = null;
         myProxyAuthentication = null;
         myRequestCount = 0;
+    }
+    
+    private void clearLastValidAuth() {
+        if (myLastValidAuth != null) {
+            myLastValidAuth.dismissSensitiveData();
+        }
+        myLastValidAuth = null;
     }
 
     public HTTPStatus request(String method, String path, HTTPHeader header, StringBuffer body, int ok1, int ok2, OutputStream dst, DefaultHandler handler) throws SVNException {
@@ -575,7 +583,7 @@ public class HTTPConnection implements IHTTPConnection {
                 if (httpAuth != null && authManager != null) {
                     BasicAuthenticationManager.acknowledgeAuthentication(false, ISVNAuthenticationManager.PASSWORD, realm, request.getErrorMessage(), httpAuth, myRepository.getLocation(), authManager);
                 }
-                myLastValidAuth = null;
+                clearLastValidAuth();
                 close();
                 err = request.getErrorMessage();
             } else if (myIsProxied && myLastStatus.getCode() == HttpURLConnection.HTTP_PROXY_AUTH) {
@@ -667,7 +675,7 @@ public class HTTPConnection implements IHTTPConnection {
                 } else if (myChallengeCredentials instanceof HTTPDigestAuthentication) {
                     // continue (retry once) if previous request was acceppted?
                     if (myLastValidAuth != null) {
-                        myLastValidAuth = null;
+                        clearLastValidAuth();
                         continue;
                     }
                 } else if (myChallengeCredentials instanceof HTTPNegotiateAuthentication) {
@@ -678,7 +686,7 @@ public class HTTPConnection implements IHTTPConnection {
                     }
                 }
 
-                myLastValidAuth = null;
+                clearLastValidAuth();
 
                 if (ntlmAuth != null && authAttempts == 1) {
                     /*
@@ -767,7 +775,7 @@ public class HTTPConnection implements IHTTPConnection {
 	        }
             
             if (httpAuth != null) {
-                myLastValidAuth = httpAuth;
+                myLastValidAuth = httpAuth.copy();
             }
 
             if (myLastStatus.getCodeClass() == 2 && authManager instanceof ISVNAuthenticationManagerExt) {
