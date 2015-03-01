@@ -392,6 +392,34 @@ public class SVNEncodingUtil {
         }
         return bytes;
     }
+
+    public static char[] getChars(byte[] data, String charset) {
+        return getChars(data, 0, data.length, charset);        
+    }
+
+    public static char[] getChars(byte[] data, int offset, int length, String charset) {
+        if (data == null) {
+            return new char[0];
+        }
+        Charset chrst;
+        try {
+            chrst = Charset.forName(charset);
+        } catch (UnsupportedCharsetException e) {
+            chrst = Charset.defaultCharset();
+        }
+        try {
+            CharBuffer cb = chrst.newDecoder().decode(ByteBuffer.wrap(data, offset, length));
+            final char[] chars = new char[cb.limit()];
+            cb.get(chars);
+            return chars;
+        } catch (CharacterCodingException e) {
+        }
+        final char[] chars = new char[data.length];
+        for (int i = 0; i < chars.length; i++) {
+            chars[i] = (char) data[i];
+        }
+        return chars;
+    }
     
     public static void clearArray(byte[] array) {
         if (array == null) {
@@ -435,4 +463,5 @@ public class SVNEncodingUtil {
         0, 0, 0, 0, 0, 0, 0, 0,   0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0,   0, 0, 0, 0, 0, 0, 0, 0,
     };
+
 }

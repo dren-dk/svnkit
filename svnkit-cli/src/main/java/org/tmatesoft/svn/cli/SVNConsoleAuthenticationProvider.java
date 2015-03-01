@@ -192,16 +192,16 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
             if (name == null) {
                 return null;
             }
-            String password = promptPassword("Password for '" + name + "'");
+            char[] password = promptPassword("Password for '" + name + "'");
             if (password == null) {
                 return null;
             }
-            return new SVNPasswordAuthentication(name, password, authMayBeStored, url, false);
+            return SVNPasswordAuthentication.newInstance(name, password, authMayBeStored, url, false);
         } else if (ISVNAuthenticationManager.SSH.equals(kind)) {
             String name = null;
             String defaultUserName = null;
-            String defaultPassword = null;
-            String defaultPassphrase = null;
+            char[] defaultPassword = null;
+            char[] defaultPassphrase = null;
             File defaultPrivateKeyFile = null;
             int defaultPort = -1;
 
@@ -213,8 +213,8 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
                 SVNSSHAuthentication sshPreviousAuth = (SVNSSHAuthentication) previousAuth;
                 defaultUserName = defaultUserName == null ? sshPreviousAuth.getUserName() : defaultUserName;
 
-                defaultPassword = sshPreviousAuth.getPassword();
-                defaultPassphrase = sshPreviousAuth.getPassphrase();
+                defaultPassword = sshPreviousAuth.getPasswordValue();
+                defaultPassphrase = sshPreviousAuth.getPassphraseValue();
                 defaultPrivateKeyFile = sshPreviousAuth.getPrivateKeyFile();
                 defaultPort = sshPreviousAuth.getPortNumber();
             }
@@ -233,7 +233,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
             String passwordPrompt = null;
             if (defaultPassword != null) {
                 passwordPrompt = "Password for '" + url.getHost() + "' (leave blank if you are going to use private key) [";
-                for (int i = 0; i < defaultPassword.length(); i++) {
+                for (int i = 0; i < defaultPassword.length; i++) {
                     passwordPrompt += "*";
                 }
                 passwordPrompt += "]";
@@ -241,7 +241,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
                 passwordPrompt = "Password for '" + url.getHost() + "' (leave blank if you are going to use private key)";
             }
             
-            String password = promptPassword(passwordPrompt);
+            char[] password = promptPassword(passwordPrompt);
             if (password == null) {
                 return null;
             } else if ("".equals(password)) {
@@ -254,7 +254,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
 
             String keyFilePath = null;
             File keyFile = null;
-            String passphrase = null;
+            char[] passphrase = null;
             if (password == null) {
                 while(keyFilePath == null) {
                     String privateKeyFilePrompt = null;
@@ -295,7 +295,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
                     String passphrasePrompt = null;
                     if (defaultPassphrase != null) {
                         passphrasePrompt = "Private key passphrase [";
-                        for (int i = 0; i < defaultPassphrase.length(); i++) {
+                        for (int i = 0; i < defaultPassphrase.length; i++) {
                             passphrasePrompt += "*";
                         }
                         passphrasePrompt += "]";
@@ -327,9 +327,9 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
                 } catch (NumberFormatException e) {}
             }
             if (password != null) {
-                return new SVNSSHAuthentication(name, password, port, authMayBeStored, url, false);
+                return SVNSSHAuthentication.newInstance(name, password, port, authMayBeStored, url, false);
             } else if (keyFile != null) {
-                return new SVNSSHAuthentication(name, keyFile, passphrase, port, authMayBeStored, url, false);
+                return SVNSSHAuthentication.newInstance(name, keyFile, passphrase, port, authMayBeStored, url, false);
             } else {
                 final AgentProxy agentProxy = SVNSSHPrivateKeyUtil.createOptionalSSHAgentProxy();
                 if (agentProxy != null) {
@@ -358,11 +358,11 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
             return new SVNUserNameAuthentication(name, authMayBeStored, url, false);
         } else if (ISVNAuthenticationManager.SSL.equals(kind)) {
             if (SVNSSLAuthentication.isCertificatePath(realm)) {
-                String passphrase = promptPassword("Passphrase for '" + realm + "'");
+                char[] passphrase = promptPassword("Passphrase for '" + realm + "'");
                 if (passphrase == null) {
                     return null;
                 }
-                return new SVNPasswordAuthentication("", passphrase, authMayBeStored, url, false);
+                return SVNPasswordAuthentication.newInstance("", passphrase, authMayBeStored, url, false);
             }
             boolean isMSCAPI = false;
             printRealm(realm);
@@ -386,15 +386,15 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
                 }
             }
             if (isMSCAPI) {
-                String alias = promptPassword("MSCAPI certificate alias");
+                char[] alias = promptPassword("MSCAPI certificate alias");
                 if (alias == null) {
                     return null;
                 } else if ("".equals(alias)) {
                     alias = null;
                 }
-                return new SVNSSLAuthentication(SVNSSLAuthentication.MSCAPI, alias, authMayBeStored, url, false);
+                return SVNSSLAuthentication.newInstance(SVNSSLAuthentication.MSCAPI, new String(alias), authMayBeStored, url, false);
             }
-            SVNSSLAuthentication sslAuth = new SVNSSLAuthentication(new File(path), null, authMayBeStored, url, false);
+            SVNSSLAuthentication sslAuth = SVNSSLAuthentication.newInstance(new File(path), null, authMayBeStored, url, false);
             sslAuth.setCertificatePath(path);
             return sslAuth;
         }
@@ -441,7 +441,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
         return readLine();
     }
     
-    private static String promptPassword(String label) {
+    private static char[] promptPassword(String label) {
         System.err.print(label + ": ");
         System.err.flush();
         Class<?> systemClass = System.class;
@@ -458,7 +458,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
                         if (password == null) {
                             return null;
                         } else if (password instanceof char[]) {
-                            return new String((char[]) password);
+                            return (char[]) password;
                         }
                     }
                 }
@@ -468,8 +468,9 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
         } catch (IllegalArgumentException e) {
         } catch (IllegalAccessException e) {
         } catch (InvocationTargetException e) {
-        }        
-        return readLine();
+        }
+        final String readLine = readLine();
+        return readLine == null ? null : readLine.toCharArray();
     }
 
     private static String readLine() {
@@ -485,7 +486,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
         return true;
     }
 
-    public String getKeyringPassword(String keyringName) throws SVNException {
+    public char[] getKeyringPassword(String keyringName) throws SVNException {
         return promptPassword("Password for '" + keyringName + "' GNOME keyring");
     }
 }
