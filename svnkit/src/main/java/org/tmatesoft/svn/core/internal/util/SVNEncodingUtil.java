@@ -394,7 +394,7 @@ public class SVNEncodingUtil {
     }
 
     public static char[] getChars(byte[] data, String charset) {
-        return getChars(data, 0, data.length, charset);        
+        return getChars(data, 0, data != null ? data.length : 0, charset);        
     }
 
     public static char[] getChars(byte[] data, int offset, int length, String charset) {
