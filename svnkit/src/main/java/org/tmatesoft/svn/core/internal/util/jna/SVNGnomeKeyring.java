@@ -259,7 +259,7 @@ public class SVNGnomeKeyring {
             PointerByReference itemsReference = new PointerByReference();
             int result = gnomeKeyringLibrary.gnome_keyring_find_network_password_sync(userName, realm, null, null, null, null, 0, itemsReference);
 
-            char[]password = null;
+            byte[]password = null;
             if (result == ISVNGnomeKeyringLibrary.GNOME_KEYRING_RESULT_OK) {
                 ISVNGLibrary.GList items = new ISVNGLibrary.GList(itemsReference.getValue());
                 items.read();
@@ -271,7 +271,7 @@ public class SVNGnomeKeyring {
                         while(item.password.getByte(offset) != 0 && offset < item.size()) {
                             offset++;
                         }
-                        password = item.password.getCharArray(0, offset);
+                        password = item.password.getByteArray(0, offset);
                     }
                     gnomeKeyringLibrary.gnome_keyring_network_password_list_free(items);
                 }
@@ -281,8 +281,11 @@ public class SVNGnomeKeyring {
 //          Ensure we freed native memory from which we obtained corresponding String Object keyringName.
 //          if (default_keyring)
 //              free(default_keyring);
-            
-            return password;
+            try {
+                return SVNEncodingUtil.getChars(password, "UTF-8");
+            } finally {
+                SVNEncodingUtil.clearArray(password);
+            }
 		}
     }
 
