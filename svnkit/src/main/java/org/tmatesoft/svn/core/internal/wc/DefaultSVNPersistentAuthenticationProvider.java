@@ -197,7 +197,6 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
                     final SVNPasswordAuthentication passphrase = readSSLPassphrase(kind, sslClientCert, authMayBeStored, url);
                     if (passphrase != null && passphrase.getPasswordValue() != null) {
                         sslAuth = SVNSSLAuthentication.newInstance(clientCertFile, passphrase.getPasswordValue(), authMayBeStored, url, false);
-                        passphrase.dismissSensitiveData();
                     }
                 }
                 sslAuth.setCertificatePath(sslClientCert);
@@ -277,7 +276,6 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
                         SVNPasswordAuthentication passphraseAuth = readSSLPassphrase(kind, path, authMayBeStored, url);
                         if (passphraseAuth != null && passphraseAuth.getPasswordValue() != null) {
                             sslAuth = SVNSSLAuthentication.newInstance(new File(path), passphraseAuth.getPasswordValue(), authMayBeStored, url, false);
-                            passphraseAuth.dismissSensitiveData();
                         }
                     }
                     sslAuth.setCertificatePath(path);
