@@ -11,7 +11,12 @@
  */
 package org.tmatesoft.svn.core.internal.io.dav.http;
 
-import java.io.UnsupportedEncodingException;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.UnsupportedCharsetException;
 
 import org.tmatesoft.svn.core.auth.SVNPasswordAuthentication;
 import org.tmatesoft.svn.core.internal.util.SVNBase64;
@@ -29,7 +34,7 @@ class HTTPBasicAuthentication extends HTTPAuthentication {
         myCharset = charset;
     }
 
-    protected HTTPBasicAuthentication (String name, String password, String charset) {
+    protected HTTPBasicAuthentication (String name, char[] password, String charset) {
         super(name, password);
         myCharset = charset;
     }
@@ -44,14 +49,36 @@ class HTTPBasicAuthentication extends HTTPAuthentication {
         }
         
         StringBuffer result = new StringBuffer();
-        String authStr = getUserName() + ":" + getPassword();
+
+        Charset charset;
         try {
-            authStr = SVNBase64.byteArrayToBase64(authStr.getBytes(myCharset));
-        } catch (UnsupportedEncodingException e) {
-            authStr = SVNBase64.byteArrayToBase64(authStr.getBytes());
+            charset = Charset.forName(myCharset);
+        } catch (UnsupportedCharsetException e) {
+            charset = Charset.defaultCharset();
         }
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try {
+            bos.write(getUserName().getBytes(charset));
+            bos.write(":".getBytes(charset));
+            
+            final CharBuffer buffer = CharBuffer.wrap(getPassword());
+            final ByteBuffer encodedBuffer = charset.newEncoder().encode(buffer);
+            final byte[] bytes = new byte[encodedBuffer.limit()];
+            try {
+                encodedBuffer.get(bytes);
+                bos.write(bytes);
+            } finally {
+                HTTPAuthentication.clear(bytes);
+                if (encodedBuffer.hasArray()) {
+                    HTTPAuthentication.clear(encodedBuffer.array());
+                }
+            }
+        } catch (IOException e) {
+            //
+        }
+
         result.append("Basic ");
-        result.append(authStr);
+        result.append(SVNBase64.byteArrayToBase64(bos.toByteArray()));
         return result.toString();
     }
 

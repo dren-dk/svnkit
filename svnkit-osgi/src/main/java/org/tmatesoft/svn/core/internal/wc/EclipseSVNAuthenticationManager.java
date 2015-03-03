@@ -52,7 +52,7 @@ public class EclipseSVNAuthenticationManager extends DefaultSVNAuthenticationMan
         return new KeyringAuthenticationProvider();
     }
 
-    protected ISVNAuthenticationProvider createDefaultAuthenticationProvider(String userName, String password, File privateKey, String passphrase, boolean allowSave) {
+    protected ISVNAuthenticationProvider createDefaultAuthenticationProvider(String userName, char[] password, File privateKey, char[] passphrase, boolean allowSave) {
         return new DumbAuthenticationProvider(userName, password, privateKey, passphrase, allowSave) {
             public int acceptServerAuthentication(SVNURL url, String realm, Object certificate, boolean resultMayBeStored) {
                 return ACCEPTED;

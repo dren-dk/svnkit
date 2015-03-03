@@ -42,7 +42,7 @@ public class SVNProperties implements Cloneable, Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private Map myProperties;
+    private Map<String, SVNPropertyValue> myProperties;
 
     /**
      * Creates a new <code>SVNProperties</code> object wrapping a given map with
@@ -174,6 +174,22 @@ public class SVNProperties implements Cloneable, Serializable {
      */
     public void put(String propertyName, String propertyValue) {
         myProperties.put(propertyName, SVNPropertyValue.create(propertyValue));
+    }
+
+    /**
+     * Stores a new property name-to-value mapping in this object.
+     *
+     * <p>
+     * <code>propertyValue</code> is converted to an {@link SVNPropertyValue}
+     * object through a call to {@link SVNPropertyValue#create(String)}.
+     *
+     * @param propertyName
+     *            property name
+     * @param propertyValue
+     *            property value string
+     */
+    public void put(String propertyName, char[] propertyValue, String encoding) {
+        myProperties.put(propertyName, SVNPropertyValue.create(propertyValue, encoding));
     }
 
     /**
@@ -485,6 +501,14 @@ public class SVNProperties implements Cloneable, Serializable {
             return myProperties.toString();
         }
         return "";
+    }
+
+    public void dispose() {
+        if (myProperties != null) {
+            for (SVNPropertyValue value : myProperties.values()) {
+                value.clear();
+            }
+        }
     }
 
 }

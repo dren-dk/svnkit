@@ -46,7 +46,22 @@ import org.tmatesoft.svn.core.io.SVNRepository;
  * @since   1.2
  * @see     ISVNAuthenticationProvider
  */
-public class BasicAuthenticationManager implements ISVNAuthenticationManager, ISVNProxyManager, ISVNSSHHostVerifier {
+public class BasicAuthenticationManager implements ISVNAuthenticationManager, ISVNProxyManagerEx, ISVNSSHHostVerifier {
+
+    public static BasicAuthenticationManager newInstance(String userName, char[] password) {
+        return new BasicAuthenticationManager(new SVNAuthentication[] {
+            SVNPasswordAuthentication.newInstance(userName, password, false, null, false),
+            SVNSSHAuthentication.newInstance(userName, password, -1, false, null, false),
+            SVNUserNameAuthentication.newInstance(userName, false, null, false),
+        });        
+    }
+    
+    public static BasicAuthenticationManager newInstance(String userName, File keyFile, char[] passphrase, int portNumber) {
+        return new BasicAuthenticationManager(new SVNAuthentication[] {
+            SVNSSHAuthentication.newInstance(userName, keyFile, passphrase, portNumber, false, null, false),
+            SVNUserNameAuthentication.newInstance(userName, false, null, false),
+        });        
+    }
 
 	public static void acknowledgeAuthentication(boolean accepted, String kind, String realm, SVNErrorMessage errorMessage, SVNAuthentication authentication, SVNURL accessedURL, ISVNAuthenticationManager authManager) throws SVNException {
 		if (authManager instanceof ISVNAuthenticationManagerExt) {
@@ -70,12 +85,14 @@ public class BasicAuthenticationManager implements ISVNAuthenticationManager, IS
     private String myProxyHost;
     private int myProxyPort;
     private String myProxyUserName;
-    private String myProxyPassword;
+    private char[] myProxyPassword;
     private boolean myIsAuthenticationForced;
     
     /**
      * Creates an auth manager given a user credential - a username 
      * and password. 
+     * 
+     * @deprecated
      * 
      * @param userName  a username
      * @param password  a password
@@ -90,7 +107,9 @@ public class BasicAuthenticationManager implements ISVNAuthenticationManager, IS
     
     /**
      * Creates an auth manager given a user credential - a username and 
-     * an ssh private key.  
+     * an ssh private key.
+     * 
+     * @deprecated
      * 
      * @param userName    a username
      * @param keyFile     a private key file
@@ -119,10 +138,13 @@ public class BasicAuthenticationManager implements ISVNAuthenticationManager, IS
      * @param authentications user credentials
      */
     public void setAuthentications(SVNAuthentication[] authentications) {
+        dismissSensitiveData();
+
         myPasswordAuthentications = new ArrayList<SVNAuthentication>();
         mySSHAuthentications = new ArrayList<SVNAuthentication>();
         myUserNameAuthentications = new ArrayList<SVNAuthentication>();
         mySSLAuthentications = new ArrayList<SVNAuthentication>();
+        
         myPasswordIndex = 0;
         mySSHIndex = 0;
         mySSLIndex = 0;
@@ -144,12 +166,26 @@ public class BasicAuthenticationManager implements ISVNAuthenticationManager, IS
     /**
      * Sets a proxy server context to this manager.
      * 
+     * @deprecated
+     * 
      * @param proxyHost        a proxy server hostname
      * @param proxyPort        a proxy server port
      * @param proxyUserName    a username to supply to a proxy machine
      * @param proxyPassword    a password to supply to a proxy machine
      */
     public void setProxy(String proxyHost, int proxyPort, String proxyUserName, String proxyPassword) {
+        setProxy(proxyHost, proxyPort, proxyUserName, proxyPassword != null ? proxyPassword.toCharArray() : null);
+    }
+
+    /**
+     * Sets a proxy server context to this manager.
+     * 
+     * @param proxyHost        a proxy server hostname
+     * @param proxyPort        a proxy server port
+     * @param proxyUserName    a username to supply to a proxy machine
+     * @param proxyPassword    a password to supply to a proxy machine
+     */
+    public void setProxy(String proxyHost, int proxyPort, String proxyUserName, char[] proxyPassword) {
         myProxyHost = proxyHost;
         myProxyPort = proxyPort >= 0 ? proxyPort : 3128;
         myProxyUserName = proxyUserName;
@@ -334,6 +370,10 @@ public class BasicAuthenticationManager implements ISVNAuthenticationManager, IS
      *         method 
      */
     public String getProxyPassword() {
+        return myProxyPassword != null ? new String(myProxyPassword) : null;
+    }
+    
+    public char[] getProxyPasswordValue() {
         return myProxyPassword;
     }
     
@@ -387,6 +427,28 @@ public class BasicAuthenticationManager implements ISVNAuthenticationManager, IS
     }
 
     public void verifyHostKey(String hostName, int port, String keyAlgorithm, byte[] hostKey) throws SVNException {
+    }
+
+    public void dismissSensitiveData() {
+        dismissSensitiveData(myPasswordAuthentications);
+        dismissSensitiveData(mySSHAuthentications);
+        dismissSensitiveData(myUserNameAuthentications);
+        dismissSensitiveData(mySSLAuthentications);
+
+        myPasswordIndex = 0;
+        mySSHIndex = 0;
+        mySSLIndex = 0;
+        myUserNameIndex = 0;
+    }
+    
+    private void dismissSensitiveData(List<SVNAuthentication> auths) {
+        if (auths == null) {
+            return;
+        }
+        for (SVNAuthentication auth : auths) {
+            auth.dismissSensitiveData();
+        }
+        auths.clear();
     }
 
 }

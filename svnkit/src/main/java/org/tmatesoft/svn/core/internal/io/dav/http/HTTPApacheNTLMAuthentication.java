@@ -65,7 +65,7 @@ public class HTTPApacheNTLMAuthentication extends HTTPNTLMAuthentication {
         if (userName == null) {
             userName = System.getProperty("user.name", System.getenv("USERNAME"));
         }
-        final String password = passwordOverride != null ? passwordOverride : getPassword();
+        final char[] password = passwordOverride != null ? passwordOverride.toCharArray() : getPassword();
 
         if (SVNFileUtil.isWindows) {
             final boolean useDomainEnvironment = Boolean.parseBoolean(System.getProperty("svnkit.http.ntlm.domain.useEnv", "false"));
@@ -92,7 +92,7 @@ public class HTTPApacheNTLMAuthentication extends HTTPNTLMAuthentication {
         SVNDebugLog.getDefaultLog().logFine(SVNLogType.NETWORK, "Workstation: " + ws);
         SVNDebugLog.getDefaultLog().logFine(SVNLogType.NETWORK, "User: " + userName);
         SVNDebugLog.getDefaultLog().logFine(SVNLogType.NETWORK, "Password: "
-                + (password != null && password.length() > 0 ? "<not empty>" : "<empty or null>"));
+                + (password != null && password.length > 0 ? "<not empty>" : "<empty or null>"));
 
         try {
             if (myState == TYPE1) {

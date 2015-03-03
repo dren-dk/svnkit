@@ -119,5 +119,26 @@ public class SVNAuthentication {
     public SVNURL getURL() {
         return myURL;
     }
+    
+    /**
+     * Disposes sensitive data (e.g. password) stored in this object.
+     * 
+     * @since 1.8.9
+     */
+    public void dismissSensitiveData() {
+    }
+    
+    public SVNAuthentication copy() {
+        return new SVNAuthentication(myKind, myUserName, myIsStorageAllowed, myURL, myIsPartial);
+    }
+    
+    protected char[] copyOf(char[] source) {
+        final char[] copy = source != null ? new char[source.length] : null;
+        if (copy != null) {
+            System.arraycopy(source, 0, copy, 0, source.length);
+        }
+        return copy;
+
+    }
 
 }

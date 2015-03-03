@@ -22,6 +22,7 @@ svnkit-test/nailgun/nailgun-0.7.1.jar -text
 svnkit-test/nailgun/ng.exe -text
 svnkit/.settings/org.eclipse.jdt.ui.prefs -text
 svnkit/src/javadoc/info.png -text
+svnkit/src/main/java/org/tmatesoft/svn/core/auth/ISVNProxyManagerEx.java -text
 svnkit/src/main/java/org/tmatesoft/svn/core/internal/io/dav/http/HTTPApacheNTLMAuthentication.java -text
 svnkit/src/main/java/org/tmatesoft/svn/core/internal/io/dav/http/INTLMEngine.java -text
 svnkit/src/main/java/org/tmatesoft/svn/core/internal/io/dav/http/NTLMEngine.java -text

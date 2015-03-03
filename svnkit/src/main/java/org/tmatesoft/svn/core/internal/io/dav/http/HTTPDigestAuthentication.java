@@ -108,7 +108,7 @@ class HTTPDigestAuthentication extends HTTPAuthentication {
         return "Digest";
     }
 
-    private String createDigest(String uname, String pwd, String charset) throws SVNException {
+    private String createDigest(String uname, char[] pwd, String charset) throws SVNException {
         final String digAlg = "MD5";
 
         String uri = getParameter("uri");
@@ -125,27 +125,30 @@ class HTTPDigestAuthentication extends HTTPAuthentication {
             SVNErrorManager.error(err, SVNLogType.NETWORK);
             return null;
         }
-        StringBuffer tmp = new StringBuffer(uname.length() + realm.length() + pwd.length() + 2);
-        tmp.append(uname);
-        tmp.append(':');
-        tmp.append(realm);
-        tmp.append(':');
-        tmp.append(pwd);
-        String a1 = tmp.toString();
+
+        final char[] tmp = new char[uname.length() + realm.length() + pwd.length + 2];
+        System.arraycopy(uname.toCharArray(), 0, tmp, 0, uname.length());
+        tmp[uname.length()] = ':';
+        System.arraycopy(realm.toCharArray(), 0, tmp, uname.length() + 1, realm.length());
+        tmp[uname.length() + realm.length() + 1] = ':';
+        System.arraycopy(pwd, 0, tmp, uname.length() + realm.length() + 2, pwd.length);
+
+        char[] a1 = tmp;
         if ("MD5-sess".equals(algorithm)) {
-            String tmp2=encode(md5Helper.digest(HTTPAuthentication.getBytes(a1, charset)));
+            String tmp2=encode(md5Helper.digest(HTTPAuthentication.getBytes(tmp, charset)));
             StringBuffer tmp3 = new StringBuffer(tmp2.length() + nonce.length() + myCnonce.length() + 2);
             tmp3.append(tmp2);
             tmp3.append(':');
             tmp3.append(nonce);
             tmp3.append(':');
             tmp3.append(myCnonce);
-            a1 = tmp3.toString();
-        }
+            a1 = tmp3.toString().toCharArray();
+        }        
 
         String md5a1 = encode(md5Helper.digest(HTTPAuthentication.getBytes(a1, charset)));
         String a2 = method + ":" + uri;
         String md5a2 = encode(md5Helper.digest(HTTPAuthentication.getASCIIBytes(a2)));
+        HTTPAuthentication.clear(tmp);
 
         StringBuffer tmp2;
         if (myQop == null) {

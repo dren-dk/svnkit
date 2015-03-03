@@ -25,6 +25,11 @@ import org.tmatesoft.svn.core.SVNURL;
  * @since   1.2
  */
 public class SVNUserNameAuthentication extends SVNAuthentication {
+    
+    public static SVNUserNameAuthentication newInstance(String userName, boolean storageAllowed, SVNURL url, boolean isPartial) {
+        return new SVNUserNameAuthentication(userName, storageAllowed, url, isPartial);        
+    }
+    
     /**
      * Creates a username authentication credential.
      * 
@@ -52,5 +57,8 @@ public class SVNUserNameAuthentication extends SVNAuthentication {
     public SVNUserNameAuthentication(String userName, boolean storageAllowed, SVNURL url, boolean isPartial) {
         super(ISVNAuthenticationManager.USERNAME, userName, storageAllowed, url, isPartial);
     }
-
+    
+    public SVNAuthentication copy() {
+        return new SVNUserNameAuthentication(getUserName(), isStorageAllowed(), getURL(), isPartial());
+    }
 }
