@@ -26,24 +26,6 @@ import org.tmatesoft.svn.core.SVNURL;
  */
 public class SVNUserNameAuthentication extends SVNAuthentication {
     
-    public static SVNUserNameAuthentication newInstance(String userName, boolean storageAllowed, SVNURL url, boolean isPartial) {
-        return new SVNUserNameAuthentication(userName, storageAllowed, url, isPartial);        
-    }
-    
-    /**
-     * Creates a username authentication credential.
-     * 
-     * @deprecated use constructor with SVNURL parameter instead
-     * 
-     * @param userName         a user name
-     * @param storageAllowed   if <span class="javakeyword">true</span> then
-     *                         this credential is allowed to be stored in the 
-     *                         global auth cache, otherwise not
-     */
-    public SVNUserNameAuthentication(String userName, boolean storageAllowed) {
-        this(userName, storageAllowed, null, false);
-    }
-
     /**
      * Creates a username authentication credential.
      * 
@@ -52,13 +34,31 @@ public class SVNUserNameAuthentication extends SVNAuthentication {
      *                         this credential is allowed to be stored in the 
      *                         global auth cache, otherwise not
      * @param url              url these credentials are applied to
+     * 
+     * @since 1.7.14
+     */
+    public static SVNUserNameAuthentication newInstance(String userName, boolean storageAllowed, SVNURL url, boolean isPartial) {
+        return new SVNUserNameAuthentication(userName, storageAllowed, url, isPartial);        
+    }
+    
+    /**
+     * @deprecated Use {@link #newInstance(String, boolean, SVNURL, boolean)} method
+     */
+    public SVNUserNameAuthentication(String userName, boolean storageAllowed) {
+        this(userName, storageAllowed, null, false);
+    }
+
+    /**
+     * @deprecated Use {@link #newInstance(String, boolean, SVNURL, boolean)} method
+     * 
      * @since 1.3.1
      */
     public SVNUserNameAuthentication(String userName, boolean storageAllowed, SVNURL url, boolean isPartial) {
         super(ISVNAuthenticationManager.USERNAME, userName, storageAllowed, url, isPartial);
     }
-    
+
+    @Override
     public SVNAuthentication copy() {
-        return new SVNUserNameAuthentication(getUserName(), isStorageAllowed(), getURL(), isPartial());
+        return SVNUserNameAuthentication.newInstance(getUserName(), isStorageAllowed(), getURL(), isPartial());
     }
 }

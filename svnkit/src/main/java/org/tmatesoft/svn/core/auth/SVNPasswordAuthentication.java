@@ -30,6 +30,19 @@ import org.tmatesoft.svn.core.internal.util.SVNEncodingUtil;
  */
 public class SVNPasswordAuthentication extends SVNAuthentication {
     
+    /**
+     * Creates a password user credential object given a username and password.
+     * 
+     * @param userName         the name of a user to authenticate 
+     * @param password         the user's password
+     * @param storageAllowed   if <span class="javakeyword">true</span> then
+     *                         this credential is allowed to be stored in the 
+     *                         global auth cache, otherwise not
+     * @param url              url these credentials are applied to
+     * @param isPartial        whether this object only contains part of credentials information
+     * 
+     * @since 1.7.14
+     */
     public static SVNPasswordAuthentication newInstance(String userName, char[] password, boolean storageAllowed, SVNURL url, boolean isPartial) {
         return new SVNPasswordAuthentication(userName, password, storageAllowed, url, isPartial);
     }
@@ -39,7 +52,7 @@ public class SVNPasswordAuthentication extends SVNAuthentication {
     /**
      * Creates a password user credential object given a username and password. 
      * 
-     * @deprecated use constructor with SVNURL parameter instead
+     * @deprecated use {@link #newInstance(String, char[], boolean, SVNURL, boolean)}
      * 
      * @param userName         the name of a user to authenticate 
      * @param password         the user's password
@@ -54,7 +67,7 @@ public class SVNPasswordAuthentication extends SVNAuthentication {
     /**
      * Creates a password user credential object given a username and password.
      * 
-     * @deprecated
+     * @deprecated use {@link #newInstance(String, char[], boolean, SVNURL, boolean)}
      * 
      * @param userName         the name of a user to authenticate 
      * @param password         the user's password
@@ -74,15 +87,22 @@ public class SVNPasswordAuthentication extends SVNAuthentication {
     }
 
     /**
-     * Returns this user credential's password. 
+     * Returns password. 
      *
-     * @deprecated
-     * @return the user's password
+     * @deprecated Use {@link #getPasswordValue()} method
+     * 
+     * @return password
      */
     public String getPassword() {
         return new String(myPassword);
     }
     
+    /**
+     * Returns password. 
+     *
+     * @since 1.7.14
+     * @return password
+     */
     public char[] getPasswordValue() {
         return myPassword;
     }
@@ -93,6 +113,7 @@ public class SVNPasswordAuthentication extends SVNAuthentication {
         SVNEncodingUtil.clearArray(myPassword);
     }
 
+    @Override
     public SVNAuthentication copy() {
         return new SVNPasswordAuthentication(getUserName(), copyOf(myPassword), isStorageAllowed(), getURL(), isPartial());
     }
