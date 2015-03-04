@@ -129,6 +129,7 @@ class SVNMacOsKeychain {
                 password = SVNEncodingUtil.getChars(rawPassword, "UTF-8");
             } finally {
                 library.SecKeychainItemFreeContent(null, passwordPointer);
+                SVNEncodingUtil.clearArray(rawPassword);
             }
 
             return password;
