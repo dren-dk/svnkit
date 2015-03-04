@@ -12,6 +12,7 @@
 package org.tmatesoft.svn.core.auth;
 
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.util.SVNEncodingUtil;
 
 /**
  * The <b>SVNAuthentication</b> is the base class that represents user 
@@ -133,11 +134,7 @@ public class SVNAuthentication {
     }
     
     protected char[] copyOf(char[] source) {
-        final char[] copy = source != null ? new char[source.length] : null;
-        if (copy != null) {
-            System.arraycopy(source, 0, copy, 0, source.length);
-        }
-        return copy;
+        return SVNEncodingUtil.copyOf(source);
 
     }
 

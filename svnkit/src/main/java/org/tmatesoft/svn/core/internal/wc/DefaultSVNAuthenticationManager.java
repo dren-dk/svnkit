@@ -31,6 +31,7 @@ import org.tmatesoft.svn.core.auth.SVNAuthentication;
 import org.tmatesoft.svn.core.auth.SVNPasswordAuthentication;
 import org.tmatesoft.svn.core.auth.SVNSSHAuthentication;
 import org.tmatesoft.svn.core.auth.SVNUserNameAuthentication;
+import org.tmatesoft.svn.core.internal.util.SVNEncodingUtil;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.SVNWCUtil;
 import org.tmatesoft.svn.util.SVNLogType;
@@ -229,7 +230,6 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
 
     public void acknowledgeAuthentication(boolean accepted, String kind, String realm, SVNErrorMessage errorMessage, SVNAuthentication authentication) throws SVNException {
         if (!accepted) {
-            // authentication sensitive data will not be reused.
             authentication.dismissSensitiveData();
             myPreviousErrorMessage = errorMessage;
             myPreviousAuthentication = authentication;
@@ -247,7 +247,6 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
             // do not cache explicit credentials in runtime cache?
             ((CacheAuthenticationProvider) myProviders[1]).saveAuthentication(authentication, realm);
         } else {
-            // credentials are not cached, will be refetched or recreated.
             authentication.dismissSensitiveData();
         }
     }
@@ -372,9 +371,9 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
                     }
                     if (myPrivateKey != null) {
                         return SVNSSHAuthentication.newInstance(myUserName, myPrivateKey, myPassphrase, sshAuth != null ? sshAuth.getPortNumber() : -1, 
-                                myIsStore, url, false);
+                                myIsStore, url, false).copy();
                     }
-                    return SVNSSHAuthentication.newInstance(myUserName, myPassword, sshAuth != null ? sshAuth.getPortNumber() : -1, myIsStore, url, false);
+                    return SVNSSHAuthentication.newInstance(myUserName, myPassword, sshAuth != null ? sshAuth.getPortNumber() : -1, myIsStore, url, false).copy();
                 } else if (ISVNAuthenticationManager.PASSWORD.equals(kind)) {
                     if (myUserName == null || "".equals(myUserName.trim())) {
                         String defaultUserName = getHostOptionsProvider().getHostOptions(url).getUserName();
@@ -390,7 +389,7 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
                     if (myPassword == null) {
                         return SVNPasswordAuthentication.newInstance(myUserName, null, false, url, true);
                     }
-                    return SVNPasswordAuthentication.newInstance(myUserName, myPassword, myIsStore, url, false);
+                    return SVNPasswordAuthentication.newInstance(myUserName, myPassword, myIsStore, url, false).copy();
                 } else if (ISVNAuthenticationManager.USERNAME.equals(kind)) {
                     if (myUserName == null || "".equals(myUserName)) {
                         String userName = System.getProperty("svnkit.ssh2.author", System.getProperty("javasvn.ssh2.author"));
@@ -406,6 +405,11 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
         }
         public int acceptServerAuthentication(SVNURL url, String r, Object serverAuth, boolean resultMayBeStored) {
             return ACCEPTED;
+        }
+
+        public void dismissSensitiveData() {
+            SVNEncodingUtil.clearArray(myPassphrase);
+            SVNEncodingUtil.clearArray(myPassword);
         }
     }
 
@@ -598,6 +602,9 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
     public void dismissSensitiveData() {
         if (myRuntimeAuthStorage instanceof RuntimeStorage) {
             ((RuntimeStorage) myRuntimeAuthStorage).clear();
+        }
+        if (myProviders[0] instanceof DumbAuthenticationProvider) {
+            ((DumbAuthenticationProvider) myProviders[0]).dismissSensitiveData(); 
         }
     }
 

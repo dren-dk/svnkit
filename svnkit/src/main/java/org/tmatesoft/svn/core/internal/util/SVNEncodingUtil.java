@@ -393,6 +393,15 @@ public class SVNEncodingUtil {
         return bytes;
     }
 
+    public static char[] copyOf(char[] source) {
+        final char[] copy = source != null ? new char[source.length] : null;
+        if (copy != null) {
+            System.arraycopy(source, 0, copy, 0, source.length);
+        }
+        return copy;
+
+    }
+
     public static char[] getChars(byte[] data, String charset) {
         return getChars(data, 0, data != null ? data.length : 0, charset);        
     }
