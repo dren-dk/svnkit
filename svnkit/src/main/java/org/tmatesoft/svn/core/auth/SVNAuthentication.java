@@ -129,6 +129,12 @@ public class SVNAuthentication {
     public void dismissSensitiveData() {
     }
     
+    /**
+     * Creates a deep copy of this credentials object. Sensitive data (e.g. password) is copied too.
+     * 
+     * @since 1.8.9
+     * @return copy of this object.
+     */
     public SVNAuthentication copy() {
         return new SVNAuthentication(myKind, myUserName, myIsStorageAllowed, myURL, myIsPartial);
     }

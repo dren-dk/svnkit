@@ -31,10 +31,30 @@ public class SVNSSLAuthentication extends SVNAuthentication {
     public static final String MSCAPI = "MSCAPI";
     public static final String SSL = "SSL";
     
+    /**
+     * @param certFile         user's certificate file
+     * @param password         user's password 
+     * @param storageAllowed   to store or not this credential in a 
+     *                         credentials cache
+     * @param url              url these credentials are applied to
+     * @param isPartial
+     * 
+     * @return authentication object
+     */
     public static SVNSSLAuthentication newInstance(File certFile, char[] password, boolean storageAllowed, SVNURL url, boolean isPartial) {
         return new SVNSSLAuthentication(SSL, null, certFile, password, storageAllowed, url, isPartial);
     }
 
+    /**
+     * @param kind             authentication kind ({@link #MSCAPI} or {@link #SSL}
+     * @param alias            alias 
+     * @param storageAllowed   to store or not this credential in a 
+     *                         credentials cache
+     * @param url              url these credentials are applied to
+     * @param isPartial
+     * 
+     * @return authentication object
+     */
     public static SVNSSLAuthentication newInstance(String kind, String alias, boolean storageAllowed, SVNURL url, boolean isPartial) {
         return new SVNSSLAuthentication(kind, alias, null, null, storageAllowed, url, isPartial);
     }
@@ -47,43 +67,21 @@ public class SVNSSLAuthentication extends SVNAuthentication {
     private String myCertificatePath;
 
     /**
-     * Creates an SSL credentials object. 
-     * 
-     * @deprecated use constructor with SVNURL parameter instead
-     * 
-     * @param certFile         user's certificate file
-     * @param password         user's password 
-     * @param storageAllowed   to store or not this credential in a 
-     *                         credentials cache    
+     * @deprecated Use {@link #newInstance(File, char[], boolean, SVNURL, boolean) method
      */
     public SVNSSLAuthentication(File certFile, String password, boolean storageAllowed) {
         this(SSL, null, certFile, password != null ? password.toCharArray() : null, storageAllowed, null, false);
     }
 
     /**
-     * Creates an SSL credentials object. 
-     * 
-     * @deprecated
-     * 
-     * @param certFile         user's certificate file
-     * @param password         user's password 
-     * @param storageAllowed   to store or not this credential in a 
-     *                         credentials cache
-     * @param url              url these credentials are applied to
-     * @since 1.3.1
+     * @deprecated Use {@link #newInstance(File, char[], boolean, SVNURL, boolean) method
      */
     public SVNSSLAuthentication(File certFile, String password, boolean storageAllowed, SVNURL url, boolean isPartial) {
         this(SSL, null, certFile, password != null ? password.toCharArray() : null, storageAllowed, url, isPartial);
     }
 
     /**
-     * @deprecated
-     * 
-     * @param sslKind
-     * @param alias
-     * @param storageAllowed
-     * @param url
-     * @param isPartial
+     * @deprecated Use {@link #newInstance(String, String, boolean, SVNURL, boolean)} method
      */
     public SVNSSLAuthentication(String sslKind, String alias, boolean storageAllowed, SVNURL url, boolean isPartial) {
         this(sslKind, alias, null, null, storageAllowed, url, isPartial);
@@ -98,15 +96,22 @@ public class SVNSSLAuthentication extends SVNAuthentication {
     }
 
     /**
-     * Return a user's password. 
+     * Returns password. 
+     *
+     * @deprecated Use {@link #getPasswordValue()} method
      * 
-     * @deprecated
-     * @return a password
+     * @return password
      */
     public String getPassword() {
         return myPassword != null ? new String(myPassword) : null;
     }
     
+    /**
+     * Returns password. 
+     *
+     * @since 1.8.9
+     * @return password
+     */
     public char[] getPasswordValue() {
         return myPassword;
     }
@@ -152,6 +157,7 @@ public class SVNSSLAuthentication extends SVNAuthentication {
         SVNEncodingUtil.clearArray(myPassword);
     }
     
+    @Override
     public SVNAuthentication copy() {
         return new SVNSSLAuthentication(mySSLKind, myAlias, myCertificate, copyOf(myPassword), isStorageAllowed(), getURL(), isPartial());
     }

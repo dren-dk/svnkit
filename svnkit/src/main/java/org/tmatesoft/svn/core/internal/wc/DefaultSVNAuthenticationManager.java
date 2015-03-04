@@ -59,19 +59,24 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
     private boolean myIsAuthenticationForced;
 
     /**
-     * @deprecated
+     * @deprecated Use {@link #DefaultSVNAuthenticationManager(File, boolean, String, char[], File, char[])}
      */
     public DefaultSVNAuthenticationManager(File configDirectory, boolean storeAuth, String userName, String password) {
         this(configDirectory, storeAuth, userName, password != null ? password.toCharArray() : null, null, null);
     }
 
     /**
-     * @deprecated
+     * @deprecated Use {@link #DefaultSVNAuthenticationManager(File, boolean, String, char[], File, char[])}
      */
     public DefaultSVNAuthenticationManager(File configDirectory, boolean storeAuth, String userName, String password, File privateKey, String passphrase) {
         this(configDirectory, storeAuth, userName, password != null ? password.toCharArray() : null, privateKey, passphrase != null ? passphrase.toCharArray() : null);
     }
 
+    /**
+     * Creates an instance of {@link DefaultSVNAuthenticationManager}
+     * 
+     * @since 1.8.9
+     */
     public DefaultSVNAuthenticationManager(File configDirectory, boolean storeAuth, String userName, char[] password, File privateKey, char[] passphrase) {
         myIsStoreAuth = storeAuth;
         myConfigDirectory = configDirectory;
@@ -85,6 +90,7 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
         myProviders[2] = createCacheAuthenticationProvider(new File(myConfigDirectory, "auth"), userName);
     }
 
+    @SuppressWarnings("rawtypes")
     public void setInMemoryServersOptions(Map serversOptions) {
         if (getHostOptionsProvider() instanceof DefaultSVNHostOptionsProvider) {
             DefaultSVNHostOptionsProvider defaultHostOptionsProvider = (DefaultSVNHostOptionsProvider) getHostOptionsProvider();
@@ -92,6 +98,7 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
         }
     }
 
+    @SuppressWarnings("rawtypes")
     public void setInMemoryConfigOptions(Map configOptions) {
         getDefaultOptions().setInMemoryConfigOptions(configOptions);
     }
@@ -394,11 +401,11 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
                     if (myUserName == null || "".equals(myUserName)) {
                         String userName = System.getProperty("svnkit.ssh2.author", System.getProperty("javasvn.ssh2.author"));
                         if (userName != null) {
-                            return new SVNUserNameAuthentication(userName, myIsStore, url, false);
+                            return SVNUserNameAuthentication.newInstance(userName, myIsStore, url, false);
                         }
                         return null;
                     }
-                    return new SVNUserNameAuthentication(myUserName, myIsStore, url, false);
+                    return SVNUserNameAuthentication.newInstance(myUserName, myIsStore, url, false);
                 }
             }
             return null;
@@ -599,6 +606,12 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
         return true;
     }
     
+    /**
+     * Dismiss cached sensitive data (e.g. password)
+     * Calling this method clears explicit and cached credentials stored in this authentication manager.
+     * 
+     * @since 1.8.9
+     */
     public void dismissSensitiveData() {
         if (myRuntimeAuthStorage instanceof RuntimeStorage) {
             ((RuntimeStorage) myRuntimeAuthStorage).clear();
