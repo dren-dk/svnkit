@@ -57,6 +57,7 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
     private int myLastProviderIndex;
     private SVNAuthentication myLastLoadedAuth;
     private boolean myIsAuthenticationForced;
+    private boolean myIsAutoDismissSensitiveData;
 
     /**
      * @deprecated Use {@link #DefaultSVNAuthenticationManager(File, boolean, String, char[], File, char[])}
@@ -234,10 +235,34 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
         SVNErrorManager.authenticationFailed("Authentication required for ''{0}''", realm);
         return null;
     }
+    
+    /**
+     * Control whether to dismiss credentials sensitive data once
+     * credentials object has been used. Default is not to dismiss.
+     * 
+     * @since 1.8.9
+     * @param dismiss whether to dismiss data.
+     */
+    public void setDismissSensitiveDataUponUse(boolean dismiss) {
+        myIsAutoDismissSensitiveData = dismiss;
+    }
+    
+    /**
+     * Returns whether this authenticaiton manager dismiss sensitive data
+     * once credentials object has been used. Default is not to dismiss.
+     * 
+     * @since 1.8.9
+     * @return
+     */
+    public boolean isDismissSensitiveDataUponUse() {
+        return myIsAutoDismissSensitiveData;
+    }
 
     public void acknowledgeAuthentication(boolean accepted, String kind, String realm, SVNErrorMessage errorMessage, SVNAuthentication authentication) throws SVNException {
         if (!accepted) {
-            authentication.dismissSensitiveData();
+            if (isDismissSensitiveDataUponUse()) {
+                authentication.dismissSensitiveData();
+            }
             myPreviousErrorMessage = errorMessage;
             myPreviousAuthentication = authentication;
             myLastLoadedAuth = null;
@@ -254,7 +279,9 @@ public class DefaultSVNAuthenticationManager implements ISVNAuthenticationManage
             // do not cache explicit credentials in runtime cache?
             ((CacheAuthenticationProvider) myProviders[1]).saveAuthentication(authentication, realm);
         } else {
-            authentication.dismissSensitiveData();
+            if (isDismissSensitiveDataUponUse()) {
+                authentication.dismissSensitiveData();
+            }
         }
     }
 
