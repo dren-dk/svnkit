@@ -1,3 +1,8 @@
+== version 1.7.14 ==
+
++ Instances of SVNAuthentication now uses char[] to store sensitive data instead of String,
+  methods introduced to dismiss stored sensitive data.
+
 == version 1.7.13 ==
 
 + Introduced 'sticky' working copy format detection mode to get rid of format detection overhead.
