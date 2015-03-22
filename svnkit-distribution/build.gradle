@@ -29,13 +29,13 @@ task buildAll << {
         from rootProject.files('LICENSE.txt', 'README.txt', 'CHANGES.txt')
     }
     
-    File destfile = new File(distsDir, "svnkit-${version}-all.zip")
+    File destfile = new File(distsDir, "org.tmatesoft.svn_${version}.standalone.zip")
     ant.zip(destfile: destfile.absolutePath) {
         zipfileset(dir: dstDir.absolutePath, excludes: '**/bin/**')
         zipfileset(dir: dstDir.absolutePath, includes: '**/bin/**', excludes: '**/bin/*.bat', filemode: '755')
         zipfileset(dir: dstDir.absolutePath, includes: '**/bin/*.bat')
     }
-    File destfileNoJNA = new File(distsDir, "svnkit-nojna-${version}-all.zip")
+    File destfileNoJNA = new File(distsDir, "org.tmatesoft.svn_${version}.standalone.nojna.zip")
     ant.zip(destfile: destfileNoJNA.absolutePath) {
         zipfileset(dir: dstDir.absolutePath, excludes: '**/bin/**,**/jna*,**/LICENSE-JNA.txt')
         zipfileset(dir: dstDir.absolutePath, includes: '**/bin/**', excludes: '**/bin/*.bat', filemode: '755')
@@ -44,8 +44,7 @@ task buildAll << {
 }
 
 task buildSources(type: Zip) {
-    baseName = 'svnkit'
-    classifier = 'src'
+    archiveName = "org.tmatesoft.svn_${version}.src.zip"
 
     into("svnkit-${version}")
 
@@ -74,8 +73,15 @@ task buildUpdateSite << {
                 String name = artifact.getModuleVersion().getId().getName()
                 name = name.replace('-', '_')
                 tokens[name + '_version'] = fileVersion.bundleVersion
+
+                def pattern = java.util.regex.Pattern.compile("\\d+\\.\\d+\\.\\d+_.+")
+                def matcher = pattern.matcher(tokens[name + '_version'])
+                if (matcher.matches()) {
+                    tokens[name + '_version'] = tokens[name + '_version'].replaceFirst("_", ".")
+                }
                 tokens[name + '_name'] = fileVersion.bundleSymbolicName
-                tokens[name + '_fullName'] = fullJarName(artifact.file) 
+                tokens[name + '_fullName'] = tokens[name + '_name'] + '_' + tokens[name + '_version'] + '.jar'
+                //fullJarName(artifact.file) 
                 copy {
                    from artifact.file
                    into pluginsDir
@@ -100,7 +106,7 @@ task buildUpdateSite << {
     }
 
     distsDir.mkdirs()
-    File destfile = new File(distsDir, "svnkit-update-site-${version}.zip")
+    File destfile = new File(distsDir, "org.tmatesoft.svn_${version}.eclipse.zip")
     ant.zip(destfile: destfile.absolutePath, basedir: siteDir.absolutePath)
 }
 
