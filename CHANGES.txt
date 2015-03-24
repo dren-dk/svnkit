@@ -2,6 +2,7 @@
 
 + Instances of SVNAuthentication now uses char[] to store sensitive data instead of String,
   methods introduced to dismiss stored sensitive data.
++ Improved NTLM authentication support backported from 1.8.x
 
 == version 1.7.13 ==
 
