@@ -44,7 +44,7 @@ jar {
         'Bundle-Version': bundleVersion,
         'Bundle-Vendor': bundleVendor,
         'Bundle-Name': bundleSymbolicName,
-        'Bundle-RequiredExecutionEnvironment' : 'J2SE-' + targetCompatibility,
+        'Bundle-RequiredExecutionEnvironment' : 'JavaSE-' + targetCompatibility,
         'Bundle-Activator' : 'org.tmatesoft.svn.core.SVNKitActivator',
         'Bundle-ActivationPolicy' : 'lazy',
         'Eclipse-BundleShape' : 'jar',
