@@ -46,6 +46,20 @@ public class SVNSSLAuthentication extends SVNAuthentication {
     }
 
     /**
+     * @param cert             user's certificate
+     * @param password         user's password 
+     * @param storageAllowed   to store or not this credential in a 
+     *                         credentials cache
+     * @param url              url these credentials are applied to
+     * @param isPartial
+     * 
+     * @return authentication object
+     */
+    public static SVNSSLAuthentication newInstance(byte[] cert, char[] password, boolean storageAllowed, SVNURL url, boolean isPartial) {
+        return new SVNSSLAuthentication(SSL, null, cert, password, storageAllowed, url, isPartial);
+    }
+
+    /**
      * @param kind             authentication kind ({@link #MSCAPI} or {@link #SSL}
      * @param alias            alias 
      * @param storageAllowed   to store or not this credential in a 
@@ -56,7 +70,7 @@ public class SVNSSLAuthentication extends SVNAuthentication {
      * @return authentication object
      */
     public static SVNSSLAuthentication newInstance(String kind, String alias, boolean storageAllowed, SVNURL url, boolean isPartial) {
-        return new SVNSSLAuthentication(kind, alias, null, null, storageAllowed, url, isPartial);
+        return new SVNSSLAuthentication(kind, alias, (File) null, null, storageAllowed, url, isPartial);
     }
 
     
@@ -65,6 +79,7 @@ public class SVNSSLAuthentication extends SVNAuthentication {
     private String mySSLKind;
     private String myAlias;
     private String myCertificatePath;
+    private byte[] myCertificateData;
 
     /**
      * @deprecated Use {@link #newInstance(File, char[], boolean, SVNURL, boolean) method
@@ -84,7 +99,7 @@ public class SVNSSLAuthentication extends SVNAuthentication {
      * @deprecated Use {@link #newInstance(String, String, boolean, SVNURL, boolean)} method
      */
     public SVNSSLAuthentication(String sslKind, String alias, boolean storageAllowed, SVNURL url, boolean isPartial) {
-        this(sslKind, alias, null, null, storageAllowed, url, isPartial);
+        this(sslKind, alias, (File) null, null, storageAllowed, url, isPartial);
     }
 
     private SVNSSLAuthentication(String sslKind, String alias, File certFile, char[] password, boolean storageAllowed, SVNURL url, boolean isPartial) {
@@ -92,6 +107,14 @@ public class SVNSSLAuthentication extends SVNAuthentication {
         mySSLKind = sslKind;
         myAlias = alias;
         myCertificate = certFile;
+        myPassword = password;
+    }
+
+    private SVNSSLAuthentication(String sslKind, String alias, byte[] cert, char[] password, boolean storageAllowed, SVNURL url, boolean isPartial) {
+        super(ISVNAuthenticationManager.SSL, null, storageAllowed, url, isPartial);
+        mySSLKind = sslKind;
+        myAlias = alias;
+        myCertificateData = cert;
         myPassword = password;
     }
 
@@ -104,6 +127,15 @@ public class SVNSSLAuthentication extends SVNAuthentication {
      */
     public String getPassword() {
         return myPassword != null ? new String(myPassword) : null;
+    }
+    
+    /**
+     * Returns certificate raw data
+     * 
+     * @return certificate data
+     */
+    public byte[] getCertificate() {
+        return myCertificateData;
     }
     
     /**

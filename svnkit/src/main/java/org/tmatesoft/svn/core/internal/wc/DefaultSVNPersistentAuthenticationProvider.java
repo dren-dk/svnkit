@@ -264,7 +264,7 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
                         return SVNSSHAuthentication.newInstance(userName, password, portNumber, authMayBeStored, url, false);
                     }
                 } else if (ISVNAuthenticationManager.USERNAME.equals(kind)) {
-                    return new SVNUserNameAuthentication(userName, authMayBeStored, url, false);
+                    return SVNUserNameAuthentication.newInstance(userName, authMayBeStored, url, false);
                 } else if (ISVNAuthenticationManager.SSL.equals(kind)) {
                     if (isMSCapi(sslKind)) {                        
                         final String alias = SVNPropertyValue.getPropertyAsString(values.getSVNPropertyValue("alias"));

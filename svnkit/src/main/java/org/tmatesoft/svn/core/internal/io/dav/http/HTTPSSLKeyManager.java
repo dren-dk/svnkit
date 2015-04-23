@@ -11,6 +11,7 @@
  */
 package org.tmatesoft.svn.core.internal.io.dav.http;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -109,6 +110,47 @@ public final class HTTPSSLKeyManager implements X509KeyManager {
         return loadClientCertificate(clientCertFile, clientCertPassword != null ? clientCertPassword.toCharArray() : null);
     }
 
+    public static KeyManager[] loadClientCertificate(byte[] clientCert, char[] clientCertPassword) throws SVNException {
+        if (clientCertPassword == null || clientCertPassword.length == 0) {
+            // Client certificates without an passphrase can't be received from Java Keystores. 
+            throw new SVNException(SVNErrorMessage.create(SVNErrorCode.RA_NOT_AUTHORIZED, "No client certificate passphrase supplied (did you forget to specify?).\n" +
+                    "Note that client certificates with empty passphrases can''t be used. In this case please re-create the certificate with a passphrase."));
+        }
+        KeyManager[] result = null;
+        KeyStore keyStore = null;
+        final InputStream is = new ByteArrayInputStream(clientCert);
+        try {
+            keyStore = KeyStore.getInstance("PKCS12");
+            if (keyStore != null) {
+                keyStore.load(is, clientCertPassword);
+            }
+        }
+        catch (Throwable th) {
+            SVNDebugLog.getDefaultLog().logFine(SVNLogType.NETWORK, th);
+            throw new SVNException(SVNErrorMessage.create(SVNErrorCode.RA_NOT_AUTHORIZED, th.getMessage(), null, SVNErrorMessage.TYPE_ERROR, th), th);
+        }
+        finally {
+            SVNFileUtil.closeFile(is);
+        }
+        KeyManagerFactory kmf = null;
+
+        if (keyStore != null) {
+            try {
+                kmf = KeyManagerFactory.getInstance("SunX509");
+                if (kmf != null) {
+                    kmf.init(keyStore, clientCertPassword);
+                    result = kmf.getKeyManagers();
+                }
+            }
+            catch (Throwable th) {
+                SVNDebugLog.getDefaultLog().logFine(SVNLogType.NETWORK, th);
+                throw new SVNException(SVNErrorMessage.create(SVNErrorCode.RA_NOT_AUTHORIZED, th.getMessage()), th);
+            }
+        }
+
+        return result;
+    }
+
     public static KeyManager[] loadClientCertificate(File clientCertFile, char[] clientCertPassword) throws SVNException {
         if (clientCertPassword == null || clientCertPassword.length == 0) {
             // Client certificates without an passphrase can't be received from Java Keystores. 
@@ -178,6 +220,7 @@ public final class HTTPSSLKeyManager implements X509KeyManager {
         char[] clientCertPassword = sslAuthentication.getPasswordValue();
         String clientCertPath = sslAuthentication.getCertificatePath();
         File clientCertFile = sslAuthentication.getCertificateFile();
+        byte[] clientCertData = sslAuthentication.getCertificate();
         
         char[] passphrase = clientCertPassword == null ? new char[0] : clientCertPassword; 
         String realm = clientCertPath;
@@ -211,7 +254,8 @@ public final class HTTPSSLKeyManager implements X509KeyManager {
 
         while(true) {
             try {
-                final InputStream is = SVNFileUtil.openFileForReading(clientCertFile, SVNLogType.NETWORK);
+                final InputStream is = clientCertData != null ? 
+                        new ByteArrayInputStream(clientCertData) : SVNFileUtil.openFileForReading(clientCertFile, SVNLogType.NETWORK);
                 try {
                     keyStore = KeyStore.getInstance("PKCS12");
                     if (keyStore != null) {
@@ -445,7 +489,11 @@ public final class HTTPSSLKeyManager implements X509KeyManager {
                             ((ISVNSSLPasspharsePromptSupport) authenticationManager).isSSLPassphrasePromtSupported()) {
                         keyManagers = loadClientCertificate(myAuthentication);
                     } else {
-                        keyManagers = loadClientCertificate(myAuthentication.getCertificateFile(), myAuthentication.getPasswordValue());
+                        if (myAuthentication.getCertificate() != null) {
+                            keyManagers = loadClientCertificate(myAuthentication.getCertificate(), myAuthentication.getPasswordValue());
+                        } else {
+                            keyManagers = loadClientCertificate(myAuthentication.getCertificateFile(), myAuthentication.getPasswordValue());
+                        }
                     }
                 }
                 
