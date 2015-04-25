@@ -277,7 +277,7 @@ public class DAVRepository extends SVNRepository {
                 DAVUtil.filterProperties(props, properties);
                 for (Iterator names = props.getProperties().keySet().iterator(); names.hasNext();) {
                     DAVElement property = (DAVElement) names.next();
-                    DAVUtil.setSpecialWCProperties(properties, property, props.getPropertyValue(property));
+                    DAVUtil.setSpecialWCProperties(properties, property, props.getPropertyValue(property), false);
                 }
                 if (fileRevision >= 0) {
                     properties.put(SVNProperty.REVISION, Long.toString(fileRevision));
@@ -459,7 +459,7 @@ public class DAVRepository extends SVNRepository {
                 DAVUtil.filterProperties(dirProps, properties);
                 for(Iterator props = dirProps.getProperties().keySet().iterator(); props.hasNext();) {
                     DAVElement property = (DAVElement) props.next();
-                    DAVUtil.setSpecialWCProperties(properties, property, dirProps.getPropertyValue(property));
+                    DAVUtil.setSpecialWCProperties(properties, property, dirProps.getPropertyValue(property), true);
                 }
             }
         } finally {

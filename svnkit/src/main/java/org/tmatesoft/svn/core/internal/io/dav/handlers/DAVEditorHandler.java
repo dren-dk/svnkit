@@ -469,20 +469,13 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
             }
             myIsInResource = true;
         } else if (element == FETCH_PROPS) {
-            if (!myIsFetchContent) {
-                if (myIsDirectory) {
-                    myEditor.changeDirProperty(PLACEHOLDER_PROPERTY_NAME, null);
-                } else {
-                    myEditor.changeFileProperty(myPath, PLACEHOLDER_PROPERTY_NAME, null);
-                }
+            if (myIsDirectory) {
+                DirInfo dirInfo = (DirInfo) myDirs.peek();
+                dirInfo.myIsFetchProps = true;
             } else {
-                if (myIsDirectory) {
-                    DirInfo dirInfo = (DirInfo) myDirs.peek();
-                    dirInfo.myIsFetchProps = true;
-                } else {
-                    myIsFetchProps = true;
-                }
+                myIsFetchProps = true;
             }
+
         } else if (element == TX_DELTA) {
             String baseChecksum = attrs.getValue(BASE_CHECKSUM_ATTR);
             if (myIsReceiveAll) {
@@ -546,18 +539,16 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
                 myVersionURLs.put(myCurrentWCPath, myHref);
             } else if (myIsDirectory) {
                 if (myDirs.size() != 1 || !myHasTarget) {
-                    DirInfo topDirInfo = (DirInfo) myDirs.peek();
-                    if (topDirInfo.myIsFetchProps) {
-                        try {
-                            SVNPropertyValue davWCURL = DAVUtil.isUseDAVWCURL() ? SVNPropertyValue.create(myHref) : null;
-                            myEditor.changeDirProperty(SVNProperty.WC_URL, davWCURL);
-                        } catch (SVNCancelException ce) {
-                            throw ce;
-                        } catch (SVNException svne) {
-                            SVNErrorManager.error(svne.getErrorMessage().wrap("Could not save the URL of the version resource"), SVNLogType.NETWORK);
-                        }
-                        topDirInfo.myVSNURL = myHref;
+                    try {
+                        SVNPropertyValue davWCURL = DAVUtil.isUseDAVWCURL() ? SVNPropertyValue.create(myHref) : null;
+                        myEditor.changeDirProperty(SVNProperty.WC_URL, davWCURL);
+                    } catch (SVNCancelException ce) {
+                        throw ce;
+                    } catch (SVNException svne) {
+                        SVNErrorManager.error(svne.getErrorMessage().wrap("Could not save the URL of the version resource"), SVNLogType.NETWORK);
                     }
+                    DirInfo topDirInfo = (DirInfo) myDirs.peek();
+                    topDirInfo.myVSNURL = myHref;
                 }
             } else {
                 if (myIsFetchContent) {
