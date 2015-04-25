@@ -190,6 +190,7 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
     protected static final String ENCODING_ATTR = "encoding";
     protected static final String COPYFROM_REV_ATTR = "copyfrom-rev";
     protected static final String COPYFROM_PATH_ATTR = "copyfrom-path";
+    protected static final String INLINE_PROPS_ATTR = "inline-props";
     protected static final String SEND_ALL_ATTR = "send-all";
     protected static final String BC_URL_ATTR = "bc-url";
     protected static final String BASE_CHECKSUM_ATTR = "base-checksum";
@@ -208,6 +209,7 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
     private String myChecksum;
     private String myEncoding;
     private ISVNDeltaConsumer myDeltaConsumer;
+    private boolean myIsAddPropsIncluded;
     private boolean myIsReceiveAll;
     private DAVConnection myConnection;
     private IHTTPConnectionFactory myConnectionFactory;
@@ -258,9 +260,14 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
     
     protected void startElement(DAVElement parent, DAVElement element, Attributes attrs) throws SVNException {
         if (element == UPDATE_REPORT) {
+            String inlineProps = attrs.getValue(INLINE_PROPS_ATTR);
+            if (inlineProps != null && Boolean.valueOf(inlineProps).booleanValue()) {
+                myIsAddPropsIncluded = true;
+            }
             String receiveAll = attrs.getValue(SEND_ALL_ATTR);
             if (receiveAll != null && Boolean.valueOf(receiveAll).booleanValue()) {
                 myIsReceiveAll = true;
+                myIsAddPropsIncluded = true;
             }
         } else if (element == TARGET_REVISION) {
             long revision = -1;
@@ -335,8 +342,10 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
             
             DirInfo dirInfo = new DirInfo(); 
             myDirs.push(dirInfo);
-            
-            dirInfo.myIsFetchProps = true;
+
+            if (!myIsAddPropsIncluded) {
+                dirInfo.myIsFetchProps = true;
+            }
             
             String bcURL = attrs.getValue(BC_URL_ATTR);
             if (!myIsReceiveAll && bcURL != null) {
@@ -407,7 +416,9 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
             if (sha1Checksum != null) {
                 myEditor.changeFileProperty(myPath, SVNProperty.SVNKIT_SHA1_CHECKSUM, SVNPropertyValue.create(sha1Checksum));
             }
-            myIsFetchProps = true;
+            if (!myIsAddPropsIncluded) {
+                myIsFetchProps = true;
+            }
             mySha1Checksum = sha1Checksum;
         } else if (element == DELETE_ENTRY) {
             String name = attrs.getValue(NAME_ATTR);
@@ -516,28 +527,40 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
         } else if (element == DAVElement.CREATOR_DISPLAY_NAME ||
                 element == DAVElement.VERSION_NAME ||
                 element == DAVElement.CREATION_DATE) {
-            DAVUtil.setSpecialWCProperties(myEditor, myIsDirectory, myPath, element, 
-                    SVNPropertyValue.create(cdata.toString()));
+
+            final boolean shouldSetPropertiesNow;
+            if (myIsDirectory) {
+                DirInfo dirInfo = (DirInfo) myDirs.peek();
+                shouldSetPropertiesNow = !dirInfo.myIsFetchProps; //the properties will be set later
+            } else {
+                shouldSetPropertiesNow = !myIsFetchProps; //the properties will be set later
+            }
+            if (shouldSetPropertiesNow) {
+                DAVUtil.setSpecialWCProperties(myEditor, myIsDirectory, myPath, element,
+                        SVNPropertyValue.create(cdata.toString()));
+            }
         } else if (element == DAVElement.HREF) {
-            if (myIsFetchContent) {
-                myHref = cdata.toString();
-                
-                if (myIsInResource) {
-                    myVersionURLs.put(myCurrentWCPath, myHref);
-                } else if (myIsDirectory) {
-                    if (myDirs.size() != 1 || !myHasTarget) {
+            myHref = cdata.toString();
+
+            if (myIsInResource) {
+                myVersionURLs.put(myCurrentWCPath, myHref);
+            } else if (myIsDirectory) {
+                if (myDirs.size() != 1 || !myHasTarget) {
+                    DirInfo topDirInfo = (DirInfo) myDirs.peek();
+                    if (topDirInfo.myIsFetchProps) {
                         try {
                             SVNPropertyValue davWCURL = DAVUtil.isUseDAVWCURL() ? SVNPropertyValue.create(myHref) : null;
                             myEditor.changeDirProperty(SVNProperty.WC_URL, davWCURL);
                         } catch (SVNCancelException ce) {
                             throw ce;
-                        } catch (SVNException svne) {                        
+                        } catch (SVNException svne) {
                             SVNErrorManager.error(svne.getErrorMessage().wrap("Could not save the URL of the version resource"), SVNLogType.NETWORK);
                         }
-                        DirInfo topDirInfo = (DirInfo) myDirs.peek();
                         topDirInfo.myVSNURL = myHref;
                     }
-                } else {
+                }
+            } else {
+                if (myIsFetchContent) {
                     try {
                         SVNPropertyValue davWCURL = DAVUtil.isUseDAVWCURL() ? SVNPropertyValue.create(myHref) : null;
                         myEditor.changeFileProperty(myPath, SVNProperty.WC_URL, davWCURL);
@@ -618,11 +641,10 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
             return;
         }
         
-        if (!myIsFetchContent) {
-            return;
-        }
-        
         if (!isDir) {
+            if (!myIsFetchContent && !myIsFetchProps) {
+                return;
+            }
             String lockToken = (String) myLockTokens.get(path);
             if (lockToken != null) {
                 String fullPath = myOwner.doGetFullPath(path);
