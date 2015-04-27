@@ -26,11 +26,12 @@ import java.util.Set;
  * @since   1.2
  */
 public class SVNProperty {
+
     /**
      * An <span class="javastring">"svn:"</span> prefix.
      */
     public static final String SVN_PREFIX = "svn:";
-    
+
     /**
      * SVNKit's own property namespace.
      */
@@ -97,7 +98,7 @@ public class SVNProperty {
      * @since SVN 1.5
      */
     public static final String MERGE_INFO = SVN_PREFIX + "mergeinfo";
-    
+
     /**
      * @since SVN 1.8
      */
@@ -107,7 +108,7 @@ public class SVNProperty {
      * @since SVN 1.8
      */
     public static final String INHERITABLE_AUTO_PROPS = SVN_PREFIX + "auto-props";
-    
+
     /**
      * An <span class="javastring">"svn:entry:revision"</span> SVN untweakable metaproperty.
      */
@@ -194,7 +195,7 @@ public class SVNProperty {
      * @since 1.3, new in Subversion 1.6
      */
     public static final String TREE_CONFLICT_DATA = SVN_ENTRY_PREFIX + "tree-conflicts";
-    
+
     /**
      * An <span class="javastring">"svn:entry:checksum"</span> SVN untweakable metaproperty.
      */
@@ -316,6 +317,7 @@ public class SVNProperty {
      * An <span class="javastring">"svn:needs-lock"</span> SVN special property.
      */
     public static final String NEEDS_LOCK = SVN_PREFIX + "needs-lock";
+
     /**
      * One of the two possible values of the {@link #KIND} property -
      * <span class="javastring">"dir"</span>
@@ -364,20 +366,20 @@ public class SVNProperty {
 
     /**
      * <code>SVNKit</code> specific property denoting a charset. A user may set this property on files
-     * if he would like to fix the charset of the file. Then when checking out, exporting, updating, etc. 
+     * if he would like to fix the charset of the file. Then when checking out, exporting, updating, etc.
      * files with such properties set on them will be translated (encoded) using the charset value of this
-     * property. Note that to take advantage of this property a user must utilize a corresponging version 
+     * property. Note that to take advantage of this property a user must utilize a corresponging version
      * of the <code>SVNKit</code> library supporting this property.
      */
     public static final String CHARSET = SVNKIT_PREFIX + "charset";
 
     /**
-     * Default value for the {@link #CHARSET} property denoting that the native charset should be used 
-     * to encode a file during translation. The native charset name will be fetched via a call to 
+     * Default value for the {@link #CHARSET} property denoting that the native charset should be used
+     * to encode a file during translation. The native charset name will be fetched via a call to
      * {@link org.tmatesoft.svn.core.wc.ISVNOptions#getNativeCharset()}.
      */
     public static final String NATIVE = "native";
-    
+
     /**
      * One of the three possible values of the {@link #SCHEDULE} property -
      * <span class="javastring">"add"</span>
@@ -394,6 +396,7 @@ public class SVNProperty {
      */
     public static final String SCHEDULE_REPLACE = "replace";
 
+
     /**
      * Default value of the {@link #WORKING_SIZE} property.
      * @since  1.2.0, new in Subversion 1.5.0
@@ -403,7 +406,7 @@ public class SVNProperty {
     /**
      * Default value for such properties as {@link #EXECUTABLE}, {@link #NEEDS_LOCK}, {@link #SPECIAL}.
      * Used only by <code>SVNKit</code> internals, never stored in a working copy.
-     * 
+     *
      * @since  1.2.0
      */
     public static final SVNPropertyValue BOOLEAN_PROPERTY_VALUE = SVNPropertyValue.create("*");
@@ -461,12 +464,12 @@ public class SVNProperty {
     }
 
     /**
-     * Checks if a property is regular. 
-     * 
+     * Checks if a property is regular.
+     *
      * <p/>
-     * A property is considered to be regular if it is not <span class="javakeyword">null</span> and 
+     * A property is considered to be regular if it is not <span class="javakeyword">null</span> and
      * does not start neither with {@link #SVN_WC_PREFIX} nor with {@link #SVN_ENTRY_PREFIX}.
-     * 
+     *
      * @param name a property name
      * @return <span class="javakeyword">true</span> if regular, otherwise
      *         <span class="javakeyword">false</span>
@@ -611,7 +614,7 @@ public class SVNProperty {
      * @since 1.1
      */
     public static SVNPropertyValue getValueOfBooleanProperty(String propName) {
-        if (SVNProperty.EXECUTABLE.equals(propName) || SVNProperty.NEEDS_LOCK.equals(propName) || 
+        if (SVNProperty.EXECUTABLE.equals(propName) || SVNProperty.NEEDS_LOCK.equals(propName) ||
                 SVNProperty.SPECIAL.equals(propName)) {
             return BOOLEAN_PROPERTY_VALUE;
         }
@@ -629,7 +632,7 @@ public class SVNProperty {
     public static boolean isBooleanProperty(String propName) {
         return SVNProperty.EXECUTABLE.equals(propName) || SVNProperty.SPECIAL.equals(propName) || SVNProperty.NEEDS_LOCK.equals(propName);
     }
-    
+
 
     private static final Set ourTextMimeTypes = new HashSet();
 
