@@ -111,6 +111,7 @@ public class DefaultSVNRepositoryPool implements ISVNRepositoryPool, ISVNSession
     private boolean myIsKeepConnection;
 
     private ScheduledFuture<?> myScheduledTimeoutTask;
+    private File mySpoolLocation;
 
     /**
      * Constructs a <b>DefaultSVNRepositoryPool</b> instance
@@ -264,6 +265,14 @@ public class DefaultSVNRepositoryPool implements ISVNRepositoryPool, ISVNSession
         return repos;
     }
 
+    public void setSpoolLocation(File location) {
+        mySpoolLocation = location;
+    }
+
+    public File getSpoolLocation() {
+        return mySpoolLocation;
+    }
+
     private void setOptionalSpoolLocation(SVNRepository repos, ISVNTunnelProvider options) {
         if (!(repos instanceof DAVRepository)) {
             return;
@@ -271,7 +280,10 @@ public class DefaultSVNRepositoryPool implements ISVNRepositoryPool, ISVNSession
         if (!(options instanceof DefaultSVNOptions)) {
             return;
         }
-        final File spoolLocation = ((DefaultSVNOptions) options).getHttpSpoolDirectory();
+        final File poolSpoolLocation = getSpoolLocation();
+        final File configSpoolLocation = ((DefaultSVNOptions) options).getHttpSpoolDirectory();
+        final File spoolLocation = poolSpoolLocation != null ? poolSpoolLocation : configSpoolLocation;
+
         if (spoolLocation != null) {
             ((DAVRepository) repos).setSpoolLocation(spoolLocation);
         }
