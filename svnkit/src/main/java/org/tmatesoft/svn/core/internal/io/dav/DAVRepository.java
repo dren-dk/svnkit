@@ -12,6 +12,7 @@
 
 package org.tmatesoft.svn.core.internal.io.dav;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -81,6 +82,7 @@ public class DAVRepository extends SVNRepository {
     private boolean myIsSpoolResponse;
 
     private static boolean ourIsKeepCredentials = Boolean.valueOf(System.getProperty("svnkit.http.keepCredentials", Boolean.TRUE.toString())).booleanValue();
+    private File mySpoolLocation;
 
     public static void setKeepCredentials(boolean keepCredentials) {
         ourIsKeepCredentials = keepCredentials;
@@ -89,6 +91,14 @@ public class DAVRepository extends SVNRepository {
     protected DAVRepository(IHTTPConnectionFactory connectionFactory, SVNURL location, ISVNSession options) {
         super(location, options);
         myConnectionFactory = connectionFactory;
+    }
+
+    public void setSpoolLocation(File spoolLocation) {
+        mySpoolLocation = spoolLocation;
+    }
+
+    public File getSpoolLocation() {
+        return mySpoolLocation;
     }
 
     public void testConnection() throws SVNException {

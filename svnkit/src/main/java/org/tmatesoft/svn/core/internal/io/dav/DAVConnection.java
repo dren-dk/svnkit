@@ -32,6 +32,7 @@ import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVGetLocksHandler;
 import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVLockHandler;
 import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVMergeHandler;
 import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVOptionsHandler;
+import org.tmatesoft.svn.core.internal.io.dav.http.HTTPConnection;
 import org.tmatesoft.svn.core.internal.io.dav.http.HTTPHeader;
 import org.tmatesoft.svn.core.internal.io.dav.http.HTTPStatus;
 import org.tmatesoft.svn.core.internal.io.dav.http.IHTTPConnection;
@@ -99,6 +100,12 @@ public class DAVConnection {
     public void open(DAVRepository repository) throws SVNException {
         if (myHttpConnection == null) {
             myHttpConnection = myConnectionFactory.createHTTPConnection(repository);
+            if (repository.getSpoolLocation() != null) {
+                if (myHttpConnection instanceof HTTPConnection) {
+                    ((HTTPConnection) myHttpConnection).setSpoolAll(true);
+                    ((HTTPConnection) myHttpConnection).setSpoolDirectory(repository.getSpoolLocation());
+                }
+            }
             exchangeCapabilities();
         }
     }

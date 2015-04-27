@@ -56,6 +56,8 @@ public class DefaultSVNOptions implements ISVNOptions, ISVNMergerFactory {
     private static final String OLD_SVNKIT_GROUP = "javasvn";
     private static final String HELPERS_GROUP = "helpers";
 
+    private static final String HTTP_SPOOL_DIRECTORY = "http-spool-directory";
+
     private static final String USE_COMMIT_TIMES = "use-commit-times";
     private static final String GLOBAL_IGNORES = "global-ignores";
     private static final String ENABLE_AUTO_PROPS = "enable-auto-props";
@@ -526,6 +528,14 @@ public class DefaultSVNOptions implements ISVNOptions, ISVNMergerFactory {
         return value;
     }
 
+    public File getHttpSpoolDirectory() {
+        final String spoolDirectory = getPropertyValue(HTTP_SPOOL_DIRECTORY);
+        if (spoolDirectory != null) {
+            return  new File(spoolDirectory);
+        }
+        return null;
+    }
+
     /**
      * Sets the value of a property from the <i>[svnkit]</i> section
      * of the <i>config</i> file.
@@ -814,8 +824,8 @@ public class DefaultSVNOptions implements ISVNOptions, ISVNMergerFactory {
             case '*':
                 result.append(".*");
                 break;
-                
-            case '\\':                
+
+            case '\\':
                 if (i + 1 < wildcard.length()) {
                     ch = wildcard.charAt(i + 1);
                     if (ch == '\\') {
