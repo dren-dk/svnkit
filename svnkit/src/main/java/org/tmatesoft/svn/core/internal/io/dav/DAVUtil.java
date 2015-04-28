@@ -29,6 +29,7 @@ import org.tmatesoft.svn.core.internal.util.SVNHashMap;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.ISVNEditor;
+import org.tmatesoft.svn.util.SVNDebugLog;
 import org.tmatesoft.svn.util.SVNLogType;
 
 /**
@@ -301,7 +302,12 @@ public class DAVUtil {
 
     public static void setSpecialWCProperties(ISVNEditor editor, boolean isDir, String path, DAVElement property, 
             SVNPropertyValue propValue) throws SVNException {
+        SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "setSpecialWCProperties() method is called");
+        SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "path=" + path);
+        SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "isDir=" + isDir);
+        SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "propValue=" + SVNPropertyValue.getPropertyAsString(propValue));
         String propName = convertDAVElementToPropName(property, isDir);
+        SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "propName=" + propName);
         if (propName != null) {
             if (isDir) {
                 editor.changeDirProperty(propName, propValue);
