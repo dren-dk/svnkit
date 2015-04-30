@@ -40,7 +40,6 @@ import org.tmatesoft.svn.core.io.*;
 import org.tmatesoft.svn.core.io.diff.SVNDeltaGenerator;
 import org.tmatesoft.svn.core.io.diff.SVNDiffWindow;
 import org.tmatesoft.svn.core.wc2.SvnChecksum;
-import org.tmatesoft.svn.util.SVNDebugLog;
 import org.tmatesoft.svn.util.SVNLogType;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
@@ -250,7 +249,6 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
         init();
         myDirs = new Stack();
         myVersionURLs = new SVNHashMap();
-        SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "DAVEditorHandler intialization: fetchContent=" + fetchContent);
     }
 
     public void closeConnection() {
@@ -262,19 +260,15 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
     
     protected void startElement(DAVElement parent, DAVElement element, Attributes attrs) throws SVNException {
         if (element == UPDATE_REPORT) {
-            SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "<update-report> tag received");
             String inlineProps = attrs.getValue(INLINE_PROPS_ATTR);
             if (inlineProps != null && Boolean.valueOf(inlineProps).booleanValue()) {
                 myIsAddPropsIncluded = true;
-                SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "inline-props attribute received, myIsAddPropsIncluded=" + myIsAddPropsIncluded);
             }
             String receiveAll = attrs.getValue(SEND_ALL_ATTR);
             if (receiveAll != null && Boolean.valueOf(receiveAll).booleanValue()) {
                 myIsReceiveAll = true;
                 myIsAddPropsIncluded = true;
-                SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "receive-all attribute received, myIsAddPropsIncluded=" + myIsAddPropsIncluded + ", myIsReceiveAll=true");
             }
-            SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "myIsAddPropsIncluded=" + myIsAddPropsIncluded + ", myIsReceiveAll=true");
         } else if (element == TARGET_REVISION) {
             long revision = -1;
             try {
@@ -321,7 +315,6 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
             DirInfo dirInfo = new DirInfo();
             myDirs.push(dirInfo);
         } else if (element == ADD_DIRECTORY) {
-            SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "<add-directory> tag received");
             myIsDirectory = true;
             String name = attrs.getValue(NAME_ATTR);
             if (name == null) {
@@ -352,25 +345,19 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
 
             if (!myIsAddPropsIncluded) {
                 dirInfo.myIsFetchProps = true;
-                SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "myIsAddPropsIncluded==false, so dirInfo.myIsFetchProps=" + dirInfo.myIsFetchProps);
             }
             
             String bcURL = attrs.getValue(BC_URL_ATTR);
             if (!myIsReceiveAll && bcURL != null) {
-                SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "Condition (!myIsReceiveAll && bcURL != null) is true; bcURL=" + bcURL);
                 DAVElement[] elements = null;
                 Map propsMap = new SVNHashMap();
                 DAVUtil.getProperties(getConnection(), DAVUtil.getPathFromURL(bcURL), 1, null, elements, propsMap);
-
-                SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "Getting properties with a separate request");
+                
                 if (!propsMap.isEmpty()) {
-                    SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "Some properties received; propsMap.size()=" + propsMap.size());
                     dirInfo.myChildren = new SVNHashMap();
                     for (Iterator propsIter = propsMap.values().iterator(); propsIter.hasNext();) {
                         DAVProperties props = (DAVProperties) propsIter.next();
-                        SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "Getting checked-in property value");
                         SVNPropertyValue vcURL = props.getPropertyValue(DAVElement.CHECKED_IN);
-                        SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "vcURL=" + vcURL);
                         if (vcURL != null) {
                             dirInfo.myChildren.put(SVNPropertyValue.getPropertyAsString(vcURL), props);
                         }
@@ -504,7 +491,6 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
         } else if (element == UPDATE_REPORT) {
             myEditor.closeEdit();
         } else if (element == OPEN_DIRECTORY || element == ADD_DIRECTORY) {
-            SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "</add-directory> tag received");
             if (myDirs.size() != 1 || !myHasTarget) {
                 addNodeProperties(myPath, true);
             }
@@ -642,17 +628,11 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
     }
     
     protected void addNodeProperties(String path, boolean isDir) throws SVNException {
-        SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "addNodeProperties() is called, path="+path);
-
         if (myIsReceiveAll) {
-            SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "myIsReceiveAll==true, exiting");
             return;
         }
-
-        SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "myIsReceiveAll==false");
         
         if (!isDir) {
-            SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "isDir==false; not logging because");
             if (!myIsFetchContent && !myIsFetchProps) {
                 return;
             }
@@ -680,42 +660,28 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
             }
             addProps(props, false);
         } else {
-            SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "isDir==true");
             DirInfo topDirInfo = (DirInfo) myDirs.peek();
             if (!topDirInfo.myIsFetchProps) {
-                SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "(!topDirInfo.myIsFetchProps) condition is met, exiting");
                 return;
             }
-            SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "(!topDirInfo.myIsFetchProps) condition is not met");
-            DAVProperties props = topDirInfo.myChildren != null ? (DAVProperties ) topDirInfo.myChildren.get(topDirInfo.myVSNURL)
+
+            DAVProperties props = topDirInfo.myChildren != null ? (DAVProperties ) topDirInfo.myChildren.get(topDirInfo.myVSNURL) 
                     : null;
-            SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "props=" + props);
             if (props == null) {
-                SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "Obtaining properties with a separate request");
                 props = DAVUtil.getResourceProperties(getConnection(), topDirInfo.myVSNURL, null, null);
-                SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "props=" + props);
             }
-            SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "props processing");
             addProps(props, true);
         }
     }
     
     private void addProps(DAVProperties props, boolean isDir) throws SVNException {
-        SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "addProps() method called, myPath=" + myPath);
         Map propsMap = props.getProperties();
-        SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "propsMap.size()=" + propsMap.size());
         for (Iterator propsIter = propsMap.keySet().iterator(); propsIter.hasNext();) {
             DAVElement element = (DAVElement) propsIter.next();
             SVNPropertyValue propValue = (SVNPropertyValue) propsMap.get(element);
             String elementNamespace = element.getNamespace();
-            SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "element=" + element);
-            SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "propValue=" + SVNPropertyValue.getPropertyAsString(propValue));
-            SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "elementNamespace=" + elementNamespace);
             if (elementNamespace.equals(DAVElement.SVN_CUSTOM_PROPERTY_NAMESPACE)) {
-                SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "(elementNamespace.equals(DAVElement.SVN_CUSTOM_PROPERTY_NAMESPACE)) condition is met");
                 String propName = element.getName();
-                SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "propName="+propName);
-                SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "isDir="+isDir);
                 if (isDir) {
                     myEditor.changeDirProperty(propName, propValue);
                 } else {
@@ -725,10 +691,7 @@ public class DAVEditorHandler extends BasicDAVDeltaHandler {
             }
             
             if (elementNamespace.equals(DAVElement.SVN_SVN_PROPERTY_NAMESPACE)) {
-                SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "(elementNamespace.equals(DAVElement.SVN_SVN_PROPERTY_NAMESPACE) condition is met");
                 String propName = SVNProperty.SVN_PREFIX + element.getName();
-                SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "propName="+propName);
-                SVNDebugLog.getDefaultLog().logFine(SVNLogType.DEFAULT, "isDir="+isDir);
                 if (isDir) {
                     myEditor.changeDirProperty(propName, propValue);
                 } else {
