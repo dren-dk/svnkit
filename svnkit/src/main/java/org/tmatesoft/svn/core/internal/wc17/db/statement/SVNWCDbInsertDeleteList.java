@@ -26,7 +26,7 @@ public class SVNWCDbInsertDeleteList extends SVNSqlJetInsertStatement {
 
             private boolean isMaxOpDepth(long opDepth) throws SVNException {
                 SVNWCDbNodesMaxOpDepth stmt = new SVNWCDbNodesMaxOpDepth(sDb, 0);
-                Long maxOpDepth = stmt.getMaxOpDepth((Long) getBind(1), getColumnString(SVNWCDbSchema.NODES__Fields.local_relpath)); 
+                Long maxOpDepth = stmt.getMaxOpDepth((Long) getBind(1), getColumnString(SVNWCDbSchema.NODES__Fields.local_relpath));
                 return maxOpDepth != null && maxOpDepth == opDepth;
             }
             @Override
@@ -35,7 +35,7 @@ public class SVNWCDbInsertDeleteList extends SVNSqlJetInsertStatement {
                 if ("base-deleted".equals(presence) ||
                     "not-present".equals(presence) ||
                     "excluded".equals(presence) ||
-                    "absent".equals(presence)) {
+                    "server-excluded".equals(presence)) {
                     return false;
                 }
                 long selectOpDepth = (Long) getBind(3);
@@ -45,13 +45,13 @@ public class SVNWCDbInsertDeleteList extends SVNSqlJetInsertStatement {
                 }
                 return isMaxOpDepth(rowOpDepth);
             }
-            
+
             @Override
             protected String getPathScope() {
                 return (String) getBind(2);
             }
-            
-            
+
+
         };
     }
 
@@ -65,7 +65,7 @@ public class SVNWCDbInsertDeleteList extends SVNSqlJetInsertStatement {
         insertValues.put(DELETE_LIST__Fields.local_relpath.toString(), selectedRow.get(NODES__Fields.local_relpath.toString()));
         return insertValues;
     }
-    
+
     public long exec() throws SVNException {
         select.bindf("isi", getBind(1), getBind(2), getBind(3));
         try {

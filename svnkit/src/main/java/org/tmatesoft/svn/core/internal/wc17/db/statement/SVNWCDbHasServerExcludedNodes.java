@@ -20,7 +20,7 @@ public class SVNWCDbHasServerExcludedNodes extends SVNSqlJetSelectStatement {
         if (getColumnLong(SVNWCDbSchema.NODES__Fields.op_depth) != 0) {
             return false;
         }
-        return "absent".equals(getColumnString(SVNWCDbSchema.NODES__Fields.presence));
+        return "server-excluded".equals(getColumnString(SVNWCDbSchema.NODES__Fields.presence));
     }
 
     @Override

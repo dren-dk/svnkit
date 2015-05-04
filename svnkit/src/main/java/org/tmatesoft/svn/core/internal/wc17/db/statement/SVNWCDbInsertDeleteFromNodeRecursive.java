@@ -54,7 +54,7 @@ public class SVNWCDbInsertDeleteFromNodeRecursive extends SVNSqlJetInsertStateme
                     return false;
                 }
                 final String rowPresence = getColumnString(SVNWCDbSchema.NODES__Fields.presence);
-                if (!"base-deleted".equals(rowPresence) && !"not-present".equals(rowPresence) && !"excluded".equals(rowPresence) && !"absent".equals(rowPresence)) {
+                if (!"base-deleted".equals(rowPresence) && !"not-present".equals(rowPresence) && !"excluded".equals(rowPresence) && !"server-excluded".equals(rowPresence)) {
                     return true;
                 }
                 return false;
@@ -64,7 +64,7 @@ public class SVNWCDbInsertDeleteFromNodeRecursive extends SVNSqlJetInsertStateme
             protected String getPathScope() {
                 return (String) getBind(2);
             }
-            
+
             protected void defineFields() {
                 fields.add(SVNWCDbSchema.NODES__Fields.wc_id);
                 fields.add(SVNWCDbSchema.NODES__Fields.local_relpath);
@@ -95,7 +95,7 @@ public class SVNWCDbInsertDeleteFromNodeRecursive extends SVNSqlJetInsertStateme
     protected Map<String, Object> getInsertValues() throws SVNException {
         Map<String, Object> rowValues = select.getRowValues();
         Map<String, Object> insertValues = new HashMap<String, Object>();
-        
+
         insertValues.put(SVNWCDbSchema.NODES__Fields.op_depth.toString(), getBind(4));
         insertValues.put(SVNWCDbSchema.NODES__Fields.presence.toString(), "base-deleted");
         insertValues.put(SVNWCDbSchema.NODES__Fields.wc_id.toString(), getBind(1));

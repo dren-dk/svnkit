@@ -39,7 +39,7 @@ public class SVNWCDbSelectAllServerExcludedNodes extends SVNSqlJetSelectStatemen
     }
 
     protected boolean isFilterPassed() throws SVNException {
-        if (!"absent".equals(getColumnString(NODES__Fields.presence))) {
+        if (!"server-excluded".equals(getColumnString(NODES__Fields.presence))) {
             return false;
         }
         final long rowDepth = getColumnLong(NODES__Fields.op_depth);
