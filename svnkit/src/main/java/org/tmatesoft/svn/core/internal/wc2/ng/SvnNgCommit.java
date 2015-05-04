@@ -322,7 +322,7 @@ public class SvnNgCommit extends SvnNgOperationRunner<SVNCommitInfo, SvnCommit> 
                 }
             }
         }
-        final boolean unlockOnly = item.getFlags() == SvnCommitItem.LOCK && removeLock && wcPropChanges == null;
+        final boolean unlockOnly = item.getFlags() == SvnCommitItem.LOCK && wcPropChanges == null;
         queueCommitted(queue, item.getPath(), false, wcProps, unlockOnly, removeLock, !keepChangelists, sha1Checksum);
     }
 
@@ -483,25 +483,27 @@ public class SvnNgCommit extends SvnNgOperationRunner<SVNCommitInfo, SvnCommit> 
             nodeInfo.release();
             return;
         }
-        SVNSkel workItem = null;
-        SVNWCDbKind kind = nodeInfo.get(NodeInfo.kind);
-        if (kind != SVNWCDbKind.Dir) {
-            if (checksum == null) {
-                checksum = nodeInfo.get(NodeInfo.checksum);
-                if (viaRecurse && !nodeInfo.is(NodeInfo.propsMod)) {
-                    Structure<NodeInfo> moreInfo = getWcContext().getDb().
-                        readInfo(localAbspath, NodeInfo.changedRev, NodeInfo.changedDate, NodeInfo.changedAuthor);
-                    newChangedRev = moreInfo.lng(NodeInfo.changedRev);
-                    newChangedDate = moreInfo.get(NodeInfo.changedDate);
-                    newChangedAuthor = moreInfo.get(NodeInfo.changedAuthor);
-                    moreInfo.release();
-                }
-            }
-            workItem = getWcContext().wqBuildFileCommit(localAbspath, nodeInfo.is(NodeInfo.propsMod));
-        }
         if (unlockOnly) {
-            getWcContext().getDb().removeLock(localAbspath);
+            if (!noUnlock) {
+                getWcContext().getDb().removeLock(localAbspath);
+            }
         } else {
+            SVNSkel workItem = null;
+            SVNWCDbKind kind = nodeInfo.get(NodeInfo.kind);
+            if (kind != SVNWCDbKind.Dir) {
+                if (checksum == null) {
+                    checksum = nodeInfo.get(NodeInfo.checksum);
+                    if (viaRecurse && !nodeInfo.is(NodeInfo.propsMod)) {
+                        Structure<NodeInfo> moreInfo = getWcContext().getDb().
+                                readInfo(localAbspath, NodeInfo.changedRev, NodeInfo.changedDate, NodeInfo.changedAuthor);
+                        newChangedRev = moreInfo.lng(NodeInfo.changedRev);
+                        newChangedDate = moreInfo.get(NodeInfo.changedDate);
+                        newChangedAuthor = moreInfo.get(NodeInfo.changedAuthor);
+                        moreInfo.release();
+                    }
+                }
+                workItem = getWcContext().wqBuildFileCommit(localAbspath, nodeInfo.is(NodeInfo.propsMod));
+            }
             getWcContext().getDb().globalCommit(localAbspath, newRevnum, newChangedRev, newChangedDate, newChangedAuthor, checksum, null, newDavCache, keepChangelist, noUnlock, workItem);
         }
     }
