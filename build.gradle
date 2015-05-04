@@ -1,5 +1,5 @@
 group = 'org.tmatesoft.svnkit'
-version = '1.8.9'
+version = '1.8.10'
 
 project.ext {
    release = false
@@ -97,7 +97,7 @@ project(':svnkit') {
 		exclude group: 'net.java.dev.jna'
 	}
         compile 'com.jcraft:jsch.agentproxy.svnkit-trilead-ssh2:0.0.7'
- 
+
         testCompile 'junit:junit:4.8'
     }
     artifacts { maven jar, sourcesJar, javadocJar }
@@ -175,6 +175,6 @@ task publish(dependsOn: [':svnkit-distribution:buildAll']) {
     toDir.mkdirs()
     ant.unzip(src: new File(project(':svnkit-distribution').distsDir, "svnkit-${version}-all.zip"), dest: toDir.absolutePath) {
        cutdirsmapper(dirs: '1')
-    }    
+    }
     ant.chmod(dir: new File(toDir, 'bin').absolutePath, perm: 'ugo+rx', includes: '**/**', excludes: '**/*.bat')
 }
