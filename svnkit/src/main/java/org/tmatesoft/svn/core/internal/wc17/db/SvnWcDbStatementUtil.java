@@ -38,11 +38,12 @@ public class SvnWcDbStatementUtil {
 
         presenceMap2.put("normal", SVNWCDbStatus.Normal);
         presenceMap2.put("server-excluded", SVNWCDbStatus.ServerExcluded);
+        presenceMap2.put("absent", SVNWCDbStatus.ServerExcluded);
         presenceMap2.put("excluded", SVNWCDbStatus.Excluded);
         presenceMap2.put("not-present", SVNWCDbStatus.NotPresent);
         presenceMap2.put("incomplete", SVNWCDbStatus.Incomplete);
         presenceMap2.put("base-deleted", SVNWCDbStatus.BaseDeleted);
-    };
+    }
 
     private static final EnumMap<SVNWCDbKind, String> kindMap = new EnumMap<SVNWCDbKind, String>(SVNWCDbKind.class);
     private static final HashMap<String, SVNWCDbKind> kindMap2 = new HashMap<String, SVNWCDbKind>();
@@ -57,7 +58,7 @@ public class SvnWcDbStatementUtil {
         kindMap2.put("dir", SVNWCDbKind.Dir);
         kindMap2.put("symlink", SVNWCDbKind.Symlink);
         kindMap2.put("unknown", SVNWCDbKind.Unknown);
-    };
+    }
 
     public static SVNSqlJetStatement bindf(SVNSqlJetStatement stmt, String format, Object... binds) throws SVNException {
         if (binds != null) {
@@ -71,7 +72,7 @@ public class SvnWcDbStatementUtil {
                 } else if (binds[i] instanceof SVNDate) {
                     binds[i] = ((SVNDate) binds[i]).getTimeInMicros();
                 } else if (binds[i] instanceof SVNDepth) {
-                    binds[i] = ((SVNDepth) binds[i]).toString();
+                    binds[i] = binds[i].toString();
                 }
             }
         }

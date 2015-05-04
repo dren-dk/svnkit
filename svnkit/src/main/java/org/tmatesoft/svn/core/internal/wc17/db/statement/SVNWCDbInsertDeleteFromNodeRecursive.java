@@ -18,6 +18,8 @@ import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.internal.db.SVNSqlJetDb;
 import org.tmatesoft.svn.core.internal.db.SVNSqlJetInsertStatement;
 import org.tmatesoft.svn.core.internal.db.SVNSqlJetSelectFieldsStatement;
+import org.tmatesoft.svn.core.internal.wc17.db.ISVNWCDb;
+import org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil;
 
 /**
  * INSERT INTO nodes (
@@ -42,7 +44,7 @@ public class SVNWCDbInsertDeleteFromNodeRecursive extends SVNSqlJetInsertStateme
 
             protected Object[] getWhere() throws SVNException {
                 return new Object[] {getBind(1)};
-            };
+            }
 
             protected boolean isFilterPassed() throws SVNException {
                 final long selectDepth = (Long) SVNWCDbInsertDeleteFromNodeRecursive.this.getBind(3);
@@ -53,12 +55,12 @@ public class SVNWCDbInsertDeleteFromNodeRecursive extends SVNSqlJetInsertStateme
                 if (!isColumnNull(SVNWCDbSchema.NODES__Fields.file_external)) {
                     return false;
                 }
-                final String rowPresence = getColumnString(SVNWCDbSchema.NODES__Fields.presence);
-                if (!"base-deleted".equals(rowPresence) && !"not-present".equals(rowPresence) && !"excluded".equals(rowPresence) && !"server-excluded".equals(rowPresence)) {
-                    return true;
-                }
-                return false;
-            };
+                final ISVNWCDb.SVNWCDbStatus rowPresence = SvnWcDbStatementUtil.getColumnPresence(this);
+                return rowPresence != ISVNWCDb.SVNWCDbStatus.BaseDeleted
+                        && rowPresence != ISVNWCDb.SVNWCDbStatus.NotPresent
+                        && rowPresence != ISVNWCDb.SVNWCDbStatus.Excluded
+                        && rowPresence != ISVNWCDb.SVNWCDbStatus.ServerExcluded;
+            }
 
             @Override
             protected String getPathScope() {
