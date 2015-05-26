@@ -11,31 +11,9 @@
  */
 package org.tmatesoft.svn.core.internal.wc17;
 
-import static org.tmatesoft.svn.core.internal.wc17.db.SVNWCDb.isAbsolute;
-
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
-import java.util.logging.Level;
-
+import de.regnis.q.sequence.line.QSequenceLineRAByteData;
+import de.regnis.q.sequence.line.QSequenceLineRAData;
+import de.regnis.q.sequence.line.QSequenceLineRAFileData;
 import org.tmatesoft.sqljet.core.SqlJetTransactionMode;
 import org.tmatesoft.sqljet.core.internal.SqlJetPagerJournalMode;
 import org.tmatesoft.svn.core.ISVNCanceller;
@@ -126,9 +104,30 @@ import org.tmatesoft.svn.core.wc2.SvnTarget;
 import org.tmatesoft.svn.util.SVNDebugLog;
 import org.tmatesoft.svn.util.SVNLogType;
 
-import de.regnis.q.sequence.line.QSequenceLineRAByteData;
-import de.regnis.q.sequence.line.QSequenceLineRAData;
-import de.regnis.q.sequence.line.QSequenceLineRAFileData;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
+import java.util.logging.Level;
+
+import static org.tmatesoft.svn.core.internal.wc17.db.SVNWCDb.isAbsolute;
 
 /**
  * @version 1.4
@@ -1087,7 +1086,7 @@ public class SVNWCContext {
             changedDate = SVNDate.NULL;
             changedAuthor = "";
         }
-        return SVNTranslator.computeKeywords(keywordsList, url, repositoryRoot, changedAuthor, changedDate.format(), Long.toString(changedRev), getOptions());
+        return SVNTranslator.computeKeywords(keywordsList, url, repositoryRoot, changedAuthor, changedDate != null ? changedDate.format() : null, Long.toString(changedRev), getOptions());
     }
 
     public boolean isFileExternal(File path) throws SVNException {
