@@ -11,11 +11,11 @@
  */
 package org.tmatesoft.svn.util;
 
+import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-
-import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 
 /**
  * @version 1.3
@@ -33,13 +33,13 @@ public class Version {
     private static final String VERSION_REVISION_PROPERTY = "svnkit.version.revision";
     private static final String SVN_VERSION_PROPERTY = "svnkit.svn.version";
 
-    private static final String VERSION_STRING_DEFAULT = "SVN/1.8.1 SVNKit/1.8.9 (http://svnkit.com/) rSNAPSHOT";
+    private static final String VERSION_STRING_DEFAULT = "SVN/1.8.1 SVNKit/1.8.10 (http://svnkit.com/) rSNAPSHOT";
 
     private static final String VERSION_MAJOR_DEFAULT = "1";
     private static final String VERSION_MINOR_DEFAULT = "8";
-    private static final String VERSION_MICRO_DEFAULT = "9";
+    private static final String VERSION_MICRO_DEFAULT = "10";
     private static final String VERSION_REVISION_DEFAULT = "SNAPSHOT";
-    private static final String SVN_VERSION_DEFAULT = "1.8.9";
+    private static final String SVN_VERSION_DEFAULT = "1.8.10";
     private static String ourUserAgent;
 
     private static Properties ourProperties;
