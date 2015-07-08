@@ -11,49 +11,6 @@
  */
 package org.tmatesoft.svn.core.internal.wc17.db;
 
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbShared.begingReadTransaction;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbShared.commitTransaction;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbShared.doesNodeExists;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbShared.getDepthInfo;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbShared.getMovedFromInfo;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnBlob;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnBoolean;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnChecksum;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnDepth;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnInt64;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnKind;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnPath;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnPresence;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnProperties;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnRevNum;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnText;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getKindText;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getPresenceText;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getTranslatedSize;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.hasColumnProperties;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.isColumnNull;
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.parseDepth;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.logging.Level;
-
 import org.tmatesoft.sqljet.core.SqlJetException;
 import org.tmatesoft.sqljet.core.SqlJetTransactionMode;
 import org.tmatesoft.sqljet.core.internal.SqlJetPagerJournalMode;
@@ -136,6 +93,49 @@ import org.tmatesoft.svn.core.wc2.ISvnObjectReceiver;
 import org.tmatesoft.svn.core.wc2.SvnChecksum;
 import org.tmatesoft.svn.util.SVNLogType;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.logging.Level;
+
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbShared.begingReadTransaction;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbShared.commitTransaction;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbShared.doesNodeExists;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbShared.getDepthInfo;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbShared.getMovedFromInfo;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnBlob;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnBoolean;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnChecksum;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnDepth;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnInt64;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnKind;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnPath;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnPresence;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnProperties;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnRevNum;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnText;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getKindText;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getPresenceText;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getTranslatedSize;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.hasColumnProperties;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.isColumnNull;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.parseDepth;
+
 /**
  *
  * @author TMate Software Ltd.
@@ -144,8 +144,8 @@ public class SVNWCDb implements ISVNWCDb {
 
     public static final int FORMAT_FROM_SDB = -1;
     public static final long UNKNOWN_WC_ID = -1;
-    static final long INVALID_REPOS_ID = -1;    
-    
+    static final long INVALID_REPOS_ID = -1;
+
 
     public static boolean isAbsolute(File localAbsPath) {
         return localAbsPath != null && localAbsPath.isAbsolute();
@@ -164,15 +164,16 @@ public class SVNWCDb implements ISVNWCDb {
     private boolean enforceEmptyWQ;
     private Map<String, SVNWCDbDir> dirData;
     private SqlJetPagerJournalMode journalMode;
+    private boolean temporaryDbInMemory;
     private boolean isAllowWC17Access;
-    
+
     public SVNWCDb() {
     }
-    
+
     public void setWC17SupportEnabled(boolean allowed) {
         this.isAllowWC17Access = allowed;
     }
-    
+
     public boolean isWC17AccessEnabled() {
         return isAllowWC17Access;
     }
@@ -183,9 +184,13 @@ public class SVNWCDb implements ISVNWCDb {
         this.enforceEmptyWQ = enforceEmptyWQ;
         this.dirData = new HashMap<String, SVNWCDbDir>();
     }
-    
+
     public void setJournalModel(SqlJetPagerJournalMode journalMode) {
         this.journalMode = journalMode;
+    }
+
+    public void setTemporaryDbInMemory(boolean temporaryDbInMemory) {
+        this.temporaryDbInMemory = temporaryDbInMemory;
     }
 
     public void close() {
@@ -203,7 +208,7 @@ public class SVNWCDb implements ISVNWCDb {
         /* Run the cleanup for each WCROOT. */
         closeManyWCRoots(roots);
     }
-    
+
     public void ensureNoUnfinishedTransactions() throws SVNException {
         final Set<SVNWCDbRoot> roots = new HashSet<SVNWCDbRoot>();
         /* Collect all the unique WCROOT structures, and empty out DIR_DATA. */
@@ -261,7 +266,7 @@ public class SVNWCDb implements ISVNWCDb {
         } else {
             ibb.status = SVNWCDbStatus.Normal;
         }
-        
+
         ibb.kind = SVNWCDbKind.Dir;
         ibb.reposId = createDb.reposId;
         ibb.reposRelpath = reposRelPath;
@@ -291,7 +296,7 @@ public class SVNWCDb implements ISVNWCDb {
 
         CreateDbInfo info = new CreateDbInfo();
 
-        info.sDb = openDb(dirAbsPath, sdbFileName, SVNSqlJetDb.Mode.RWCreate, journalMode);
+        info.sDb = openDb(dirAbsPath, sdbFileName, SVNSqlJetDb.Mode.RWCreate, journalMode, temporaryDbInMemory);
 
         /* Create the database's schema. */
         SVNWCDbCreateSchema createSchema = new SVNWCDbCreateSchema(info.sDb, SVNWCDbCreateSchema.MAIN_DB_STATEMENTS, workingCopyFormat, isUpgrade);
@@ -381,22 +386,22 @@ public class SVNWCDb implements ISVNWCDb {
             stmt.reset();
         }
     }
-    
+
     public Map<File, File> getExternalsDefinedBelow(File localAbsPath) throws SVNException {
         Map<File, File> externals = new TreeMap<File, File>(Collections.reverseOrder());
-                
+
         DirParsedInfo parseDir = parseDir(localAbsPath, Mode.ReadWrite);
         SVNWCDbDir pdh = parseDir.wcDbDir;
         File localRelpath = parseDir.localRelPath;
         verifyDirUsable(pdh);
-        
+
         SVNSqlJetStatement stmt = pdh.getWCRoot().getSDb().getStatement(SVNWCDbStatements.SELECT_EXTERNALS_DEFINED);
         try {
             stmt.bindf("is", pdh.getWCRoot().getWcId(), localRelpath);
             while(stmt.next()) {
                 localRelpath = SVNFileUtil.createFilePath(getColumnText(stmt, SVNWCDbSchema.EXTERNALS__Fields.local_relpath));
                 File defLocalRelpath = SVNFileUtil.createFilePath(getColumnText(stmt, SVNWCDbSchema.EXTERNALS__Fields.def_local_relpath));
-                externals.put(SVNFileUtil.createFilePath(pdh.getWCRoot().getAbsPath(), localRelpath), 
+                externals.put(SVNFileUtil.createFilePath(pdh.getWCRoot().getAbsPath(), localRelpath),
                         SVNFileUtil.createFilePath(pdh.getWCRoot().getAbsPath(), defLocalRelpath));
             }
         } finally {
@@ -404,13 +409,13 @@ public class SVNWCDb implements ISVNWCDb {
         }
         return externals;
     }
-    
+
     public void gatherExternalDefinitions(File localAbsPath, SVNExternalsStore externals) throws SVNException {
         DirParsedInfo parseDir = parseDir(localAbsPath, Mode.ReadWrite);
         SVNWCDbDir pdh = parseDir.wcDbDir;
         File localRelpath = parseDir.localRelPath;
         verifyDirUsable(pdh);
-        
+
         SVNSqlJetStatement stmt = pdh.getWCRoot().getSDb().getStatement(SVNWCDbStatements.SELECT_EXTERNAL_PROPERTIES);
         try {
             stmt.bindf("is", pdh.getWCRoot().getWcId(), localRelpath);
@@ -423,7 +428,7 @@ public class SVNWCDb implements ISVNWCDb {
                 if (externalProperty == null) {
                     continue;
                 }
-                
+
                 File nodeRelPath = SVNFileUtil.createFilePath(getColumnText(stmt, NODES__Fields.local_relpath));
                 File nodeAbsPath = SVNFileUtil.createFilePath(pdh.getWCRoot().getAbsPath(), nodeRelPath);
                 externals.addExternal(nodeAbsPath, null, externalProperty);
@@ -442,7 +447,7 @@ public class SVNWCDb implements ISVNWCDb {
     }
 
     public void addBaseDirectory(File localAbsPath, File reposRelPath, SVNURL reposRootUrl, String reposUuid, long revision, SVNProperties props, long changedRev, SVNDate changedDate, String changedAuthor,
-            List<File> children, SVNDepth depth, SVNProperties davCache, SVNSkel conflict, boolean updateActualProps, SVNProperties actualProps, 
+            List<File> children, SVNDepth depth, SVNProperties davCache, SVNSkel conflict, boolean updateActualProps, SVNProperties actualProps,
             Map<String, SVNProperties> iprops, SVNSkel workItems) throws SVNException {
         assert (SVNFileUtil.isAbsolute(localAbsPath));
         assert (reposRelPath != null);
@@ -459,34 +464,34 @@ public class SVNWCDb implements ISVNWCDb {
         InsertBase ibb = new InsertBase();
         ibb.reposRootURL = reposRootUrl;
         ibb.reposUUID = reposUuid;
-        
+
         ibb.status = SVNWCDbStatus.Normal;
         ibb.kind = SVNWCDbKind.Dir;
         ibb.reposRelpath = reposRelPath;
         ibb.revision = revision;
-        
+
         ibb.props = props;
         ibb.changedRev = changedRev;
         ibb.changedDate = changedDate;
         ibb.changedAuthor = changedAuthor;
-        
+
         ibb.children = children;
         ibb.depth = depth;
-        
+
         ibb.davCache = davCache;
         ibb.conflict = conflict;
         ibb.workItems = workItems;
-        
+
         if (updateActualProps) {
             ibb.updateActualProps = true;
             ibb.actualProps = actualProps;
         }
-        
+
         ibb.iprops = iprops;
         ibb.localRelpath = localRelpath;
         ibb.wcId = pdh.getWCRoot().getWcId();
         ibb.wcRoot = pdh.getWCRoot();
-            
+
         pdh.getWCRoot().getSDb().runTransaction(ibb);
         pdh.flushEntries(localAbsPath);
     }
@@ -819,7 +824,7 @@ public class SVNWCDb implements ISVNWCDb {
         public int opDepth;
         public int movedFromDepth;
     }
-    
+
     private class InsertLock implements SVNSqlJetTransaction {
 
         public File localAbsPath;
@@ -855,10 +860,10 @@ public class SVNWCDb implements ISVNWCDb {
         public long reposId = INVALID_REPOS_ID;
         public File reposRelpath;
         public long revision = INVALID_REVNUM;
-        
+
         public SVNURL reposRootURL;
         public String reposUUID;
-        
+
         public SVNProperties props;
         public long changedRev = INVALID_REVNUM;
         public SVNDate changedDate;
@@ -869,36 +874,36 @@ public class SVNWCDb implements ISVNWCDb {
         public SVNDepth depth = SVNDepth.INFINITY;
 
         public SvnChecksum checksum;
-        
+
         public File target;
-        
+
         public boolean fileExternal;
 
         public SVNSkel conflict;
 
         public boolean updateActualProps;
         public SVNProperties actualProps;
-        
+
        public boolean insertBaseDeleted;
        public boolean keepRecordedInfo;
         public boolean deleteWorking;
-       
+
         public SVNSkel workItems;
 
         public long wcId;
         public File localRelpath;
 
         public SVNWCDbRoot wcRoot;
-        
+
         public void transaction(SVNSqlJetDb db) throws SqlJetException, SVNException {
             long recordedSize = INVALID_FILESIZE;
             long recordedModTime = 0;
             File parentRelpath = SVNFileUtil.getFileDir(localRelpath);
-            
+
             if (reposId == INVALID_REPOS_ID) {
-                reposId = createReposId(db, reposRootURL, reposUUID);                
+                reposId = createReposId(db, reposRootURL, reposUUID);
             }
-            
+
             if (keepRecordedInfo) {
                 SVNSqlJetStatement stmt = db.getStatement(SVNWCDbStatements.SELECT_BASE_NODE);
                 try {
@@ -912,8 +917,8 @@ public class SVNWCDb implements ISVNWCDb {
                     stmt.reset();
                 }
             }
-            
-            
+
+
             SVNSqlJetStatement stmt = db.getStatement(SVNWCDbStatements.INSERT_NODE);
             try {
                 stmt.bindf("isisisrtstrisnnnnns",
@@ -963,7 +968,7 @@ public class SVNWCDb implements ISVNWCDb {
             } finally {
                 stmt.reset();
             }
-            
+
             if (updateActualProps) {
                 SVNProperties baseProps = props;
                 SVNProperties newActualProps = actualProps;
@@ -997,7 +1002,7 @@ public class SVNWCDb implements ISVNWCDb {
                     stmt.reset();
                 }
             }
-            
+
             if (insertBaseDeleted) {
                 stmt = db.getStatement(SVNWCDbStatements.INSERT_DELETE_FROM_BASE);
                 try {
@@ -1007,7 +1012,7 @@ public class SVNWCDb implements ISVNWCDb {
                     stmt.reset();
                 }
             }
-            
+
             addWorkItems(db, workItems);
 
             if (conflict != null) {
@@ -1022,7 +1027,7 @@ public class SVNWCDb implements ISVNWCDb {
         public SVNWCDbStatus status;
         public SVNWCDbKind kind;
         public File reposRelpath;
-        
+
         public SVNProperties props;
         public long changedRev = INVALID_REVNUM;
         public SVNDate changedDate;
@@ -1032,9 +1037,9 @@ public class SVNWCDb implements ISVNWCDb {
         public SVNDepth depth = SVNDepth.INFINITY;
 
         public SvnChecksum checksum;
-        
+
         public File target;
-        
+
         public SVNSkel workItems;
 
         public SVNWCDbRoot wcRoot;
@@ -1042,7 +1047,7 @@ public class SVNWCDb implements ISVNWCDb {
         public File originalReposRelPath;
         public long originalReposId;
         public long originalRevision;
-        
+
         public long opDepth;
         public long notPresentOpDepth;
 
@@ -1104,7 +1109,7 @@ public class SVNWCDb implements ISVNWCDb {
             } finally {
                 stmt.reset();
             }
-            
+
             if (kind == SVNWCDbKind.Dir && children != null) {
                 insertIncompleteChildren(db, wcId, localRelpath, -1, null, originalRevision, children, opDepth);
             }
@@ -1124,7 +1129,7 @@ public class SVNWCDb implements ISVNWCDb {
 
                 setActualProperties(db, wcId, localRelpath, newActualProps);
             }
-            
+
             // update changelists
             if (kind == SVNWCDbKind.Dir) {
                 stmt = db.getStatement(SVNWCDbStatements.UPDATE_ACTUAL_CLEAR_CHANGELIST);
@@ -1142,7 +1147,7 @@ public class SVNWCDb implements ISVNWCDb {
                     stmt.reset();
                 }
             }
-            
+
             if (notPresentOpDepth > 0 && notPresentOpDepth < opDepth) {
                 stmt = db.getStatement(SVNWCDbStatements.INSERT_NODE);
                 try {
@@ -1226,7 +1231,7 @@ public class SVNWCDb implements ISVNWCDb {
 //            }
 //        }
     }
-    
+
     public void extendParentDelete(SVNSqlJetDb db, long wcId, File localRelPath, SVNNodeKind kind, int opDepth) throws SVNException {
         long parentOpDepth = 0;
         SVNSqlJetStatement stmt;
@@ -1308,7 +1313,7 @@ public class SVNWCDb implements ISVNWCDb {
         ibb.conflict = conflict;
         ibb.workItems = workItems;
         ibb.iprops = iprops;
-        
+
         if (updateActualProps) {
             ibb.updateActualProps = true;
             ibb.actualProps = actualProps;
@@ -1320,7 +1325,7 @@ public class SVNWCDb implements ISVNWCDb {
         ibb.localRelpath = localRelpath;
         ibb.wcId = pdh.getWCRoot().getWcId();
         ibb.wcRoot = pdh.getWCRoot();
-        
+
         pdh.getWCRoot().getSDb().runTransaction(ibb);
         pdh.flushEntries(localAbspath);
     }
@@ -1360,7 +1365,7 @@ public class SVNWCDb implements ISVNWCDb {
         ibb.davCache = davCache;
         ibb.conflict = conflict;
         ibb.workItems = workItems;
-        
+
         if (updateActualProps) {
             ibb.updateActualProps = true;
             ibb.actualProps = acutalProps;
@@ -1376,17 +1381,17 @@ public class SVNWCDb implements ISVNWCDb {
     public void addLock(File localAbsPath, SVNWCDbLock lock) throws SVNException {
     	assert (isAbsolute(localAbsPath));
     	assert (lock != null);
-    	
+
         final DirParsedInfo dir = parseDir(localAbsPath, Mode.ReadOnly);
         final SVNWCDbDir pdh = dir.wcDbDir;
-        
+
         verifyDirUsable(pdh);
-        
+
         InsertLock ilb = new InsertLock();
         ilb.localAbsPath = localAbsPath;
         ilb.lock = lock;
         pdh.getWCRoot().getSDb().runTransaction(ilb);
-    	
+
     	pdh.flushEntries(localAbsPath);
     }
 
@@ -1479,7 +1484,7 @@ public class SVNWCDb implements ISVNWCDb {
             stmt.reset();
         }
     }
-    
+
     public void clearDavCacheRecursive(File localAbsPath) throws SVNException {
     	assert (isAbsolute(localAbsPath));
         final DirParsedInfo parsed = parseDir(localAbsPath, Mode.ReadWrite);
@@ -1502,10 +1507,10 @@ public class SVNWCDb implements ISVNWCDb {
         final File localRelPath = dir.localRelPath;
 
         verifyDirUsable(pdh);
-        
+
         return getBaseInfo(dir.wcDbDir.getWCRoot(), localRelPath, fields);
     }
-    
+
     public WCDbBaseInfo getBaseInfo(SVNWCDbRoot root, File localRelPath, BaseInfoField... fields) throws SVNException {
 
         final EnumSet<BaseInfoField> f = getInfoFields(BaseInfoField.class, fields);
@@ -1549,7 +1554,7 @@ public class SVNWCDb implements ISVNWCDb {
                     }
                 }
                 info.reposId = getColumnInt64(stmt, NODES__Fields.repos_id);
-                
+
                 if (f.contains(BaseInfoField.reposRootUrl) || f.contains(BaseInfoField.reposUuid)) {
                     /* Fetch repository information via REPOS_ID. */
                     if (isColumnNull(stmt, SVNWCDbSchema.NODES__Fields.repos_id)) {
@@ -1774,7 +1779,7 @@ public class SVNWCDb implements ISVNWCDb {
         public void transaction(SVNSqlJetDb db) throws SqlJetException, SVNException {
             try {
                 db.beginTransaction(SqlJetTransactionMode.WRITE);
-                
+
                 final ISqlJetTable table = db.getDb().getTable(SVNWCDbSchema.NODES.name());
                 ISqlJetCursor c = table.lookup(null, wcRoot.getWcId(), SVNFileUtil.getFilePath(localRelpath));
                 c = c.reverse();
@@ -1792,7 +1797,7 @@ public class SVNWCDb implements ISVNWCDb {
             } catch (SVNException e) {
                 db.rollback();
                 throw e;
-            }  
+            }
         }
     }
 
@@ -1802,7 +1807,7 @@ public class SVNWCDb implements ISVNWCDb {
         final DirParsedInfo parsed = parseDir(wriAbspath, Mode.ReadWrite);
         SVNWCDbDir pdh = parsed.wcDbDir;
         verifyDirUsable(pdh);
-        
+
         SvnWcDbPristines.installPristine(pdh.getWCRoot(), tempfileAbspath, sha1Checksum, md5Checksum);
     }
 
@@ -1920,51 +1925,51 @@ public class SVNWCDb implements ISVNWCDb {
 
         do { //workaround to emulate "goto"
             if (foundRoot == null) {
-                while (true) {    
+                while (true) {
                     try {
-                        sDb = openDb(localAbspath, SDB_FILE, sMode, journalMode);
+                        sDb = openDb(localAbspath, SDB_FILE, sMode, journalMode, temporaryDbInMemory);
                         break;
                     } catch (SVNException e) {
                         if (e.getErrorMessage().getErrorCode() != SVNErrorCode.SQLITE_ERROR && !e.isEnoent()) {
                             throw e;
                         }
                     }
-        
+
                     if (!movedUpwards || alwaysCheck || isDetectWCGeneration) {
                         wc_format = getOldVersion(localAbspath);
-                        if (wc_format != 0) { 
+                        if (wc_format != 0) {
                             break;
                         }
                     }
-        
+
                     if (SVNFileUtil.getParentFile(localAbspath) == null) { //if is root
                         if (isSymlink && !isAdditionMode) { //if we add a symlink, we never follow it
                             localAbspath = originalAbspath;
                             SVNNodeKind resolvedKind = SVNFileType.getNodeKind(SVNFileType.getType(SVNFileUtil.resolveSymlink(localAbspath)));
-        
+
                             if (resolvedKind == SVNNodeKind.DIR) {
                                 foundRoot = dirData.get(localAbspath.getAbsolutePath());
                                 if (foundRoot != null) {
                                     break;
                                 }
-        
+
                                 kind = SVNNodeKind.DIR;
                                 isSymlink = false;
                                 movedUpwards = false;
                                 localDirAbspath = localAbspath;
                                 buildRelPath = "";
-        
+
                                 continue;
                             }
                         }
-        
+
                         SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.WC_NOT_WORKING_COPY, "''{0}'' is not a working copy", originalAbspath);
                         SVNErrorManager.error(err, SVNLogType.WC);
                     }
-        
+
                     localAbspath = SVNFileUtil.getParentFile(localAbspath);
                     movedUpwards = true;
-        
+
                     foundRoot = dirData.get(localAbspath.getAbsolutePath());
                     if (foundRoot != null) {
                         break;
@@ -1976,7 +1981,7 @@ public class SVNWCDb implements ISVNWCDb {
                 info.wcDbDir = foundRoot;
             } else if (wc_format == 0) {
                 long wcId = UNKNOWN_WC_ID;
-    
+
                 try {
                     wcId = fetchWCId(sDb);
                 } catch (SVNException e) {
@@ -1985,15 +1990,15 @@ public class SVNWCDb implements ISVNWCDb {
                         SVNErrorManager.error(err, SVNLogType.WC);
                     }
                 }
-    
+
                 info.wcDbDir = new SVNWCDbDir(localAbspath);
                 final boolean allowWc17Access = isWC17AccessEnabled() || isDetectWCGeneration;
                 info.wcDbDir.setWCRoot(new SVNWCDbRoot(this, localAbspath, sDb, wcId, FORMAT_FROM_SDB, autoUpgrade, !allowWc17Access, enforceEmptyWQ));
-    
+
             } else {
                 info.wcDbDir = new SVNWCDbDir(localAbspath);
                 info.wcDbDir.setWCRoot(new SVNWCDbRoot(this, localAbspath, null, UNKNOWN_WC_ID, wc_format, autoUpgrade, false, enforceEmptyWQ));
-    
+
                 isOldFormat = true;
             }
 
@@ -2001,7 +2006,7 @@ public class SVNWCDb implements ISVNWCDb {
             info.localRelPath = SVNFileUtil.createFilePath(dirRelPath, buildRelPath);
 
             if (isSymlink && !isAdditionMode) {
-    
+
                 SVNWCDbStatus status;
                 boolean conflicted;
                 boolean retryIfDir = false;
@@ -2035,16 +2040,16 @@ public class SVNWCDb implements ISVNWCDb {
                                 e.getErrorMessage().getErrorCode() != SVNErrorCode.WC_NOT_WORKING_COPY) {
                             throw e;
                         }
-    
+
                         retryIfDir = true;
                     }
                 }
-    
+
                 if (retryIfDir) {
                     SVNNodeKind resolvedKind = SVNFileType.getNodeKind(SVNFileType.getType(SVNFileUtil.resolveSymlink(localAbspath)));
                     if (resolvedKind == SVNNodeKind.DIR) {
                         localAbspath = originalAbspath;
-    
+
                         //goto emulation using do{}while() + continue
                         kind = SVNNodeKind.DIR;
                         isSymlink = false;
@@ -2053,7 +2058,7 @@ public class SVNWCDb implements ISVNWCDb {
                         buildRelPath = "";
                         foundRoot = null;
                         wc_format = 0; //reset wc_format
-    
+
                         continue;
                     }
                 }
@@ -2065,7 +2070,7 @@ public class SVNWCDb implements ISVNWCDb {
             SVNWCDbDir wcDbDir = new SVNWCDbDir(localDirAbspath);
             wcDbDir.setWCRoot(info.wcDbDir.getWCRoot());
             dirData.put(wcDbDir.getLocalAbsPath().getAbsolutePath(), wcDbDir);
-    
+
             if (!movedUpwards) {
                 return info;
             }
@@ -2075,15 +2080,15 @@ public class SVNWCDb implements ISVNWCDb {
             do {
                 File parentDir = SVNFileUtil.getParentFile(scanAbspath);
                 SVNWCDbDir parentRoot;
-    
+
                 parentRoot = dirData.get(parentDir.getAbsolutePath());
-    
+
                 if (parentRoot == null) {
                     SVNWCDbDir parentWcDbDir = new SVNWCDbDir(parentDir);
                     parentWcDbDir.setWCRoot(info.wcDbDir.getWCRoot());
                     dirData.put(parentWcDbDir.getLocalAbsPath().getAbsolutePath(), parentWcDbDir);
                 }
-    
+
                 scanAbspath = parentDir;
             } while (!localAbspath.equals(scanAbspath));
         }
@@ -2200,7 +2205,7 @@ public class SVNWCDb implements ISVNWCDb {
                 File lockedPath = getColumnPath(stmt, WC_LOCK__Fields.local_dir_relpath);
                 if (SVNWCUtils.isAncestor(lockedPath, localRelpath)) {
                     long locked_levels = getColumnInt64(stmt, WC_LOCK__Fields.locked_levels);
-                    int lockedPathDepth = SVNWCUtils.relpathDepth(lockedPath); 
+                    int lockedPathDepth = SVNWCUtils.relpathDepth(lockedPath);
                     return (locked_levels == -1 || locked_levels + lockedPathDepth >= pathDepth);
                 }
             }
@@ -2209,13 +2214,13 @@ public class SVNWCDb implements ISVNWCDb {
         }
         return false;
     }
-    
+
     public SVNSqlJetDb getSDb(File localAbsPath) throws SVNException {
         DirParsedInfo parseDir = parseDir(localAbsPath, Mode.ReadWrite);
         SVNWCDbDir pdh = parseDir.wcDbDir;
         verifyDirUsable(pdh);
-        
-        return pdh.getWCRoot().getSDb();        
+
+        return pdh.getWCRoot().getSDb();
     }
 
     public void opAddDirectory(File localAbsPath, SVNProperties props, SVNSkel workItems) throws SVNException {
@@ -2312,7 +2317,7 @@ public class SVNWCDb implements ISVNWCDb {
         verifyDirUsable(dstPdh);
 
         File dstOpRootRelPath = SVNFileUtil.skipAncestor(dstPdh.getWCRoot().getAbsPath(), dstOpRootAbsPath);
-        
+
         SvnWcDbCopy.copy(srcPdh, localSrcRelpath, dstPdh, localDstRelpath, dstOpRootRelPath, isMove, workItems);
     }
 
@@ -2326,7 +2331,7 @@ public class SVNWCDb implements ISVNWCDb {
         SVNWCDbDir dstPdh = parseDstDir.wcDbDir;
         File localDstRelpath = parseDstDir.localRelPath;
         verifyDirUsable(dstPdh);
-        
+
         SvnWcDbCopy.copyShadowedLayer(srcPdh, localSrcRelpath, dstPdh, localDstRelpath, isMove);
     }
 
@@ -2337,8 +2342,8 @@ public class SVNWCDb implements ISVNWCDb {
         final File localRelpath = parsed.localRelPath;
         verifyDirUsable(pdh);
 
-        SvnWcDbCopy.copyDir(pdh, localRelpath, 
-                props, changedRev, changedDate, changedAuthor, originalReposRelPath, originalRootUrl, 
+        SvnWcDbCopy.copyDir(pdh, localRelpath,
+                props, changedRev, changedDate, changedAuthor, originalReposRelPath, originalRootUrl,
                 originalUuid, originalRevision, children, isMove, depth, conflict, workItems);
     }
 
@@ -2349,8 +2354,8 @@ public class SVNWCDb implements ISVNWCDb {
         final File localRelpath = parsed.localRelPath;
         verifyDirUsable(pdh);
 
-        SvnWcDbCopy.copyFile(pdh, localRelpath, 
-                props, changedRev, changedDate, changedAuthor, originalReposRelPath, originalRootUrl, 
+        SvnWcDbCopy.copyFile(pdh, localRelpath,
+                props, changedRev, changedDate, changedAuthor, originalReposRelPath, originalRootUrl,
                 originalUuid, originalRevision, checksum, updateActualProps, newActualProps, conflict, workItems);
     }
 
@@ -2373,7 +2378,7 @@ public class SVNWCDb implements ISVNWCDb {
         } else {
             movedToRelPath = null;
         }
-        
+
         Delete deleteTxn = new Delete();
         deleteTxn.root = pdh.getWCRoot();
         deleteTxn.localRelPath = localRelpath;
@@ -2383,7 +2388,7 @@ public class SVNWCDb implements ISVNWCDb {
         deleteTxn.deleteDirExternals = deleteDirExternals;
         deleteTxn.conflict = conflict;
         deleteTxn.workItems = workItems;
-        
+
         pdh.flushEntries(localAbsPath);
         pdh.getWCRoot().getSDb().beginTransaction(SqlJetTransactionMode.WRITE);
         try {
@@ -2756,11 +2761,11 @@ public class SVNWCDb implements ISVNWCDb {
                         tcKind = SVNNodeKind.FILE;
                     }
                     final SVNTreeConflictDescription treeConflict = new SVNTreeConflictDescription(
-                            childAbsPath, tcKind, 
-                            treeConflictInfo.<SVNConflictAction>get(TreeConflictInfo.incomingChange), 
-                            treeConflictInfo.<SVNConflictReason>get(TreeConflictInfo.localChange), 
-                            conflictInfo.<SVNOperation>get(ConflictInfo.conflictOperation), 
-                            leftVersion, 
+                            childAbsPath, tcKind,
+                            treeConflictInfo.<SVNConflictAction>get(TreeConflictInfo.incomingChange),
+                            treeConflictInfo.<SVNConflictReason>get(TreeConflictInfo.localChange),
+                            conflictInfo.<SVNOperation>get(ConflictInfo.conflictOperation),
+                            leftVersion,
                             rightVersion);
                     treeConflicts.put(childBaseName, treeConflict);
                 }
@@ -2848,14 +2853,14 @@ public class SVNWCDb implements ISVNWCDb {
         }
     }
 
-    public void opRevert(File localAbspath, SVNDepth depth) throws SVNException {        
+    public void opRevert(File localAbspath, SVNDepth depth) throws SVNException {
         final DirParsedInfo parsed = parseDir(localAbspath, Mode.ReadWrite);
         SVNWCDbDir pdh = parsed.wcDbDir;
         verifyDirUsable(pdh);
-        
+
         SVNSqlJetDb sdb = pdh.getWCRoot().getSDb();
         sdb.beginTransaction(SqlJetTransactionMode.WRITE);
-            
+
         try {
             SVNSqlJetStatement stmt = new SVNWCDbCreateSchema(sdb.getTemporaryDb(), SVNWCDbCreateSchema.REVERT_LIST, -1, false);
             try {
@@ -2883,13 +2888,13 @@ public class SVNWCDb implements ISVNWCDb {
         DirParsedInfo parsed = parseDir(localAbspath, Mode.ReadWrite);
         SVNWCDbDir pdh = parsed.wcDbDir;
         verifyDirUsable(pdh);
-                
+
         pdh.flushEntries(localAbspath);
-        
+
         SvnWcDbChangelist.setChangelist(pdh.getWCRoot(), parsed.localRelPath, changelistName, changeLists, depth, eventHandler);
     }
-    
-    
+
+
     public void opSetProps(File localAbsPath, SVNProperties props, SVNSkel conflict, boolean clearRecordedInfo, SVNSkel workItems) throws SVNException {
         assert (SVNFileUtil.isAbsolute(localAbsPath));
         final DirParsedInfo parsed = parseDir(localAbsPath, Mode.ReadWrite);
@@ -2902,7 +2907,7 @@ public class SVNWCDb implements ISVNWCDb {
         spb.workItems = workItems;
         spb.localRelpath = parsed.localRelPath;
         spb.clearRecordedInfo = clearRecordedInfo;
-        
+
         pdh.getWCRoot().getSDb().runTransaction(spb);
     }
 
@@ -3045,40 +3050,40 @@ public class SVNWCDb implements ISVNWCDb {
 
         return names;
     }
-    
+
     public void readChildren(File localAbsPath, Map<String, SVNWCDbInfo> children, Set<String> conflicts) throws SVNException {
         final DirParsedInfo parsed = parseDir(localAbsPath, Mode.ReadOnly);
         SVNWCDbDir pdh = parsed.wcDbDir;
         File localRelPath = parsed.localRelPath;
-        
+
         verifyDirUsable(pdh);
-        
+
         readChildren(pdh.getWCRoot(), localRelPath, children, conflicts);
-        
+
     }
 
     public void readChildren(SVNWCDbRoot root, File localRelPath, Map<String, SVNWCDbInfo> children, Set<String> conflicts) throws SVNException {
         GatherChildren gather = new GatherChildren();
         gather.dirRelPath = localRelPath;
         gather.wcRoot = root;
-        
+
         gather.nodes = children;
         gather.conflicts = conflicts;
-        
+
         root.getSDb().runTransaction(gather, SqlJetTransactionMode.READ_ONLY);
     }
-    
+
     private class GatherChildren implements SVNSqlJetTransaction {
-        
+
         Map<String, SVNWCDbInfo> nodes;
         Set<String> conflicts;
-        
+
         File dirRelPath;
         SVNWCDbRoot wcRoot;
-        
+
         public void transaction(SVNSqlJetDb db) throws SqlJetException, SVNException {
             WCDbRepositoryInfo reposInfo = new WCDbRepositoryInfo();
-            
+
             SVNSqlJetStatement stmt = db.getStatement(SVNWCDbStatements.SELECT_NODE_CHILDREN_INFO);
             try {
                 stmt.bindf("is", wcRoot.getWcId(), dirRelPath);
@@ -3216,14 +3221,14 @@ public class SVNWCDb implements ISVNWCDb {
                 stmt.reset();
             }
         }
-        
+
     }
-    
+
     private static class GatheredChildItem extends SVNWCDbInfo {
         public int layersCount;
         public long opDepth;
     }
-    
+
     private Set<String> gatherChildren(File localAbsPath, boolean baseOnly, boolean workOnly) throws SVNException {
         final DirParsedInfo wcInfo = obtainWcRoot(localAbsPath);
         final File localRelPath = wcInfo.localRelPath;
@@ -3266,27 +3271,27 @@ public class SVNWCDb implements ISVNWCDb {
             while(baseStmt.next()) {
                 WCDbBaseInfo child = new WCDbBaseInfo();
                 row = baseStmt.getRowValues2(row);
-                
-                child.updateRoot = row.get(SVNWCDbSchema.NODES__Fields.file_external.toString()) != null; 
+
+                child.updateRoot = row.get(SVNWCDbSchema.NODES__Fields.file_external.toString()) != null;
                 child.status = SvnWcDbStatementUtil.parsePresence((String) row.get(SVNWCDbSchema.NODES__Fields.presence.toString()));
                 child.revision = (Long) row.get(SVNWCDbSchema.NODES__Fields.revision.toString()) ;
                 final String path = (String) row.get(SVNWCDbSchema.NODES__Fields.repos_path.toString());
-                child.reposRelPath = path != null ? new File(path) : null; 
+                child.reposRelPath = path != null ? new File(path) : null;
                 child.depth = SvnWcDbStatementUtil.parseDepth((String) row.get(SVNWCDbSchema.NODES__Fields.depth.toString()));
                 child.kind = SvnWcDbStatementUtil.parseKind((String) row.get(SVNWCDbSchema.NODES__Fields.kind.toString()));
-                
+
                 if (fetchLocks) {
                     final SVNSqlJetStatement lockStmt = fetchLocks ? sDb.getStatement(SVNWCDbStatements.SELECT_LOCK) : null;
                     try {
                         child.lock = null;
-                        lockStmt.bindf("is", 
+                        lockStmt.bindf("is",
                                 row.get(SVNWCDbSchema.NODES__Fields.repos_id.toString()),
                                 row.get(SVNWCDbSchema.NODES__Fields.repos_path.toString()));
                         if (lockStmt.next()) {
-                            child.lock = SvnWcDbStatementUtil.getLockFromColumns(lockStmt, 
-                                    SVNWCDbSchema.LOCK__Fields.lock_token, 
-                                    SVNWCDbSchema.LOCK__Fields.lock_owner, 
-                                    SVNWCDbSchema.LOCK__Fields.lock_comment, 
+                            child.lock = SvnWcDbStatementUtil.getLockFromColumns(lockStmt,
+                                    SVNWCDbSchema.LOCK__Fields.lock_token,
+                                    SVNWCDbSchema.LOCK__Fields.lock_owner,
+                                    SVNWCDbSchema.LOCK__Fields.lock_comment,
                                     SVNWCDbSchema.LOCK__Fields.lock_date);
                         }
                     } finally {
@@ -3357,16 +3362,16 @@ public class SVNWCDb implements ISVNWCDb {
         final List<SVNWCConflictDescription17> conflicts = readConflicts(localAbsPath, false);
         final List<SVNConflictDescription> translated = new ArrayList<SVNConflictDescription>();
         for(SVNWCConflictDescription17 description : conflicts) {
-            
-            final SVNMergeFileSet mergeFiles = new SVNMergeFileSet(null, null, 
-                    description.getBaseFile(), 
-                    description.getMyFile(), 
-                    localAbsPath.getAbsolutePath(), 
-                    description.getTheirFile(), 
-                    description.getMergedFile(), 
-                    null, 
+
+            final SVNMergeFileSet mergeFiles = new SVNMergeFileSet(null, null,
+                    description.getBaseFile(),
+                    description.getMyFile(),
+                    localAbsPath.getAbsolutePath(),
+                    description.getTheirFile(),
+                    description.getMergedFile(),
+                    null,
                     description.getMimeType());
-            
+
             if (description.getKind() == ConflictKind.PROPERTY) {
                 translated.add(new SVNPropertyConflictDescription(mergeFiles, description.getNodeKind(), description.getPropertyName(), description.getAction(), description.getReason()));
             } else if (description.getKind() == ConflictKind.TREE) {
@@ -3526,7 +3531,7 @@ public class SVNWCDb implements ISVNWCDb {
         final DirParsedInfo wcInfo = obtainWcRoot(localAbsPath);
         final File localRelPath = wcInfo.localRelPath;
         final SVNSqlJetDb sDb = wcInfo.wcDbDir.getWCRoot().getSDb();
-        
+
         final WCDbInfo info = readInfo(wcInfo.wcDbDir.getWCRoot(), localRelPath, fields);
 
         final EnumSet<InfoField> f = getInfoFields(InfoField.class, fields);
@@ -3593,10 +3598,10 @@ public class SVNWCDb implements ISVNWCDb {
         }
         return info;
     }
-    
+
     public long readOpDepth(SVNWCDbRoot root, File localRelPath) throws SVNException {
         SVNSqlJetStatement stmt = null;
-        try { 
+        try {
             stmt = root.getSDb().getStatement(SVNWCDbStatements.SELECT_NODE_INFO);
             stmt.bindf("is", root.getWcId(), localRelPath);
             if (stmt.next()) {
@@ -3606,28 +3611,28 @@ public class SVNWCDb implements ISVNWCDb {
             try {
                 if (stmt != null) {
                     stmt.reset();
-                } 
-            } catch (SVNException e) {} 
+                }
+            } catch (SVNException e) {}
         }
         return 0;
     }
-    
+
     public WCDbInfo readInfoBelowWorking(File localAbsPath) throws SVNException {
         final DirParsedInfo wcInfo = obtainWcRoot(localAbsPath);
         final File localRelPath = wcInfo.localRelPath;
         return readInfoBelowWorking(wcInfo.wcDbDir.getWCRoot(), localRelPath, -1);
     }
-    
+
     public WCDbInfo readInfoBelowWorking(SVNWCDbRoot wcRoot, File localRelPath, int belowOpDepth) throws SVNException {
 
         WCDbInfo info = new WCDbInfo();
         SVNSqlJetStatement stmt = null;
         boolean haveRow;
-        try { 
+        try {
             stmt = wcRoot.getSDb().getStatement(SVNWCDbStatements.SELECT_NODE_INFO);
             stmt.bindf("is", wcRoot.getWcId(), localRelPath);
             haveRow = stmt.next();
-            
+
             if (belowOpDepth >= 0) {
                 while(haveRow && getColumnInt64(stmt, SVNWCDbSchema.NODES__Fields.op_depth) > belowOpDepth) {
                     haveRow = stmt.next();
@@ -3640,7 +3645,7 @@ public class SVNWCDb implements ISVNWCDb {
                 }
                 while (haveRow) {
                     if (getColumnInt64(stmt, SVNWCDbSchema.NODES__Fields.op_depth) > 0) {
-                        info.haveWork = true; 
+                        info.haveWork = true;
                     } else {
                         info.haveBase = true;
                     }
@@ -3651,15 +3656,15 @@ public class SVNWCDb implements ISVNWCDb {
             try {
                 if (stmt != null) {
                     stmt.reset();
-                } 
-            } catch (SVNException e) {} 
+                }
+            } catch (SVNException e) {}
         }
         if (info.haveWork) {
-            info.status = getWorkingStatus(info.status); 
+            info.status = getWorkingStatus(info.status);
         }
         return info;
     }
-    
+
     public WCDbInfo readInfo(SVNWCDbRoot wcRoot, File localRelPath, InfoField... fields) throws SVNException {
 
         WCDbInfo info = new WCDbInfo();
@@ -3667,19 +3672,19 @@ public class SVNWCDb implements ISVNWCDb {
         final EnumSet<InfoField> f = getInfoFields(InfoField.class, fields);
         SVNSqlJetStatement stmtInfo = null;
         SVNSqlJetStatement stmtActual = null;
-        
+
         try {
             stmtInfo = wcRoot.getSDb().getStatement(f.contains(InfoField.lock) ? SVNWCDbStatements.SELECT_NODE_INFO_WITH_LOCK : SVNWCDbStatements.SELECT_NODE_INFO);
             stmtInfo.bindf("is", wcRoot.getWcId(), localRelPath);
             boolean haveInfo = stmtInfo.next();
             boolean haveActual = false;
-            
+
             if (f.contains(InfoField.changelist) || f.contains(InfoField.conflicted) || f.contains(InfoField.propsMod)) {
                 stmtActual = wcRoot.getSDb().getStatement(SVNWCDbStatements.SELECT_ACTUAL_NODE);
                 stmtActual.bindf("is", wcRoot.getWcId(), localRelPath);
                 haveActual = stmtActual.next();
             }
-            
+
             if (haveInfo) {
                 long opDepth = getColumnInt64(stmtInfo, SVNWCDbSchema.NODES__Fields.op_depth);
                 SVNWCDbKind nodeKind = getColumnKind(stmtInfo, NODES__Fields.kind);
@@ -3706,7 +3711,7 @@ public class SVNWCDb implements ISVNWCDb {
                     info.changedRev = getColumnRevNum(stmtInfo, SVNWCDbSchema.NODES__Fields.changed_revision);
                 }
                 if (f.contains(InfoField.changedAuthor)) {
-                    info.changedAuthor = getColumnText(stmtInfo, SVNWCDbSchema.NODES__Fields.changed_author);                
+                    info.changedAuthor = getColumnText(stmtInfo, SVNWCDbSchema.NODES__Fields.changed_author);
                 }
                 if (f.contains(InfoField.lastModTime)) {
                     info.lastModTime = getColumnInt64(stmtInfo, SVNWCDbSchema.NODES__Fields.last_mod_time);
@@ -3728,7 +3733,7 @@ public class SVNWCDb implements ISVNWCDb {
                             SVNErrorMessage err = SVNErrorMessage.create(e.getErrorMessage().getErrorCode(), "The node ''{0}'' has a corrupt checksum value.", wcRoot.getAbsPath(localRelPath));
                             SVNErrorManager.error(err, SVNLogType.WC);
                         }
-                    }                
+                    }
                 }
                 if (f.contains(InfoField.translatedSize)) {
                     info.translatedSize = getTranslatedSize(stmtInfo, SVNWCDbSchema.NODES__Fields.translated_size);
@@ -3751,10 +3756,10 @@ public class SVNWCDb implements ISVNWCDb {
                 }
                 if (f.contains(InfoField.hadProps)) {
                     byte[] props = getColumnBlob(stmtInfo, SVNWCDbSchema.NODES__Fields.properties);
-                    info.hadProps = props != null && props.length > 2; 
+                    info.hadProps = props != null && props.length > 2;
                 }
                 if (f.contains(InfoField.conflicted) && haveActual) {
-                    info.conflicted = 
+                    info.conflicted =
                         !isColumnNull(stmtActual, SVNWCDbSchema.ACTUAL_NODE__Fields.conflict_data) || /* data */
                         !isColumnNull(stmtActual, SVNWCDbSchema.ACTUAL_NODE__Fields.conflict_old) || /* old */
                         !isColumnNull(stmtActual, SVNWCDbSchema.ACTUAL_NODE__Fields.conflict_new) || /* new */
@@ -3789,7 +3794,7 @@ public class SVNWCDb implements ISVNWCDb {
                 }
                 if (f.contains(InfoField.movedTo)) {
                     final File relativePath = getColumnPath(stmtInfo, NODES__Fields.moved_to);
-                    if (relativePath != null) {                        
+                    if (relativePath != null) {
                         info.movedToAbsPath = SVNFileUtil.createFilePath(wcRoot.getAbsPath(), relativePath);
                     }
                 }
@@ -3822,8 +3827,8 @@ public class SVNWCDb implements ISVNWCDb {
                         isColumnNull(stmtActual, SVNWCDbSchema.ACTUAL_NODE__Fields.conflict_working)) {
                     SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.WC_CORRUPT, "Corrupt data for ''{0}''", wcRoot.getAbsPath(localRelPath));
                     SVNErrorManager.error(err, SVNLogType.WC);
-                }    
-                assert (f.contains(InfoField.conflicted));    
+                }
+                assert (f.contains(InfoField.conflicted));
                 if (f.contains(InfoField.status)) {
                     info.status = SVNWCDbStatus.Normal;
                 }
@@ -3859,28 +3864,28 @@ public class SVNWCDb implements ISVNWCDb {
                 SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.WC_PATH_NOT_FOUND, "The node ''{0}'' was not found.", wcRoot.getAbsPath(localRelPath));
                 SVNErrorManager.error(err, SVNLogType.WC);
             }
-        } finally {            
+        } finally {
             try {
                 if (stmtInfo != null) {
                     stmtInfo.reset();
                 }
-            } catch (SVNException e) {} 
+            } catch (SVNException e) {}
             try {
                 if (stmtActual != null) {
                     stmtActual.reset();
                 }
-            } catch (SVNException e) {} 
+            } catch (SVNException e) {}
         }
 
         return info;
     }
-    
+
     public static SVNWCDbStatus getWorkingStatus(SVNWCDbStatus status) {
         if (status == SVNWCDbStatus.Excluded) {
             return status;
         } else if (status == SVNWCDbStatus.NotPresent || status == SVNWCDbStatus.BaseDeleted) {
             return SVNWCDbStatus.Deleted;
-        } 
+        }
         return SVNWCDbStatus.Added;
     }
 
@@ -4009,7 +4014,7 @@ public class SVNWCDb implements ISVNWCDb {
         verifyDirUsable(pdh);
         return SvnWcDbProperties.readPristineProperties(pdh.getWCRoot(), localRelPath);
     }
-    
+
     public void readPropertiesRecursively(File localAbsPath, SVNDepth depth, boolean baseProperties, boolean pristineProperties, Collection<String> changelists,
             ISvnObjectReceiver<SVNProperties> receiver) throws SVNException {
         assert (isAbsolute(localAbsPath));
@@ -4018,8 +4023,8 @@ public class SVNWCDb implements ISVNWCDb {
         SVNWCDbDir pdh = parseDir.wcDbDir;
         File localRelPath = parseDir.localRelPath;
         verifyDirUsable(pdh);
-        
-        SvnWcDbProperties.readPropertiesRecursively(pdh.getWCRoot(), localRelPath, depth, baseProperties, pristineProperties, changelists, receiver);        
+
+        SvnWcDbProperties.readPropertiesRecursively(pdh.getWCRoot(), localRelPath, depth, baseProperties, pristineProperties, changelists, receiver);
     }
 
     public SVNProperties readProperties(File localAbsPath) throws SVNException {
@@ -4028,7 +4033,7 @@ public class SVNWCDb implements ISVNWCDb {
         SVNWCDbDir pdh = parseDir.wcDbDir;
         File localRelPath = parseDir.localRelPath;
         verifyDirUsable(pdh);
-        
+
         try {
             begingReadTransaction(pdh.getWCRoot());
             return SvnWcDbProperties.readProperties(pdh.getWCRoot(), localRelPath);
@@ -4322,7 +4327,7 @@ public class SVNWCDb implements ISVNWCDb {
         DirParsedInfo parseDir = parseDir(wcRootAbsPath, Mode.ReadWrite);
         SVNWCDbDir pdh = parseDir.wcDbDir;
         verifyDirUsable(pdh);
-        
+
         SvnWcDbPristines.removePristine(pdh.getWCRoot(), checksum);
     }
 
@@ -4757,10 +4762,10 @@ public class SVNWCDb implements ISVNWCDb {
         final DirParsedInfo parsed = parseDir(localAbsPath, Mode.ReadOnly);
         SVNWCDbDir pdh = parsed.wcDbDir;
         verifyDirUsable(pdh);
-        
+
         SvnWcDbPristines.cleanupPristine(pdh.getWCRoot(), localAbsPath);
     }
-    
+
     private long fetchWCId(SVNSqlJetDb sDb) throws SVNException {
         /*
          * ### cheat. we know there is just one WORKING_COPY row, and it has a
@@ -4814,7 +4819,7 @@ public class SVNWCDb implements ISVNWCDb {
         }
         return info;
     }
-    
+
     public Structure<RepositoryInfo> fetchRepositoryInfo(SVNSqlJetDb sDb, long repos_id) throws SVNException {
         Structure<RepositoryInfo> info = Structure.obtain(RepositoryInfo.class);
         if (repos_id == INVALID_REPOS_ID) {
@@ -4839,16 +4844,16 @@ public class SVNWCDb implements ISVNWCDb {
         } finally {
             stmt.reset();
         }
-        
+
         return info;
     }
 
-    private static SVNSqlJetDb openDb(File dirAbsPath, String sdbFileName, Mode sMode, SqlJetPagerJournalMode journalMode) throws SVNException {
+    private static SVNSqlJetDb openDb(File dirAbsPath, String sdbFileName, Mode sMode, SqlJetPagerJournalMode journalMode, boolean temporaryDbInMemory) throws SVNException {
         if (dirAbsPath == null || sdbFileName == null) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_NOT_FOUND);
             SVNErrorManager.error(err, SVNLogType.WC);
         }
-        return SVNSqlJetDb.open(SVNWCUtils.admChild(dirAbsPath, sdbFileName), sMode, journalMode);
+        return SVNSqlJetDb.open(SVNWCUtils.admChild(dirAbsPath, sdbFileName), sMode, journalMode, temporaryDbInMemory);
     }
 
     protected static void verifyDirUsable(SVNWCDbDir pdh) throws SVNException {
@@ -5040,7 +5045,7 @@ public class SVNWCDb implements ISVNWCDb {
                     stmt.reset();
                 }
             }
-            
+
             final List<String> children = gatherRepoChildren(pdh.getWCRoot(), localRelpath, 0);
             for (String name : children) {
                 MakeCopy cbt = new MakeCopy();
@@ -5052,7 +5057,7 @@ public class SVNWCDb implements ISVNWCDb {
                 cbt.opDepth = opDepth;
                 cbt.transaction(db);
             }
-            
+
             pdh.flushEntries(localAbspath);
 
             if (conflicts != null) {
@@ -5101,7 +5106,7 @@ public class SVNWCDb implements ISVNWCDb {
         DirParsedInfo parsed = parseDir(localAbspath, Mode.ReadWrite);
         SVNWCDbDir pdh = parsed.wcDbDir;
         verifyDirUsable(pdh);
-        
+
         final InsertBase insertBase = new InsertBase();
         insertBase.reposRootURL = reposRootURL;
         insertBase.reposUUID = reposUuid;
@@ -5110,7 +5115,7 @@ public class SVNWCDb implements ISVNWCDb {
         insertBase.reposRelpath = reposRelpath;
         insertBase.revision = revision;
         insertBase.depth = depth;
-        
+
         insertBase.localRelpath = parsed.localRelPath;
         insertBase.wcId = pdh.getWCRoot().getWcId();
         insertBase.wcRoot = pdh.getWCRoot();
@@ -5123,7 +5128,7 @@ public class SVNWCDb implements ISVNWCDb {
         pdh.getWCRoot().getSDb().runTransaction(insertBase);
         pdh.flushEntries(localAbspath);
     }
-    
+
     public void opBumpRevisionPostUpdate(File localAbsPath, SVNDepth depth, File newReposRelPath, SVNURL newReposRootURL, String newReposUUID,
             long newRevision, Collection<File> excludedPaths, Map<File, Map<String, SVNProperties>> inheritableProperties, ISVNEventHandler eventHandler) throws SVNException {
         DirParsedInfo parseDir = parseDir(localAbsPath, Mode.ReadWrite);
@@ -5137,26 +5142,26 @@ public class SVNWCDb implements ISVNWCDb {
             depth = SVNDepth.INFINITY;
         }
         BumpRevisionPostUpdate brb = new BumpRevisionPostUpdate();
-        
+
         brb.depth = depth;
         brb.newReposRelPath = newReposRelPath;
         brb.newReposRootURL = newReposRootURL;
         brb.newReposUUID = newReposUUID;
         brb.newRevision = newRevision;
-        
+
         brb.localRelPath = localRelPath;
         brb.wcRoot = pdh.getWCRoot().getAbsPath();
         brb.exludedRelPaths = excludedPaths;
         brb.dbWcRoot = pdh.getWCRoot();
         brb.iprops = inheritableProperties;
         brb.eventHandler = eventHandler;
-        
+
         pdh.getWCRoot().getSDb().runTransaction(brb);
         pdh.flushEntries(localAbsPath);
     }
-    
+
     private class BumpRevisionPostUpdate implements SVNSqlJetTransaction {
-        
+
         public Map<File, Map<String, SVNProperties>> iprops;
         private SVNDepth depth;
         private File newReposRelPath;
@@ -5164,7 +5169,7 @@ public class SVNWCDb implements ISVNWCDb {
         private String newReposUUID;
         private long newRevision;
         private Collection<File> exludedRelPaths;
-        
+
         private File localRelPath;
         private File wcRoot;
         private SVNWCDbRoot dbWcRoot;
@@ -5174,7 +5179,7 @@ public class SVNWCDb implements ISVNWCDb {
             SVNWCDbStatus status = null;
             WCDbBaseInfo baseInfo = null;
             try {
-                baseInfo = getBaseInfo(dbWcRoot, localRelPath, 
+                baseInfo = getBaseInfo(dbWcRoot, localRelPath,
                         BaseInfoField.status, BaseInfoField.kind, BaseInfoField.reposRelPath, BaseInfoField.updateRoot,
                         BaseInfoField.revision);
                 status = baseInfo.status;
@@ -5192,7 +5197,7 @@ public class SVNWCDb implements ISVNWCDb {
             default:
                 break;
             }
-            
+
             long reposId = INVALID_REPOS_ID;
             if (newReposRootURL != null) {
                 reposId = createReposId(db, newReposRootURL, newReposUUID);
@@ -5363,8 +5368,8 @@ public class SVNWCDb implements ISVNWCDb {
             if (exludedRelPaths != null && exludedRelPaths.contains(localRelPath)) {
                 return;
             }
-            final WCDbBaseInfo baseInfo = getBaseInfo(root, localRelPath, 
-                    BaseInfoField.status, BaseInfoField.kind, BaseInfoField.revision, BaseInfoField.reposId, BaseInfoField.updateRoot, 
+            final WCDbBaseInfo baseInfo = getBaseInfo(root, localRelPath,
+                    BaseInfoField.status, BaseInfoField.kind, BaseInfoField.revision, BaseInfoField.reposId, BaseInfoField.updateRoot,
                     BaseInfoField.reposRelPath);
             if (baseInfo.updateRoot && baseInfo.kind == SVNWCDbKind.File && !isRoot) {
                 return;
@@ -5372,8 +5377,8 @@ public class SVNWCDb implements ISVNWCDb {
             if (skipWhenDir && baseInfo.kind == SVNWCDbKind.Dir) {
                 return;
             }
-            
-            if (!isRoot && (baseInfo.status == SVNWCDbStatus.NotPresent || 
+
+            if (!isRoot && (baseInfo.status == SVNWCDbStatus.NotPresent ||
                     (baseInfo.status == SVNWCDbStatus.ServerExcluded && baseInfo.revision != newRevision))) {
                 removeBase(SVNFileUtil.createFilePath(wcRoot, localRelPath));
                 return;
@@ -5389,9 +5394,9 @@ public class SVNWCDb implements ISVNWCDb {
                 } catch (Throwable th) {
                     th.printStackTrace();
                 }
-                
+
             }
-            
+
             if (depth.compareTo(SVNDepth.EMPTY) <= 0 ||
                     baseInfo.kind != SVNWCDbKind.Dir ||
                     baseInfo.status == SVNWCDbStatus.ServerExcluded ||
@@ -5403,19 +5408,19 @@ public class SVNWCDb implements ISVNWCDb {
             if (depth == SVNDepth.IMMEDIATES || depth == SVNDepth.FILES) {
                 depthBelowHere = SVNDepth.EMPTY;
             }
-            
+
             List<String> children = gatherRepoChildren(root, localRelPath, 0);
             for (String child : children) {
                 File childReposRelPath = null;
-                File childLocalRelPath = SVNFileUtil.createFilePath(localRelPath, child);                
+                File childLocalRelPath = SVNFileUtil.createFilePath(localRelPath, child);
                 if (newReposRelPath != null) {
                     childReposRelPath = SVNFileUtil.createFilePath(newReposRelPath, child);
                 }
-                bumpNodeRevision(root, wcRoot, childLocalRelPath, reposId, childReposRelPath, newRevision, depthBelowHere, exludedRelPaths, false, depth.compareTo(SVNDepth.IMMEDIATES) < 0);               
-            }        
+                bumpNodeRevision(root, wcRoot, childLocalRelPath, reposId, childReposRelPath, newRevision, depthBelowHere, exludedRelPaths, false, depth.compareTo(SVNDepth.IMMEDIATES) < 0);
+            }
         }
     }
-    
+
     public File getWCRootTempDir(File localAbspath) throws SVNException {
         assert (isAbsolute(localAbspath));
         DirParsedInfo parseDir = parseDir(localAbspath, Mode.ReadWrite);
@@ -5551,7 +5556,7 @@ public class SVNWCDb implements ISVNWCDb {
                 stmt.reset();
             }
         }
-        
+
         if (setReposRelpath) {
             final long reposId = createReposId(wcRoot.getSDb(), reposRootUrl, reposUuid);
             stmt = new SVNSqlJetUpdateStatement(wcRoot.getSDb(), SVNWCDbSchema.NODES) {
@@ -5643,7 +5648,7 @@ public class SVNWCDb implements ISVNWCDb {
                     SVNErrorManager.error(err, SVNLogType.WC);
                 }
             }
-            
+
             WCDbWorkQueueInfo wq = fetchWorkQueue(pdh.getWCRoot().getAbsPath());
             if (wq.workItem != null) {
                 SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.WC_LOCKED, "There are unfinished work items in ''{0}''; run ''svn cleanup'' first.", pdh.getWCRoot().getAbsPath());
@@ -5654,7 +5659,7 @@ public class SVNWCDb implements ISVNWCDb {
         baton.levelsToLock = levelsToLock;
         pdh.getWCRoot().getSDb().runTransaction(baton);
     }
-    
+
     private class WCLockObtain implements SVNSqlJetTransaction {
 
         SVNWCDbDir pdh;
@@ -5930,7 +5935,7 @@ public class SVNWCDb implements ISVNWCDb {
         assert (reposUuid != null);
         assert (SVNRevision.isValidRevisionNumber(revision));
         assert (status == SVNWCDbStatus.ServerExcluded || status == SVNWCDbStatus.Excluded || status == SVNWCDbStatus.NotPresent);
-        
+
         DirParsedInfo parseDir = parseDir(SVNFileUtil.getParentFile(localAbspath), Mode.ReadWrite);
         SVNWCDbDir pdh = parseDir.wcDbDir;
         File localRelpath = SVNFileUtil.createFilePath(parseDir.localRelPath, SVNFileUtil.getFileName(localAbspath));
@@ -5949,7 +5954,7 @@ public class SVNWCDb implements ISVNWCDb {
         ibb.workItems = workItems;
         ibb.reposRootURL = reposRootUrl;
         ibb.reposUUID = reposUuid;
-        
+
         ibb.wcId = pdh.getWCRoot().getWcId();
         ibb.wcRoot = pdh.getWCRoot();
         ibb.localRelpath = localRelpath;
@@ -6050,19 +6055,19 @@ public class SVNWCDb implements ISVNWCDb {
             ReposInfo2 reposInfo = determineReposInfo(pdh, localRelpath);
             reposId = reposInfo.reposId;
             reposRelPath = reposInfo.reposRelPath;
-            
+
             SVNSqlJetDb sdb = pdh.getWCRoot().getSDb();
             long wcId = pdh.getWCRoot().getWcId();
-            
+
             try {
                 stmtInfo = sdb.getStatement(SVNWCDbStatements.SELECT_NODE_INFO);
                 stmtInfo.bindf("is", wcId, localRelpath);
                 stmtInfo.next();
-    
+
                 stmtAct = pdh.getWCRoot().getSDb().getStatement(SVNWCDbStatements.SELECT_ACTUAL_NODE);
                 stmtAct.bindf("is", wcId, localRelpath);
                 haveAct = stmtAct.next();
-                
+
                 opDepth = getColumnInt64(stmtInfo, NODES__Fields.op_depth);
                 newKind = getColumnKind(stmtInfo, NODES__Fields.kind);
                 if (newKind == SVNWCDbKind.Dir) {
@@ -6086,7 +6091,7 @@ public class SVNWCDb implements ISVNWCDb {
                     stmtAct.reset();
                 }
             }
-            
+
             if (opDepth > 0) {
                 stmt = sdb.getStatement(SVNWCDbStatements.DELETE_ALL_LAYERS);
                 long affectedRows;
@@ -6199,13 +6204,13 @@ public class SVNWCDb implements ISVNWCDb {
         try {
             stmt.bindf("is", dir.getWCRoot().getWcId(), relativePath);
             if (!stmt.next()) {
-                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.WC_PATH_NOT_FOUND, "The node ''{0}'' was not found.", 
+                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.WC_PATH_NOT_FOUND, "The node ''{0}'' was not found.",
                         localAbspath), SVNLogType.WC);
             }
-            
+
             long opDepth = getColumnInt64(stmt, NODES__Fields.op_depth);
             SVNWCDbStatus status = getColumnPresence(stmt);
-            
+
             if (opDepth > 0 && status == SVNWCDbStatus.BaseDeleted) {
                 boolean hasNext = stmt.next();
                 assert hasNext;
@@ -6217,7 +6222,7 @@ public class SVNWCDb implements ISVNWCDb {
             result.set(PristineInfo.changed_date, SVNWCUtils.readDate(getColumnInt64(stmt, NODES__Fields.changed_date)));
             result.set(PristineInfo.changed_author, getColumnText(stmt, NODES__Fields.changed_author));
             result.set(PristineInfo.changed_rev, getColumnInt64(stmt, NODES__Fields.changed_revision));
-            
+
             if (opDepth > 0) {
                 result.set(PristineInfo.status, getWorkingStatus(status));
             } else {
@@ -6255,7 +6260,7 @@ public class SVNWCDb implements ISVNWCDb {
         } finally {
             stmt.reset();
         }
-            
+
         return result;
     }
 
@@ -6269,10 +6274,10 @@ public class SVNWCDb implements ISVNWCDb {
         final DirParsedInfo parseDir = parseDir(localAbspath, Mode.ReadOnly, false, isAdditionMode);
         SVNWCDbDir pdh = parseDir.wcDbDir;
         verifyDirUsable(pdh);
-        
+
         return parseDir;
     }
-    
+
     public void registerExternal(File definingAbsPath, File localAbsPath, SVNNodeKind kind, SVNURL reposRootUrl, String reposUuid, File reposRelPath, long operationalRevision, long revision) throws SVNException {
         SvnWcDbExternals.addExternalDir(this, localAbsPath, definingAbsPath, reposRootUrl, reposUuid, definingAbsPath, reposRelPath, operationalRevision, revision, null);
     }
@@ -6282,7 +6287,7 @@ public class SVNWCDb implements ISVNWCDb {
         SVNWCDbDir pdh = parseDir.wcDbDir;
         File localRelpath = parseDir.localRelPath;
         verifyDirUsable(pdh);
-        
+
         pdh.getWCRoot().getSDb().beginTransaction(SqlJetTransactionMode.WRITE);
         try {
             long reposId = -1;
@@ -6292,7 +6297,7 @@ public class SVNWCDb implements ISVNWCDb {
                 reposId = baseInfo.reposId;
                 reposRelPath = baseInfo.reposRelPath;
             }
-            
+
             SVNSqlJetStatement stmt = pdh.getWCRoot().getSDb().getStatement(SVNWCDbStatements.DELETE_NODES_RECURSIVE);
             try {
                 stmt.bindf("isi", pdh.getWCRoot().getWcId(), localRelpath , 0);
@@ -6308,7 +6313,7 @@ public class SVNWCDb implements ISVNWCDb {
             } finally {
                 stmt.reset();
             }
-            
+
             if (notPresentRevision >= 0) {
                 InsertBase ib = new InsertBase();
                 ib.reposId = reposId;
@@ -6316,7 +6321,7 @@ public class SVNWCDb implements ISVNWCDb {
                 ib.status = SVNWCDbStatus.NotPresent;
                 ib.kind = notPresentKind;
                 ib.revision = notPresentRevision;
-                
+
                 ib.localRelpath = localRelpath;
                 ib.wcId = pdh.getWCRoot().getWcId();
                 ib.wcRoot = pdh.getWCRoot();
@@ -6331,12 +6336,12 @@ public class SVNWCDb implements ISVNWCDb {
         }
         pdh.flushEntries(localAbspath);
     }
-    
+
     public void upgradeBegin(File localAbspath, SVNWCDbUpgradeData upgradeData, SVNURL repositoryRootUrl, String repositoryUUID, int targetWorkingCopyFormat) throws SVNException {
     	CreateDbInfo dbInfo =  createDb(localAbspath, repositoryRootUrl, repositoryUUID, SDB_FILE, targetWorkingCopyFormat, true);
     	upgradeData.repositoryId = dbInfo.reposId;
     	upgradeData.workingCopyId = dbInfo.wcId;
-    	    	
+
     	SVNWCDbDir pdh = new SVNWCDbDir(localAbspath);
     	SVNWCDbRoot root = new SVNWCDbRoot(this, localAbspath, dbInfo.sDb, dbInfo.wcId, FORMAT_FROM_SDB, true, false, false);
         pdh.setWCRoot(root);

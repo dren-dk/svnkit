@@ -5177,6 +5177,12 @@ public class SVNWCContext {
         }
     }
 
+    public void setSqliteTemporaryDbInMemory(boolean temporaryDbInMemory) {
+        if (this.db != null) {
+            ((SVNWCDb) this.db).setTemporaryDbInMemory(temporaryDbInMemory);
+        }
+    }
+
     public SVNSkel conflictCreateMarker(SVNSkel conflictSkel, File localAbsPath) throws SVNException {
         Structure<SvnWcDbConflicts.ConflictInfo> conflictInfoStructure = SvnWcDbConflicts.readConflictInfo(conflictSkel);
         SVNOperation operation = conflictInfoStructure.get(SvnWcDbConflicts.ConflictInfo.conflictOperation);
