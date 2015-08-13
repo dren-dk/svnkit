@@ -1942,7 +1942,8 @@ public class SVNWCDb implements ISVNWCDb {
                         }
                     }
 
-                    if (SVNFileUtil.getParentFile(localAbspath) == null) { //if is root
+                    final File localAbspathParent = SVNFileUtil.getParentFile(localAbspath);
+                    if (localAbspathParent == null || localAbspathParent.equals(localAbspath)) { //if is root
                         if (isSymlink && !isAdditionMode) { //if we add a symlink, we never follow it
                             localAbspath = originalAbspath;
                             SVNNodeKind resolvedKind = SVNFileType.getNodeKind(SVNFileType.getType(SVNFileUtil.resolveSymlink(localAbspath)));
@@ -1967,7 +1968,7 @@ public class SVNWCDb implements ISVNWCDb {
                         SVNErrorManager.error(err, SVNLogType.WC);
                     }
 
-                    localAbspath = SVNFileUtil.getParentFile(localAbspath);
+                    localAbspath = localAbspathParent;
                     movedUpwards = true;
 
                     foundRoot = dirData.get(localAbspath.getAbsolutePath());
