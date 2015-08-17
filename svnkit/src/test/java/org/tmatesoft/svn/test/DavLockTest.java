@@ -17,6 +17,8 @@ import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.auth.BasicAuthenticationManager;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
+import org.tmatesoft.svn.core.io.SVNRepository;
+import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
 import org.tmatesoft.svn.core.wc.ISVNEventHandler;
 import org.tmatesoft.svn.core.wc.SVNEvent;
 import org.tmatesoft.svn.core.wc.SVNEventAction;
@@ -266,6 +268,53 @@ public class DavLockTest {
             setLock.run();
 
             //TODO: lap the test
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
+    @Test
+    public void testDoubleFileLockShouldFail() throws Exception {
+        final TestOptions options = TestOptions.getInstance();
+        Assume.assumeTrue(TestUtil.areAllApacheOptionsSpecified(options));
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testDoubleFileLockShouldFail", options);
+        try {
+            BasicAuthenticationManager authenticationManager1 = new BasicAuthenticationManager("user1", "password1");
+            BasicAuthenticationManager authenticationManager2 = new BasicAuthenticationManager("user2", "password2");
+
+            final Map<String, String> loginToPassword = new HashMap<String, String>();
+            loginToPassword.put("user1", "password1");
+            loginToPassword.put("user2", "password2");
+
+            final SVNURL url = sandbox.createSvnRepositoryWithDavAccess(loginToPassword);
+
+            final CommitBuilder commitBuilder = new CommitBuilder(url);
+            commitBuilder.setAuthenticationManager(authenticationManager1);
+            commitBuilder.addFile("file");
+            commitBuilder.commit();
+
+            SVNRepository svnRepository = SVNRepositoryFactory.create(url);
+            try {
+                HashMap<String, Long> pathsToRevisions = new HashMap<String, Long>();
+                pathsToRevisions.put("file", (long) 1);
+
+                svnRepository.setAuthenticationManager(authenticationManager1);
+                svnRepository.lock(pathsToRevisions, "comment", false, null);
+
+                svnRepository.setAuthenticationManager(authenticationManager2);
+                try {
+                    svnRepository.lock(pathsToRevisions, "comment", false, null);
+                    Assert.fail("An exception should be thrown");
+                } catch (SVNException e) {
+                    //expected
+                    Assert.assertEquals(SVNErrorCode.FS_PATH_ALREADY_LOCKED, e.getErrorMessage().getErrorCode());
+                }
+            } finally {
+                svnRepository.closeSession();
+            }
         } finally {
             svnOperationFactory.dispose();
             sandbox.dispose();

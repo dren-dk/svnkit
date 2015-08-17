@@ -707,7 +707,7 @@ public class DAVRepository extends SVNRepository {
                             error = e.getErrorMessage();
                         }
                     }
-                    if (error == null) {
+                    if (error != null) {
                         throw e;
                     }
                 }
