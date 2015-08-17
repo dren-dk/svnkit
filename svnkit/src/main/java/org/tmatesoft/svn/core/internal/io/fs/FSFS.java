@@ -117,7 +117,7 @@ public class FSFS {
     public static final int REPOSITORY_FORMAT = 5;
     public static final int REPOSITORY_FORMAT_LEGACY = 3;
     public static final int DB_FORMAT_PRE_17 = 4;
-    public static final int DB_FORMAT = 6;
+    public static final int DB_FORMAT = 7;
     public static final int DB_FORMAT_LOW = 1;
     public static final int LAYOUT_FORMAT_OPTION_MINIMAL_FORMAT = 3;
     public static final int MIN_CURRENT_TXN_FORMAT = 3;
@@ -129,6 +129,7 @@ public class FSFS {
     public static final int MIN_KIND_IN_CHANGED_FORMAT = 4;
     public static final int MIN_PACKED_REVPROP_SQLITE_DEV_FORMAT = 5;
     public static final int MIN_PACKED_REVPROP_FORMAT = 6;
+    public static final int LOG_ADDRESSING_MINIMAL_FORMAT = 7;
 
     //TODO: we should be able to change this via some option
     private static long DEFAULT_MAX_FILES_PER_DIRECTORY = 1000;
@@ -166,6 +167,7 @@ public class FSFS {
     private long myMaxFilesPerDirectory;
     private long myYoungestRevisionCache;
     private long myMinUnpackedRevision;
+    private boolean myUseLogAddressing;
     private SVNConfigFile myConfig;
     private IFSRepresentationCacheManager myReposCacheManager;
     private long myMinUnpackedRevProp;
@@ -345,6 +347,7 @@ public class FSFS {
         } catch (SVNException svne) {
             if (svne.getCause() instanceof FileNotFoundException) {
                 format = DB_FORMAT_LOW;
+                myMaxFilesPerDirectory = 0;
             } else if (svne.getErrorMessage().getErrorCode() == SVNErrorCode.STREAM_UNEXPECTED_EOF) {
                 SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.BAD_VERSION_FILE_FORMAT,
                         "Can''t read first line of format file ''{0}''", formatFile.getFile());
@@ -1835,6 +1838,9 @@ public class FSFS {
     }
 
     public void readOptions(FSFile formatFile, int formatNumber) throws SVNException {
+        myMaxFilesPerDirectory = 0;
+        myUseLogAddressing = false;
+
         while (true) {
             String line = null;
             try {
@@ -1859,6 +1865,18 @@ public class FSFS {
                                 "Format file ''{0}'' contains an unexpected non-digit", formatFile.getFile());
                         SVNErrorManager.error(err, SVNLogType.FSFS);
                     }
+                    continue;
+                }
+            }
+
+            if (formatNumber >= LOG_ADDRESSING_MINIMAL_FORMAT && line.startsWith("addressing ")) {
+                String optionValue = line.substring(11); //11 == "addressing ".length()
+                if (optionValue.equals("physical")) {
+                    myUseLogAddressing = false;
+                    continue;
+                }
+                if (optionValue.equals("logical")) {
+                    myUseLogAddressing = true;
                     continue;
                 }
             }
