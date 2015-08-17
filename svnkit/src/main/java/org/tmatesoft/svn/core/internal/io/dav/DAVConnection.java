@@ -15,11 +15,7 @@ package org.tmatesoft.svn.core.internal.io.dav;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
@@ -69,12 +65,27 @@ public class DAVConnection {
     protected boolean myKeepLocks;
     protected Map myLocks;
     protected Map myCapabilities;
+    //HTTPv2 stuff:
+    protected String myMeResource;
+    protected String myRevStub;
+    protected String myRevRootStub;
+    protected String myTxnStub;
+    protected String myTxnRootStub;
+    protected String myVtxnStub;
+    protected String myVtxnRootStub;
+    protected String myUUID;
+    protected String myServerAllowsBulk;
+    protected long myLatestRevision;
+    protected List<String> mySupportedPosts;
+    protected SVNURL myRepositoryRoot;
+
     protected IHTTPConnectionFactory myConnectionFactory;
     private HTTPStatus myLastStatus;
 
     public DAVConnection(IHTTPConnectionFactory connectionFactory, SVNRepository repository) {
         myRepository = repository;
         myConnectionFactory = connectionFactory;
+        myLatestRevision = SVNRepository.INVALID_REVISION;
     }
 
     public boolean isReportResponseSpooled() {
@@ -657,7 +668,8 @@ public class DAVConnection {
         myCapabilities.put(SVNCapability.INHERITED_PROPS, DAV_CAPABILITY_NO);
         myCapabilities.put(SVNCapability.EPHEMERAL_PROPS, DAV_CAPABILITY_NO);
 
-    	Collection capValues = status.getHeader().getHeaderValues(HTTPHeader.DAV_HEADER);
+        HTTPHeader header = status.getHeader();
+        Collection capValues = header.getHeaderValues(HTTPHeader.DAV_HEADER);
     	if (capValues != null) {
     		for (Iterator valuesIter = capValues.iterator(); valuesIter.hasNext();) {
                 String value = (String) valuesIter.next();
@@ -678,6 +690,59 @@ public class DAVConnection {
                 }
 			}
     	}
+
+        Map<String, List<String>> rawHeaders = header.getRawHeaders();
+        for (Map.Entry<String, List<String>> entry : rawHeaders.entrySet()) {
+            String headerName = entry.getKey();
+            if (headerName.toUpperCase().startsWith("SVN")) {
+                List<String> value = entry.getValue();
+                String firstValue = (value != null && value.size() > 0) ? value.get(0) : null;
+
+                if (mySupportedPosts == null) {
+                    mySupportedPosts = Collections.singletonList("create-txn");
+                }
+
+                if (DAVElement.SVN_ROOT_URI_HEADER.equals(headerName)) {
+                    try {
+                        myRepositoryRoot = myRepository.getLocation().setPath(firstValue, false);
+                    } catch (SVNException e) {
+                        myRepositoryRoot = null;
+                    }
+                } else if (DAVElement.SVN_ME_RESOURCE_HEADER.equals(headerName)) {
+                    myMeResource = firstValue;
+                } else if (DAVElement.SVN_REV_STUB_HEADER.equals(headerName)) {
+                    myRevStub = firstValue;
+                } else if (DAVElement.SVN_REV_ROOT_STUB_HEADER.equals(headerName)) {
+                    myRevRootStub = firstValue;
+                } else if (DAVElement.SVN_TXN_STUB_HEADER.equals(headerName)) {
+                    myTxnStub = firstValue;
+                } else if (DAVElement.SVN_TXN_ROOT_STUB_HEADER.equals(headerName)) {
+                    myTxnRootStub = firstValue;
+                } else if (DAVElement.SVN_VTXN_STUB_HEADER.equals(headerName)) {
+                    myVtxnStub = firstValue;
+                } else if (DAVElement.SVN_VTXN_ROOT_STUB_HEADER.equals(headerName)) {
+                    myVtxnRootStub = firstValue;
+                } else if (DAVElement.SVN_REPOS_UUID_HEADER.equals(headerName)) {
+                    myUUID = firstValue;
+                } else if (DAVElement.SVN_YOUNGEST_REV_HEADER.equals(headerName)) {
+                    try {
+                        myLatestRevision = Long.parseLong(firstValue);
+                    } catch (NumberFormatException e) {
+                        myLatestRevision = -1;
+                    }
+                } else if (DAVElement.SVN_ALLOW_BULK_UPDATES_HEADER.equals(headerName)) {
+                    myServerAllowsBulk = firstValue;
+                } else if (DAVElement.SVN_SUPPORTED_POSTS_HEADER.equals(headerName)) {
+                    mySupportedPosts = new ArrayList<String>(value);
+                } else if (DAVElement.SVN_REPOSITORY_MERGEINFO_HEADER.equals(headerName)) {
+                    if (DAV_CAPABILITY_YES.equals(firstValue)) {
+                        myCapabilities.put(SVNCapability.MERGE_INFO, DAV_CAPABILITY_YES);
+                    } else if (DAV_CAPABILITY_NO.equals(firstValue)) {
+                        myCapabilities.put(SVNCapability.MERGE_INFO, DAV_CAPABILITY_NO);
+                    }
+                }
+            }
+        }
     }
 
     private String getActivityCollectionURL(String path, boolean force) throws SVNException {
