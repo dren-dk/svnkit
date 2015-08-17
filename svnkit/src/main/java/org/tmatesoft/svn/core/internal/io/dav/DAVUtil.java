@@ -21,6 +21,7 @@ import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNProperties;
 import org.tmatesoft.svn.core.SVNProperty;
 import org.tmatesoft.svn.core.SVNPropertyValue;
+import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVOptionsHandler;
 import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVPropertiesHandler;
 import org.tmatesoft.svn.core.internal.io.dav.http.HTTPHeader;
 import org.tmatesoft.svn.core.internal.io.dav.http.HTTPStatus;
@@ -29,6 +30,7 @@ import org.tmatesoft.svn.core.internal.util.SVNHashMap;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.ISVNEditor;
+import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.util.SVNLogType;
 
 /**
@@ -249,6 +251,21 @@ public class DAVUtil {
         properties = getResourceProperties(connection, vcc, label, elements);
         properties.setURL(baselineRelativePath);
         return properties;
+    }
+
+    public static long getLatestRevisionHttpV2(DAVConnection davConnection) throws SVNException {
+        HTTPStatus status = davConnection.doOptions(davConnection.getLocation().getPath());
+        if (status.getCode() != 200) {
+            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_DAV_OPTIONS_REQ_FAILED,
+                    "OPTIONS request (for latest revision) got HTTP response code {0}",
+                    new Integer(status.getCode()));
+            SVNErrorManager.error(err, SVNLogType.NETWORK);
+        }
+        if (!SVNRevision.isValidRevisionNumber(davConnection.myLatestRevision)) {
+            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.RA_DAV_OPTIONS_REQ_FAILED, "The OPTIONS response did not include the youngest revision");
+            SVNErrorManager.error(errorMessage, SVNLogType.NETWORK);
+        }
+        return davConnection.myLatestRevision;
     }
 
     public static SVNProperties filterProperties(DAVProperties source, SVNProperties target) {
