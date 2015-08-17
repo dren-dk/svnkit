@@ -10,19 +10,14 @@ import junit.framework.Assert;
 import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.tmatesoft.svn.core.SVNCancelException;
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.auth.BasicAuthenticationManager;
+import org.tmatesoft.svn.core.internal.wc.SVNEventFactory;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
+import org.tmatesoft.svn.core.io.ISVNLockHandler;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
-import org.tmatesoft.svn.core.wc.ISVNEventHandler;
-import org.tmatesoft.svn.core.wc.SVNEvent;
-import org.tmatesoft.svn.core.wc.SVNEventAction;
-import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.*;
 import org.tmatesoft.svn.core.wc2.SvnCheckout;
 import org.tmatesoft.svn.core.wc2.SvnOperationFactory;
 import org.tmatesoft.svn.core.wc2.SvnSetLock;
@@ -275,12 +270,12 @@ public class DavLockTest {
     }
 
     @Test
-    public void testDoubleFileLockShouldFail() throws Exception {
+    public void testDoubleFileLockShouldNotFail() throws Exception {
         final TestOptions options = TestOptions.getInstance();
         Assume.assumeTrue(TestUtil.areAllApacheOptionsSpecified(options));
 
         final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
-        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testDoubleFileLockShouldFail", options);
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testDoubleFileLockShouldNotFail", options);
         try {
             BasicAuthenticationManager authenticationManager1 = new BasicAuthenticationManager("user1", "password1");
             BasicAuthenticationManager authenticationManager2 = new BasicAuthenticationManager("user2", "password2");
@@ -296,25 +291,30 @@ public class DavLockTest {
             commitBuilder.addFile("file");
             commitBuilder.commit();
 
+            final LockEventHandler eventHandler1 = new LockEventHandler();
+            final LockEventHandler eventHandler2 = new LockEventHandler();
+
             SVNRepository svnRepository = SVNRepositoryFactory.create(url);
             try {
                 HashMap<String, Long> pathsToRevisions = new HashMap<String, Long>();
                 pathsToRevisions.put("file", (long) 1);
 
                 svnRepository.setAuthenticationManager(authenticationManager1);
-                svnRepository.lock(pathsToRevisions, "comment", false, null);
+                svnRepository.lock(pathsToRevisions, "comment", false, eventHandler1);
 
                 svnRepository.setAuthenticationManager(authenticationManager2);
-                try {
-                    svnRepository.lock(pathsToRevisions, "comment", false, null);
-                    Assert.fail("An exception should be thrown");
-                } catch (SVNException e) {
-                    //expected
-                    Assert.assertEquals(SVNErrorCode.FS_PATH_ALREADY_LOCKED, e.getErrorMessage().getErrorCode());
-                }
+                svnRepository.lock(pathsToRevisions, "comment", false, eventHandler2);
             } finally {
                 svnRepository.closeSession();
             }
+
+            Assert.assertEquals(1, eventHandler1.events.size());
+            Assert.assertEquals(1, eventHandler2.events.size());
+
+            Assert.assertNull(eventHandler1.events.get(0).getErrorMessage());
+            Assert.assertNotNull(eventHandler2.events.get(0).getErrorMessage());
+
+            Assert.assertEquals(SVNErrorCode.FS_PATH_ALREADY_LOCKED, eventHandler2.events.get(0).getErrorMessage().getErrorCode());
         } finally {
             svnOperationFactory.dispose();
             sandbox.dispose();
@@ -342,7 +342,7 @@ public class DavLockTest {
         return new LockEventHandler();
     }
 
-    private static class LockEventHandler implements ISVNEventHandler {
+    private static class LockEventHandler implements ISVNEventHandler, ISVNLockHandler {
 
         private final List<SVNEvent> events;
 
@@ -357,6 +357,15 @@ public class DavLockTest {
         }
 
         public void checkCancelled() throws SVNCancelException {
+        }
+
+        public void handleLock(String path, SVNLock lock, SVNErrorMessage error) throws SVNException {
+            events.add(SVNEventFactory.createLockEvent(SVNFileUtil.createFilePath(path), SVNEventAction.LOCKED, lock, error));
+
+        }
+
+        public void handleUnlock(String path, SVNLock lock, SVNErrorMessage error) throws SVNException {
+            events.add(SVNEventFactory.createLockEvent(SVNFileUtil.createFilePath(path), SVNEventAction.UNLOCKED, lock, error));
         }
     }
 }
