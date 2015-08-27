@@ -770,13 +770,18 @@ public class DAVConnection {
         }
     }
 
-    protected String getRelativePath() {
+    protected String getRelativePath(String origPath) {
         if (myRepositoryRoot == null) {
             assert !hasHttpV2Support();
 
             throw new UnsupportedOperationException();
         }
-        return SVNURLUtil.getRelativeURL(myRepositoryRoot, myRepository.getLocation(), false);
+        String rootPath = myRepositoryRoot.getURIEncodedPath();
+        return SVNPathUtil.getPathAsChild(rootPath, origPath);
+    }
+
+    protected String getRelativePath() {
+        return getRelativePath(myRepository.getLocation().getURIEncodedPath());
     }
 
     private String getActivityCollectionURL(String path, boolean force) throws SVNException {

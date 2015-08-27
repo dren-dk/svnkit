@@ -182,10 +182,23 @@ public class DAVUtil {
 
     public static DAVBaselineInfo getBaselineInfo(DAVConnection connection, DAVRepository repos, String path, long revision,
                                                   boolean includeType, boolean includeRevision, DAVBaselineInfo info) throws SVNException {
+        info = info == null ? new DAVBaselineInfo() : info;
+
+        if (connection.hasHttpV2Support()) {
+            if (SVNRevision.isValidRevisionNumber(revision)) {
+                info.revision = revision;
+            } else {
+                info.revision = getLatestRevisionHttpV2(connection);
+            }
+            info.baselineBase = SVNPathUtil.append(connection.myRevRootStub, String.valueOf(info.revision));
+            info.baselinePath = connection.getRelativePath(path);
+            return info;
+        }
+
         DAVElement[] properties = includeRevision ? DAVElement.BASELINE_PROPERTIES : new DAVElement[] {DAVElement.BASELINE_COLLECTION};
         DAVProperties baselineProperties = getBaselineProperties(connection, repos, path, revision, properties);
 
-        info = info == null ? new DAVBaselineInfo() : info;
+
         info.baselinePath = baselineProperties.getURL();
         SVNPropertyValue baseValue = baselineProperties.getPropertyValue(DAVElement.BASELINE_COLLECTION);
         info.baselineBase = baseValue == null ? null : baseValue.getString();

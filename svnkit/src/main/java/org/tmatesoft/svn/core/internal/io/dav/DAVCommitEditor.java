@@ -200,56 +200,60 @@ class DAVCommitEditor implements ISVNEditor {
     }
 
     public void addDir(String path, String copyPath, long copyRevision) throws SVNException {
-        if (myConnection.hasHttpV2Support()) {
-//            TODO: add HTTPv2 support
-        } else {
-            path = SVNEncodingUtil.uriEncode(path);
+        path = SVNEncodingUtil.uriEncode(path);
 
-            DAVResource parentResource = (DAVResource) myDirsStack.peek();
+        DAVResource parentResource = (DAVResource) myDirsStack.peek();
+        if (!myConnection.hasHttpV2Support()) {
             checkoutResource(parentResource, true);
-            String wPath = parentResource.getWorkingURL();
-
-            DAVResource newDir = new DAVResource(myCommitMediator, myConnection, path, -1, copyPath != null);
-            newDir.setWorkingURL(SVNPathUtil.append(wPath, SVNPathUtil.tail(path)));
-            newDir.setAdded(true);
-
-            myDirsStack.push(newDir);
-            myPathsMap.put(newDir.getURL(), path);
-            if (copyPath != null) {
-                // convert to full path?
-                copyPath = myRepository.doGetFullPath(copyPath);
-                copyPath = SVNEncodingUtil.uriEncode(copyPath);
-                DAVBaselineInfo info = DAVUtil.getBaselineInfo(myConnection, myRepository, copyPath, copyRevision, false, false, null);
-                copyPath = SVNPathUtil.append(info.baselineBase, info.baselinePath);
-
-                // full url.
-                wPath = myLocation.setPath(newDir.getWorkingURL(), true).toString();
-                myConnection.doCopy(copyPath, wPath, 1);
-            } else {
-                try {
-                    myConnection.doMakeCollection(newDir.getWorkingURL());
-                } catch (SVNException e) {
-                    // check if dir already exists.
-                    if (!e.getErrorMessage().getErrorCode().isAuthentication() &&
-                            e.getErrorMessage().getErrorCode() != SVNErrorCode.CANCELLED) {
-                        SVNErrorMessage err = null;
-                        try {
-                            DAVBaselineInfo info = DAVUtil.getBaselineInfo(myConnection, myRepository, newDir.getURL(), -1, false, false, null);
-                            if (info != null) {
-                                err = SVNErrorMessage.create(SVNErrorCode.RA_DAV_ALREADY_EXISTS, "Path ''{0}'' already exists", newDir.getURL());
-                            }
-                        } catch (SVNException inner) {
-                        }
-                        if (err != null) {
-                            SVNErrorManager.error(err, SVNLogType.NETWORK);
-                        }
-                    }
-                    throw e;
-                }
-            }
         }
 
+        String wPath = parentResource.getWorkingURL();
 
+        DAVResource newDir = new DAVResource(myCommitMediator, myConnection, path, -1, copyPath != null);
+        newDir.setWorkingURL(SVNPathUtil.append(wPath, SVNPathUtil.tail(path)));
+        newDir.setAdded(true);
+        newDir.setCustomURL(SVNPathUtil.append(myTxnRootUrl, path));
+
+        String target;
+        if (myConnection.hasHttpV2Support()) {
+            target = newDir.getCustomURL();
+        } else {
+            target = newDir.getWorkingURL();
+        }
+
+        myDirsStack.push(newDir);
+        myPathsMap.put(newDir.getURL(), path);
+        if (copyPath != null) {
+            // convert to full path?
+            copyPath = myRepository.doGetFullPath(copyPath);
+            copyPath = SVNEncodingUtil.uriEncode(copyPath);
+            DAVBaselineInfo info = DAVUtil.getBaselineInfo(myConnection, myRepository, copyPath, copyRevision, false, false, null);
+            copyPath = SVNPathUtil.append(info.baselineBase, info.baselinePath);
+
+            String dst = myLocation.setPath(myConnection.hasHttpV2Support() ? newDir.getCustomURL() : newDir.getWorkingURL(), true).toString();
+            myConnection.doCopy(copyPath, dst, 1);
+        } else {
+            try {
+                myConnection.doMakeCollection(target);
+            } catch (SVNException e) {
+                // check if dir already exists.
+                if (!e.getErrorMessage().getErrorCode().isAuthentication() &&
+                        e.getErrorMessage().getErrorCode() != SVNErrorCode.CANCELLED) {
+                    SVNErrorMessage err = null;
+                    try {
+                        DAVBaselineInfo info = DAVUtil.getBaselineInfo(myConnection, myRepository, newDir.getURL(), -1, false, false, null);
+                        if (info != null) {
+                            err = SVNErrorMessage.create(SVNErrorCode.RA_DAV_ALREADY_EXISTS, "Path ''{0}'' already exists", newDir.getURL());
+                        }
+                    } catch (SVNException inner) {
+                    }
+                    if (err != null) {
+                        SVNErrorManager.error(err, SVNLogType.NETWORK);
+                    }
+                }
+                throw e;
+            }
+        }
     }
 
     public void openDir(String path, long revision) throws SVNException {
