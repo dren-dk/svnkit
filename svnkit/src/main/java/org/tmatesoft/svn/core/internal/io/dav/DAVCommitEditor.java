@@ -16,9 +16,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 import org.tmatesoft.svn.core.SVNCommitInfo;
 import org.tmatesoft.svn.core.SVNErrorCode;
@@ -33,9 +31,7 @@ import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVProppatchHandler;
 import org.tmatesoft.svn.core.internal.io.dav.http.HTTPBodyInputStream;
 import org.tmatesoft.svn.core.internal.io.dav.http.HTTPHeader;
 import org.tmatesoft.svn.core.internal.io.dav.http.HTTPStatus;
-import org.tmatesoft.svn.core.internal.util.SVNEncodingUtil;
-import org.tmatesoft.svn.core.internal.util.SVNHashMap;
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
+import org.tmatesoft.svn.core.internal.util.*;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.io.ISVNEditor;
@@ -50,6 +46,9 @@ import org.tmatesoft.svn.util.SVNLogType;
  */
 class DAVCommitEditor implements ISVNEditor {
 
+    public static final String CREATE_TXN_WITH_PROPS = "create-txn-with-props";
+    public static final String CREATE_TXN = "create-txn";
+    public static final String SKEL_MIME_TYPE = "application/vnd.svn-skel";
     private DAVConnection myConnection;
     private SVNURL myLocation;
 	private DAVRepository myRepository;
@@ -63,6 +62,10 @@ class DAVCommitEditor implements ISVNEditor {
     private String myBaseChecksum;
     private SVNProperties myRevProps;
     private String myActivityLocation;
+    private Set<String> myDeletedPaths;
+
+    private String myTxnRootUrl;
+    private String myTxnUrl;
 
     public DAVCommitEditor(DAVRepository repository, DAVConnection connection, String message, ISVNWorkspaceMediator mediator, Runnable closeCallback) {
         this(repository, connection, (SVNProperties) null, mediator, closeCallback);
@@ -70,6 +73,7 @@ class DAVCommitEditor implements ISVNEditor {
         if (message != null) {
             myRevProps.put(SVNRevisionProperty.LOG, message);
         }
+        myDeletedPaths = new HashSet<String>();
     }
 
     public DAVCommitEditor(DAVRepository repository, DAVConnection connection, SVNProperties revProps, ISVNWorkspaceMediator mediator, Runnable closeCallback) {
@@ -82,6 +86,7 @@ class DAVCommitEditor implements ISVNEditor {
         myPathsMap = new SVNHashMap();
         myFilesMap = new SVNHashMap();
         myRevProps = revProps != null ? revProps : new SVNProperties();
+        myDeletedPaths = new HashSet<String>();
     }
 
     /* do nothing */
@@ -93,90 +98,158 @@ class DAVCommitEditor implements ISVNEditor {
     }
 
     public void openRoot(long revision) throws SVNException {
-        // make activity
-        final String[] activityUrls = createActivity();
-        myActivity = activityUrls[0];
-        myActivityLocation = activityUrls[1];
-        DAVResource root = new DAVResource(myCommitMediator, myConnection, "", revision);
-        root.fetchVersionURL(null, false);
-        myDirsStack.push(root);
-        myPathsMap.put(root.getURL(), root.getPath());
+        String propPatchTarget;
+
+        if (myConnection.hasHttpV2Support()) {
+            boolean postWithRevProps = myConnection.getSupportedPosts().contains(CREATE_TXN_WITH_PROPS);
+            final byte[] txnPostBody = createTxnPostBody(postWithRevProps ? myRevProps : null);
+            final String mimeType = SKEL_MIME_TYPE;
+            final String path = myConnection.getMeResource();
+
+            HTTPStatus httpStatus = myConnection.doPost(path, mimeType, txnPostBody);
+            if (httpStatus.getCode() != 201) {
+                SVNErrorMessage errorMessage = createUnexpectedStatusErrorMessage(httpStatus);
+                if (errorMessage != null) {
+                    SVNErrorManager.error(errorMessage, SVNLogType.NETWORK);
+                }
+            }
+            HTTPHeader responseHeader = httpStatus.getHeader();
+            if (responseHeader != null) {
+                if (responseHeader.hasHeader(DAVElement.SVN_TXN_NAME_HEADER)) {
+                    myTxnUrl = SVNPathUtil.append(myConnection.myTxnStub, responseHeader.getFirstHeaderValue(DAVElement.SVN_TXN_NAME_HEADER));
+                    myTxnRootUrl = SVNPathUtil.append(myConnection.myTxnRootStub, responseHeader.getFirstHeaderValue(DAVElement.SVN_TXN_NAME_HEADER));
+                }
+                if (responseHeader.hasHeader(DAVElement.SVN_VTXN_NAME_HEADER)) {
+                    myTxnUrl = SVNPathUtil.append(myConnection.myVtxnStub, responseHeader.getFirstHeaderValue(DAVElement.SVN_VTXN_NAME_HEADER));
+                    myTxnRootUrl = SVNPathUtil.append(myConnection.myVtxnRootStub, responseHeader.getFirstHeaderValue(DAVElement.SVN_VTXN_NAME_HEADER));
+                }
+            }
+
+            if (!(myTxnRootUrl != null && myTxnUrl != null)) {
+                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.RA_DAV_REQUEST_FAILED, "POST request did not return transaction information");
+                SVNErrorManager.error(errorMessage, SVNLogType.NETWORK);
+            }
+
+            String relPath = myConnection.getRelativePath();
+            myTxnRootUrl = SVNPathUtil.append(myTxnRootUrl, relPath);
+
+            DAVResource root = new DAVResource(myCommitMediator, myConnection, "", revision);
+            root.setCustomURL(myTxnRootUrl);
+            myDirsStack.push(root);
+
+            propPatchTarget = postWithRevProps ? null : myTxnUrl;
+        } else {
+            // make activity
+            final String[] activityUrls = createActivity();
+            myActivity = activityUrls[0];
+            myActivityLocation = activityUrls[1];
+            DAVResource root = new DAVResource(myCommitMediator, myConnection, "", revision);
+            root.fetchVersionURL(null, false);
+            myDirsStack.push(root);
+            myPathsMap.put(root.getURL(), root.getPath());
+
+            propPatchTarget = null; //baselineUrl ?
+        }
+
+        if (propPatchTarget != null) {
+            patchResourceProperties(propPatchTarget, myRevProps);
+        }
     }
 
     public void deleteEntry(String path, long revision) throws SVNException {
-        path = SVNEncodingUtil.uriEncode(path);
-        // get parent's working copy. (checkout? or use checked out?)
-        DAVResource parentResource = (DAVResource) myDirsStack.peek();
-        checkoutResource(parentResource, true);
-        String wPath = parentResource.getWorkingURL();
-		// get root wURL and delete from it!
+        if (myConnection.hasHttpV2Support()) {
+            String deleteTarget;
+            deleteTarget = SVNPathUtil.append(myTxnRootUrl, path);
 
-        // append name part of the path to the checked out location
-		// should we append full name here?
-        String url;
-		if (myDirsStack.size() == 1) {
-			wPath = SVNPathUtil.append(parentResource.getWorkingURL(), path);
-            url = SVNPathUtil.append(parentResource.getURL(), path);
-		} else {
-			// we are inside openDir()...
-			wPath = SVNPathUtil.append(wPath, SVNPathUtil.tail(path));
-            url = SVNPathUtil.append(parentResource.getURL(), SVNPathUtil.tail(path));
-		}
-        // call DELETE for the composed path
-        myConnection.doDelete(url, wPath, revision);
-		if (myDirsStack.size() == 1) {
-			myPathsMap.put(SVNPathUtil.append(parentResource.getURL(), path), path);
-		} else {
-			myPathsMap.put(SVNPathUtil.append(parentResource.getURL(), SVNPathUtil.tail(path)), path);
-		}
-    }
-
-
-    public void addDir(String path, String copyPath, long copyRevision) throws SVNException {
-        path = SVNEncodingUtil.uriEncode(path);
-
-        DAVResource parentResource = (DAVResource) myDirsStack.peek();
-        checkoutResource(parentResource, true);
-        String wPath = parentResource.getWorkingURL();
-
-        DAVResource newDir = new DAVResource(myCommitMediator, myConnection, path, -1, copyPath != null);
-        newDir.setWorkingURL(SVNPathUtil.append(wPath, SVNPathUtil.tail(path)));
-        newDir.setAdded(true);
-
-        myDirsStack.push(newDir);
-        myPathsMap.put(newDir.getURL(), path);
-        if (copyPath != null) {
-            // convert to full path?
-            copyPath = myRepository.doGetFullPath(copyPath);
-            copyPath = SVNEncodingUtil.uriEncode(copyPath);
-            DAVBaselineInfo info = DAVUtil.getBaselineInfo(myConnection, myRepository, copyPath, copyRevision, false, false, null);
-            copyPath = SVNPathUtil.append(info.baselineBase, info.baselinePath);
-
-            // full url.
-            wPath = myLocation.setPath(newDir.getWorkingURL(), true).toString();
-            myConnection.doCopy(copyPath, wPath, 1);
-        } else {
-            try {
-                myConnection.doMakeCollection(newDir.getWorkingURL());
-            } catch (SVNException e) {
-                // check if dir already exists.
-                if (!e.getErrorMessage().getErrorCode().isAuthentication() &&
-                        e.getErrorMessage().getErrorCode() != SVNErrorCode.CANCELLED) {
-                    SVNErrorMessage err = null;
-                    try {
-                        DAVBaselineInfo info = DAVUtil.getBaselineInfo(myConnection, myRepository, newDir.getURL(), -1, false, false, null);
-                        if (info != null) {
-                            err = SVNErrorMessage.create(SVNErrorCode.RA_DAV_ALREADY_EXISTS, "Path ''{0}'' already exists", newDir.getURL());
-                        }
-                    } catch (SVNException inner) {
-                    }
-                    if (err != null) {
-                        SVNErrorManager.error(err, SVNLogType.NETWORK);
-                    }
+            HTTPStatus httpStatus = myConnection.doDelete(path, deleteTarget, revision);
+            if (httpStatus.getCode() != 204) {
+                SVNErrorMessage errorMessage = createUnexpectedStatusErrorMessage(httpStatus);
+                if (errorMessage != null) {
+                    SVNErrorManager.error(errorMessage, SVNLogType.NETWORK);
                 }
-                throw e;
+            }
+            myDeletedPaths.add(path);
+        } else {
+            path = SVNEncodingUtil.uriEncode(path);
+            // get parent's working copy. (checkout? or use checked out?)
+            DAVResource parentResource = (DAVResource) myDirsStack.peek();
+            checkoutResource(parentResource, true);
+            String wPath = parentResource.getWorkingURL();
+            // get root wURL and delete from it!
+
+            // append name part of the path to the checked out location
+            // should we append full name here?
+            String url;
+            if (myDirsStack.size() == 1) {
+                wPath = SVNPathUtil.append(parentResource.getWorkingURL(), path);
+                url = SVNPathUtil.append(parentResource.getURL(), path);
+            } else {
+                // we are inside openDir()...
+                wPath = SVNPathUtil.append(wPath, SVNPathUtil.tail(path));
+                url = SVNPathUtil.append(parentResource.getURL(), SVNPathUtil.tail(path));
+            }
+
+            // call DELETE for the composed path
+            myConnection.doDelete(url, wPath, revision);
+            if (myDirsStack.size() == 1) {
+                myPathsMap.put(SVNPathUtil.append(parentResource.getURL(), path), path);
+            } else {
+                myPathsMap.put(SVNPathUtil.append(parentResource.getURL(), SVNPathUtil.tail(path)), path);
             }
         }
+    }
+
+    public void addDir(String path, String copyPath, long copyRevision) throws SVNException {
+        if (myConnection.hasHttpV2Support()) {
+//            TODO: add HTTPv2 support
+        } else {
+            path = SVNEncodingUtil.uriEncode(path);
+
+            DAVResource parentResource = (DAVResource) myDirsStack.peek();
+            checkoutResource(parentResource, true);
+            String wPath = parentResource.getWorkingURL();
+
+            DAVResource newDir = new DAVResource(myCommitMediator, myConnection, path, -1, copyPath != null);
+            newDir.setWorkingURL(SVNPathUtil.append(wPath, SVNPathUtil.tail(path)));
+            newDir.setAdded(true);
+
+            myDirsStack.push(newDir);
+            myPathsMap.put(newDir.getURL(), path);
+            if (copyPath != null) {
+                // convert to full path?
+                copyPath = myRepository.doGetFullPath(copyPath);
+                copyPath = SVNEncodingUtil.uriEncode(copyPath);
+                DAVBaselineInfo info = DAVUtil.getBaselineInfo(myConnection, myRepository, copyPath, copyRevision, false, false, null);
+                copyPath = SVNPathUtil.append(info.baselineBase, info.baselinePath);
+
+                // full url.
+                wPath = myLocation.setPath(newDir.getWorkingURL(), true).toString();
+                myConnection.doCopy(copyPath, wPath, 1);
+            } else {
+                try {
+                    myConnection.doMakeCollection(newDir.getWorkingURL());
+                } catch (SVNException e) {
+                    // check if dir already exists.
+                    if (!e.getErrorMessage().getErrorCode().isAuthentication() &&
+                            e.getErrorMessage().getErrorCode() != SVNErrorCode.CANCELLED) {
+                        SVNErrorMessage err = null;
+                        try {
+                            DAVBaselineInfo info = DAVUtil.getBaselineInfo(myConnection, myRepository, newDir.getURL(), -1, false, false, null);
+                            if (info != null) {
+                                err = SVNErrorMessage.create(SVNErrorCode.RA_DAV_ALREADY_EXISTS, "Path ''{0}'' already exists", newDir.getURL());
+                            }
+                        } catch (SVNException inner) {
+                        }
+                        if (err != null) {
+                            SVNErrorManager.error(err, SVNLogType.NETWORK);
+                        }
+                    }
+                    throw e;
+                }
+            }
+        }
+
+
     }
 
     public void openDir(String path, long revision) throws SVNException {
@@ -374,40 +447,44 @@ class DAVCommitEditor implements ISVNEditor {
     }
 
     public SVNCommitInfo closeEdit() throws SVNException {
-	    try {
-		    if (!myDirsStack.isEmpty()) {
-		        DAVResource resource = (DAVResource) myDirsStack.pop();
-		        // do proppatch if there were property changes.
-		        if (resource.getProperties() != null) {
-		            StringBuffer request = DAVProppatchHandler.generatePropertyRequest(null, resource.getProperties());
-		            myConnection.doProppatch(resource.getURL(), resource.getWorkingURL(), request, null, null);
-		        }
-		        resource.dispose();
-		    }
-		    DAVMergeHandler handler = new DAVMergeHandler(myCommitMediator, myPathsMap);
-            patchResourceProperties(myActivityLocation, myRevProps);
-
-		    HTTPStatus status = myConnection.doMerge(myActivity, true, handler);
-		    if (status.getError() != null) {
-                // DELETE shouldn't be called anymore if there is an error or MERGE.
-                // calling abortEdit will do nothing on closeEdit failure now.
-                myIsAborted = true;
-		        SVNErrorManager.error(status.getError(), SVNLogType.NETWORK);
-		    }
-		    return handler.getCommitInfo();
-	    }
-	    finally {
-            // we should run abort edit if exception is thrown
-            // abort edit will not be run if there was an error (from server side) on MERGE.
             try {
-                abortEdit();
-            } catch (SVNException e) {
-                SVNDebugLog.getDefaultLog().logError(SVNLogType.DEFAULT, e);
-            }
+                if (!myDirsStack.isEmpty()) {
+                    DAVResource resource = (DAVResource) myDirsStack.pop();
+                    // do proppatch if there were property changes.
+                    if (resource.getProperties() != null) {
+                        StringBuffer request = DAVProppatchHandler.generatePropertyRequest(null, resource.getProperties());
+                        myConnection.doProppatch(resource.getURL(), resource.getWorkingURL(), request, null, null);
+                    }
+                    resource.dispose();
+                }
+                String mergeTarget = myActivity != null ? myActivity : myTxnUrl;
 
-            // always run close callback to 'unlock' SVNRepository.
-            runCloseCallback();
-	    }
+                DAVMergeHandler handler = new DAVMergeHandler(myCommitMediator, myPathsMap);
+                if (!myConnection.hasHttpV2Support()) {
+                    //with http2 revisions properties are set up at openRoot()
+                    patchResourceProperties(myActivityLocation, myRevProps);
+                }
+
+                HTTPStatus status = myConnection.doMerge(mergeTarget, true, handler);
+                if (status.getError() != null) {
+                    // DELETE shouldn't be called anymore if there is an error or MERGE.
+                    // calling abortEdit will do nothing on closeEdit failure now.
+                    myIsAborted = true;
+                    SVNErrorManager.error(status.getError(), SVNLogType.NETWORK);
+                }
+                return handler.getCommitInfo();
+            } finally {
+                // we should run abort edit if exception is thrown
+                // abort edit will not be run if there was an error (from server side) on MERGE.
+                try {
+                    abortEdit();
+                } catch (SVNException e) {
+                    SVNDebugLog.getDefaultLog().logError(SVNLogType.DEFAULT, e);
+                }
+
+                // always run close callback to 'unlock' SVNRepository.
+                runCloseCallback();
+            }
     }
 
     public void abortEdit() throws SVNException {
@@ -528,4 +605,21 @@ class DAVCommitEditor implements ISVNEditor {
         resource.setWorkingURL(location);
     }
 
+    private byte[] createTxnPostBody(SVNProperties revisionProperties) throws SVNException {
+        SVNSkel requestSkel = SVNSkel.createEmptyList();
+
+        if (revisionProperties != null) {
+            SVNSkel propListSkel = SVNSkel.createPropList(revisionProperties.asMap());
+            requestSkel.prepend(propListSkel);
+            requestSkel.prependString(CREATE_TXN_WITH_PROPS);
+            return requestSkel.unparse();
+        } else {
+            return ("( " + CREATE_TXN + " )").getBytes();
+        }
+    }
+
+    private static SVNErrorMessage createUnexpectedStatusErrorMessage(HTTPStatus httpStatus) {
+        //TODO: move to HTTPRequest class
+        return SVNErrorMessage.create(SVNErrorCode.UNKNOWN);
+    }
 }

@@ -12,6 +12,7 @@
 
 package org.tmatesoft.svn.core.internal.io.dav;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -33,12 +34,7 @@ import org.tmatesoft.svn.core.internal.io.dav.http.HTTPHeader;
 import org.tmatesoft.svn.core.internal.io.dav.http.HTTPStatus;
 import org.tmatesoft.svn.core.internal.io.dav.http.IHTTPConnection;
 import org.tmatesoft.svn.core.internal.io.dav.http.IHTTPConnectionFactory;
-import org.tmatesoft.svn.core.internal.util.SVNDate;
-import org.tmatesoft.svn.core.internal.util.SVNEncodingUtil;
-import org.tmatesoft.svn.core.internal.util.SVNHashMap;
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
-import org.tmatesoft.svn.core.internal.util.SVNUUIDGenerator;
-import org.tmatesoft.svn.core.internal.util.SVNXMLUtil;
+import org.tmatesoft.svn.core.internal.util.*;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.ISVNWorkspaceMediator;
 import org.tmatesoft.svn.core.io.SVNCapability;
@@ -610,6 +606,17 @@ public class DAVConnection {
         }
     }
 
+    public HTTPStatus doPost(String path, String mimeType, byte[] body) throws SVNException {
+        beforeCall();
+        IHTTPConnection httpConnection = getConnection();
+        HTTPHeader header = new HTTPHeader();
+        if (mimeType != null) {
+            header.setHeaderValue(HTTPHeader.CONTENT_TYPE_HEADER, mimeType);
+        }
+        HTTPStatus status = performHttpRequest(httpConnection, "POST", path, header, body, 404, 201, null, null);
+        return status;
+    }
+
     public void close()  {
         if (myHttpConnection != null) {
             myHttpConnection.close();
@@ -643,6 +650,14 @@ public class DAVConnection {
 
     public boolean hasHttpV2Support() {
         return myMeResource != null;
+    }
+
+    public String getMeResource() {
+        return myMeResource;
+    }
+
+    public List<String> getSupportedPosts() {
+        return mySupportedPosts;
     }
 
     protected IHTTPConnection getConnection() {
@@ -755,6 +770,15 @@ public class DAVConnection {
         }
     }
 
+    protected String getRelativePath() {
+        if (myRepositoryRoot == null) {
+            assert !hasHttpV2Support();
+
+            throw new UnsupportedOperationException();
+        }
+        return SVNURLUtil.getRelativeURL(myRepositoryRoot, myRepository.getLocation(), false);
+    }
+
     private String getActivityCollectionURL(String path, boolean force) throws SVNException {
         if (!force && myActivityCollectionURL != null) {
             return myActivityCollectionURL;
@@ -787,6 +811,16 @@ public class DAVConnection {
 
     private void beforeCall() {
         myLastStatus = null;
+    }
+
+    private HTTPStatus performHttpRequest(IHTTPConnection httpConnection, String method, String path, HTTPHeader header, byte[] body, int ok1, int ok2, OutputStream dst, DefaultHandler handler) throws SVNException {
+        myLastStatus = null;
+        try {
+            myLastStatus = httpConnection.request(method, path, header, body != null ? new ByteArrayInputStream(body) : null, ok1, ok2, dst, handler);
+            return myLastStatus;
+        } finally {
+            myLastStatus = httpConnection.getLastStatus();
+        }
     }
 
     private HTTPStatus performHttpRequest(IHTTPConnection httpConnection, String method, String path, HTTPHeader header, StringBuffer body, int ok1, int ok2, OutputStream dst, DefaultHandler handler) throws SVNException {
