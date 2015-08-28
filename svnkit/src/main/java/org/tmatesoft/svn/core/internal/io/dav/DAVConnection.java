@@ -617,6 +617,13 @@ public class DAVConnection {
         return status;
     }
 
+    public HTTPStatus doHead(String path) throws SVNException {
+        beforeCall();
+        IHTTPConnection httpConnection = getConnection();
+        HTTPStatus status = performHttpRequest(httpConnection, "HEAD", path, null, (StringBuffer)null, 404, 0, null, null);
+        return status;
+    }
+
     public void close()  {
         if (myHttpConnection != null) {
             myHttpConnection.close();
