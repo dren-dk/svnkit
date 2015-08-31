@@ -108,7 +108,7 @@ class DAVCommitEditor implements ISVNEditor {
 
             HTTPStatus httpStatus = myConnection.doPost(path, mimeType, txnPostBody);
             if (httpStatus.getCode() != 201) {
-                SVNErrorMessage errorMessage = createUnexpectedStatusErrorMessage(httpStatus);
+                SVNErrorMessage errorMessage = DAVUtil.createUnexpectedStatusErrorMessage(httpStatus, "POST", path);
                 if (errorMessage != null) {
                     SVNErrorManager.error(errorMessage, SVNLogType.NETWORK);
                 }
@@ -163,7 +163,7 @@ class DAVCommitEditor implements ISVNEditor {
 
             HTTPStatus httpStatus = myConnection.doDelete(path, deleteTarget, revision);
             if (httpStatus.getCode() != 204) {
-                SVNErrorMessage errorMessage = createUnexpectedStatusErrorMessage(httpStatus);
+                SVNErrorMessage errorMessage = DAVUtil.createUnexpectedStatusErrorMessage(httpStatus, "DELETE", path);
                 if (errorMessage != null) {
                     SVNErrorManager.error(errorMessage, SVNLogType.NETWORK);
                 }
@@ -651,10 +651,5 @@ class DAVCommitEditor implements ISVNEditor {
         } else {
             return ("( " + CREATE_TXN + " )").getBytes();
         }
-    }
-
-    private static SVNErrorMessage createUnexpectedStatusErrorMessage(HTTPStatus httpStatus) {
-        //TODO: move to HTTPRequest class
-        return SVNErrorMessage.create(SVNErrorCode.UNKNOWN);
     }
 }
