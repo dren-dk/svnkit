@@ -227,7 +227,7 @@ class DAVCommitEditor implements ISVNEditor {
             // convert to full path?
             copyPath = myRepository.doGetFullPath(copyPath);
             copyPath = SVNEncodingUtil.uriEncode(copyPath);
-            DAVBaselineInfo info = DAVUtil.getBaselineInfo(myConnection, myRepository, copyPath, copyRevision, false, false, null);
+            DAVBaselineInfo info = DAVUtil.getStableURL(myConnection, myRepository, copyPath, copyRevision, false, false, null);
             copyPath = SVNPathUtil.append(info.baselineBase, info.baselinePath);
 
             String dst = myLocation.setPath(myConnection.hasHttpV2Support() ? newDir.getCustomURL() : newDir.getWorkingURL(), true).toString();
@@ -241,7 +241,7 @@ class DAVCommitEditor implements ISVNEditor {
                         e.getErrorMessage().getErrorCode() != SVNErrorCode.CANCELLED) {
                     SVNErrorMessage err = null;
                     try {
-                        DAVBaselineInfo info = DAVUtil.getBaselineInfo(myConnection, myRepository, newDir.getURL(), -1, false, false, null);
+                        DAVBaselineInfo info = DAVUtil.getStableURL(myConnection, myRepository, newDir.getURL(), -1, false, false, null);
                         if (info != null) {
                             err = SVNErrorMessage.create(SVNErrorCode.RA_DAV_ALREADY_EXISTS, "Path ''{0}'' already exists", newDir.getURL());
                         }
@@ -357,7 +357,7 @@ class DAVCommitEditor implements ISVNEditor {
         if (copyPath != null) {
             copyPath = myRepository.doGetFullPath(copyPath);
             copyPath = SVNEncodingUtil.uriEncode(copyPath);
-            DAVBaselineInfo info = DAVUtil.getBaselineInfo(myConnection, myRepository, copyPath, copyRevision, false, false, null);
+            DAVBaselineInfo info = DAVUtil.getStableURL(myConnection, myRepository, copyPath, copyRevision, false, false, null);
             copyPath = SVNPathUtil.append(info.baselineBase, info.baselinePath);
 
             // do "COPY" copyPath to parents working url ?

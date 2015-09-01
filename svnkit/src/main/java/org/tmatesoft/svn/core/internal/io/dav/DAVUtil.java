@@ -175,11 +175,10 @@ public class DAVUtil {
         return vcc.getString();
     }
 
-    public static DAVBaselineInfo getBaselineInfo(DAVConnection connection, DAVRepository repos, String path, long revision,
+    public static DAVBaselineInfo getStableURL(DAVConnection connection, DAVRepository repos, String path, long revision,
                                                   boolean includeType, boolean includeRevision, DAVBaselineInfo info) throws SVNException {
-        info = info == null ? new DAVBaselineInfo() : info;
-
         if (connection.hasHttpV2Support()) {
+            info = info == null ? new DAVBaselineInfo() : info;
             if (SVNRevision.isValidRevisionNumber(revision)) {
                 info.revision = revision;
             } else {
@@ -188,7 +187,14 @@ public class DAVUtil {
             info.baselineBase = SVNPathUtil.append(connection.myRevRootStub, String.valueOf(info.revision));
             info.baselinePath = connection.getRelativePath(path);
             return info;
+        } else {
+            return getBaselineInfo(connection, repos, path, revision, includeType, includeRevision, info);
         }
+    }
+
+    public static DAVBaselineInfo getBaselineInfo(DAVConnection connection, DAVRepository repos, String path, long revision,
+                                                  boolean includeType, boolean includeRevision, DAVBaselineInfo info) throws SVNException {
+        info = info == null ? new DAVBaselineInfo() : info;
 
         DAVElement[] properties = includeRevision ? DAVElement.BASELINE_PROPERTIES : new DAVElement[] {DAVElement.BASELINE_COLLECTION};
         DAVProperties baselineProperties = getBaselineProperties(connection, repos, path, revision, properties);

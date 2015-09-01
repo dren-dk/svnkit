@@ -119,13 +119,17 @@ public class DAVConnection {
 
     public void fetchRepositoryRoot(DAVRepository repository) throws SVNException {
         if (!repository.hasRepositoryRoot()) {
-            String rootPath = repository.getLocation().getURIEncodedPath();
-            DAVBaselineInfo info = DAVUtil.getBaselineInfo(this, repository, rootPath, -1, false, false, null);
-            // remove relative part from the path
-            rootPath = rootPath.substring(0, rootPath.length() - info.baselinePath.length());
-            SVNURL location = repository.getLocation();
-            SVNURL url = location.setPath(rootPath, true);
-            repository.setRepositoryRoot(url);
+            if (hasHttpV2Support()) {
+                repository.setRepositoryRoot(myRepositoryRoot);
+            } else {
+                String rootPath = repository.getLocation().getURIEncodedPath();
+                DAVBaselineInfo info = DAVUtil.getBaselineInfo(this, repository, rootPath, -1, false, false, null);
+                // remove relative part from the path
+                rootPath = rootPath.substring(0, rootPath.length() - info.baselinePath.length());
+                SVNURL location = repository.getLocation();
+                SVNURL url = location.setPath(rootPath, true);
+                repository.setRepositoryRoot(url);
+            }
         }
     }
 
