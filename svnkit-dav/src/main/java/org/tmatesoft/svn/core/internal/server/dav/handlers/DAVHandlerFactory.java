@@ -83,6 +83,8 @@ public class DAVHandlerFactory {
             return new DAVLockHandler(manager, request, response);
         } else if (METHOD_UNLOCK.equals(methodName)) {
             return new DAVUnlockHandler(manager, request, response);
+        } else if (METHOD_HEAD.equals(methodName)) {
+            return new DAVHeadHandler(manager, request, response);
         }
         
         SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_DAV_REQUEST_FAILED, "Unknown request method ''{0}''", request.getMethod()), 
