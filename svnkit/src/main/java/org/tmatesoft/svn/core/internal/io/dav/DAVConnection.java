@@ -149,6 +149,12 @@ public class DAVConnection {
         return performHttpRequest(httpConnection, "PROPFIND", path, header, body, -1, 0, null, handler);
     }
 
+    public HTTPStatus doOptions(String path) throws SVNException {
+        beforeCall();
+        IHTTPConnection httpConnection = getConnection();
+        return performHttpRequest(httpConnection, "OPTIONS", path, null, DAVOptionsHandler.OPTIONS_REQUEST, 200, 0, null, null);
+    }
+
     public SVNLock doGetLock(String path, DAVRepository repos) throws SVNException {
         beforeCall();
         DAVBaselineInfo info = DAVUtil.getBaselineInfo(this, repos, path, -1, false, true, null);
@@ -633,6 +639,10 @@ public class DAVConnection {
 
     public void setCapability(SVNCapability capability, String capResult){
         myCapabilities.put(capability, capResult);
+    }
+
+    public boolean hasHttpV2Support() {
+        return myMeResource != null;
     }
 
     protected IHTTPConnection getConnection() {

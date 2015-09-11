@@ -43,17 +43,7 @@ import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.SVNRevisionProperty;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
-import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVDateRevisionHandler;
-import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVDeletedRevisionHandler;
-import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVEditorHandler;
-import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVFileRevisionHandler;
-import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVInheritedPropertiesHandler;
-import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVLocationSegmentsHandler;
-import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVLocationsHandler;
-import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVLogHandler;
-import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVMergeInfoHandler;
-import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVProppatchHandler;
-import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVReplayHandler;
+import org.tmatesoft.svn.core.internal.io.dav.handlers.*;
 import org.tmatesoft.svn.core.internal.io.dav.http.HTTPStatus;
 import org.tmatesoft.svn.core.internal.io.dav.http.IHTTPConnectionFactory;
 import org.tmatesoft.svn.core.internal.io.fs.FSErrors;
@@ -67,6 +57,7 @@ import org.tmatesoft.svn.core.internal.wc.SVNDepthFilterEditor;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.io.*;
+import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc2.SvnChecksum;
 import org.tmatesoft.svn.util.SVNLogType;
 import org.tmatesoft.svn.util.Version;
@@ -188,6 +179,9 @@ public class DAVRepository extends SVNRepository {
             String path = getLocation().getPath();
             path = SVNEncodingUtil.uriEncode(path);
             DAVConnection connection = getConnection();
+            if (connection.hasHttpV2Support()) {
+                return DAVUtil.getLatestRevisionHttpV2(connection);
+            }
             DAVBaselineInfo info = DAVUtil.getBaselineInfo(connection, this, path, -1, false, true, null);
             return info.revision;
         } finally {
