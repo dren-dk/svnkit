@@ -261,11 +261,15 @@ class DAVCommitEditor implements ISVNEditor {
         // do nothing,
         DAVResource parent = myDirsStack.peek() != null ? (DAVResource) myDirsStack.peek() : null;
         DAVResource directory = new DAVResource(myCommitMediator, myConnection, path, revision, parent != null && parent.isCopy());
-        if (parent != null && parent.getVersionURL() == null) {
-            // part of copied structure -> derive wurl
-            directory.setWorkingURL(SVNPathUtil.append(parent.getWorkingURL(), SVNPathUtil.tail(path)));
+        if (myConnection.hasHttpV2Support()) {
+            directory.setCustomURL(SVNPathUtil.append(myTxnRootUrl, path));
         } else {
-            directory.fetchVersionURL(parent, false);
+            if (parent != null && parent.getVersionURL() == null) {
+                // part of copied structure -> derive wurl
+                directory.setWorkingURL(SVNPathUtil.append(parent.getWorkingURL(), SVNPathUtil.tail(path)));
+            } else {
+                directory.fetchVersionURL(parent, false);
+            }
         }
         myDirsStack.push(directory);
         myPathsMap.put(directory.getURL(), directory.getPath());
