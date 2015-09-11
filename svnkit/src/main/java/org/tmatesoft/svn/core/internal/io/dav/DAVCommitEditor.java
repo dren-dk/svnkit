@@ -269,7 +269,9 @@ class DAVCommitEditor implements ISVNEditor {
 
     public void changeDirProperty(String name, SVNPropertyValue value) throws SVNException {
         DAVResource directory = (DAVResource) myDirsStack.peek();
-        checkoutResource(directory, true);
+        if (!myConnection.hasHttpV2Support()) {
+            checkoutResource(directory, true);
+        }
         directory.putProperty(name, value);
         myPathsMap.put(directory.getURL(), directory.getPath());
     }
@@ -279,7 +281,8 @@ class DAVCommitEditor implements ISVNEditor {
         // do proppatch if there were property changes.
         if (resource.getProperties() != null) {
             StringBuffer request = DAVProppatchHandler.generatePropertyRequest(null, resource.getProperties());
-            myConnection.doProppatch(resource.getURL(), resource.getWorkingURL(), request, null, null);
+            String propPatchTarget = myConnection.hasHttpV2Support() ? resource.getCustomURL() : resource.getWorkingURL();
+            myConnection.doProppatch(resource.getURL(), propPatchTarget, request, null, null);
         }
         resource.dispose();
     }
