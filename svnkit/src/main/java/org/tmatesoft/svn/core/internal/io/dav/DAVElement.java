@@ -69,6 +69,8 @@ public class DAVElement {
     public static final String SVN_TXN_ROOT_STUB_HEADER = "SVN-Txn-Root-Stub";
     public static final String SVN_VTXN_STUB_HEADER = "SVN-VTxn-Stub";
     public static final String SVN_VTXN_ROOT_STUB_HEADER = "SVN-VTxn-Root-Stub";
+    public static final String SVN_TXN_NAME_HEADER = "SVN-Txn-Name";
+    public static final String SVN_VTXN_NAME_HEADER = "SVN-VTxn-Name";
     public static final String SVN_REPOS_UUID_HEADER = "SVN-Repository-UUID";
     public static final String SVN_YOUNGEST_REV_HEADER = "SVN-Youngest-Rev";
     public static final String SVN_ALLOW_BULK_UPDATES_HEADER = "SVN-Allow-Bulk-Updates";
