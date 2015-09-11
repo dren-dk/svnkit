@@ -116,12 +116,12 @@ class DAVCommitEditor implements ISVNEditor {
             HTTPHeader responseHeader = httpStatus.getHeader();
             if (responseHeader != null) {
                 if (responseHeader.hasHeader(DAVElement.SVN_TXN_NAME_HEADER)) {
-                    myTxnUrl = SVNPathUtil.append(myConnection.myTxnStub, responseHeader.getFirstHeaderValue(DAVElement.SVN_TXN_NAME_HEADER));
-                    myTxnRootUrl = SVNPathUtil.append(myConnection.myTxnRootStub, responseHeader.getFirstHeaderValue(DAVElement.SVN_TXN_NAME_HEADER));
+                    myTxnUrl = SVNPathUtil.append(myConnection.getTxnStub(), responseHeader.getFirstHeaderValue(DAVElement.SVN_TXN_NAME_HEADER));
+                    myTxnRootUrl = SVNPathUtil.append(myConnection.getTxnRootStub(), responseHeader.getFirstHeaderValue(DAVElement.SVN_TXN_NAME_HEADER));
                 }
                 if (responseHeader.hasHeader(DAVElement.SVN_VTXN_NAME_HEADER)) {
-                    myTxnUrl = SVNPathUtil.append(myConnection.myVtxnStub, responseHeader.getFirstHeaderValue(DAVElement.SVN_VTXN_NAME_HEADER));
-                    myTxnRootUrl = SVNPathUtil.append(myConnection.myVtxnRootStub, responseHeader.getFirstHeaderValue(DAVElement.SVN_VTXN_NAME_HEADER));
+                    myTxnUrl = SVNPathUtil.append(myConnection.getVtxnStub(), responseHeader.getFirstHeaderValue(DAVElement.SVN_VTXN_NAME_HEADER));
+                    myTxnRootUrl = SVNPathUtil.append(myConnection.getVtxnRootStub(), responseHeader.getFirstHeaderValue(DAVElement.SVN_VTXN_NAME_HEADER));
                 }
             }
 

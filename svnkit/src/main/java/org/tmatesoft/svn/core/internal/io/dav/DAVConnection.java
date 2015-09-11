@@ -671,6 +671,22 @@ public class DAVConnection {
         return mySupportedPosts;
     }
 
+    public String getTxnStub() {
+        return myTxnStub;
+    }
+
+    public String getTxnRootStub() {
+        return myTxnRootStub;
+    }
+
+    public String getVtxnStub() {
+        return myVtxnStub;
+    }
+
+    public String getVtxnRootStub() {
+        return myVtxnRootStub;
+    }
+
     protected IHTTPConnection getConnection() {
         return myHttpConnection;
     }
