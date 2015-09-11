@@ -439,7 +439,9 @@ public class SVNErrorCode implements Serializable {
     public static final SVNErrorCode RA_DAV_PROPPATCH_FAILED = new SVNErrorCode(RA_DAV_CATEGORY, 8, "Failed to execute WebDAV PROPPATCH");
     public static final SVNErrorCode RA_DAV_MALFORMED_DATA = new SVNErrorCode(RA_DAV_CATEGORY, 9, "Malformed network data");
     public static final SVNErrorCode RA_DAV_RESPONSE_HEADER_BADNESS = new SVNErrorCode(RA_DAV_CATEGORY, 10, "Unable to extract data from response header");
-    
+    public static final SVNErrorCode RA_DAV_PRECONDITION_FAILED = new SVNErrorCode(RA_DAV_CATEGORY, 14, "The server state conflicts with the requested preconditions");
+    public static final SVNErrorCode RA_DAV_METHOD_NOT_ALLOWED = new SVNErrorCode(RA_DAV_CATEGORY, 15, "The URL doesn't allow the requested method");
+
     /**
      * @since 1.2.0, SVN 1.5
      */
