@@ -71,8 +71,10 @@ public class DAVRepository extends SVNRepository {
     private DAVConnection myConnection;
     private IHTTPConnectionFactory myConnectionFactory;
     private boolean myIsSpoolResponse;
+    private boolean myHttpV2Enabled;
 
     private static boolean ourIsKeepCredentials = Boolean.valueOf(System.getProperty("svnkit.http.keepCredentials", Boolean.TRUE.toString())).booleanValue();
+    private static boolean ourHttpV2Enabled = Boolean.valueOf(System.getProperty("svnkit.http.httpV2Enabled", Boolean.FALSE.toString())).booleanValue();
     private File mySpoolLocation;
 
     public static void setKeepCredentials(boolean keepCredentials) {
@@ -82,6 +84,7 @@ public class DAVRepository extends SVNRepository {
     protected DAVRepository(IHTTPConnectionFactory connectionFactory, SVNURL location, ISVNSession options) {
         super(location, options);
         myConnectionFactory = connectionFactory;
+        myHttpV2Enabled = ourHttpV2Enabled;
     }
 
     public void setSpoolLocation(File spoolLocation) {
@@ -163,6 +166,14 @@ public class DAVRepository extends SVNRepository {
 
     public boolean isSpoolResponse() {
         return myIsSpoolResponse;
+    }
+
+    public boolean isHttpV2Enabled() {
+        return myHttpV2Enabled;
+    }
+
+    public void setHttpV2Enabled(boolean httpV2Enabled) {
+        this.myHttpV2Enabled = httpV2Enabled;
     }
 
     public void setAuthenticationManager(ISVNAuthenticationManager authManager) {
