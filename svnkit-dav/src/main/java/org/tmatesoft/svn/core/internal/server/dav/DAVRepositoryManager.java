@@ -311,7 +311,11 @@ public class DAVRepositoryManager {
             requestContext = SVNPathUtil.append(pathToRepos, reposName);
             return SVNEncodingUtil.uriEncode(requestContext);
         }
-        requestContext = DAVPathUtil.append(requestContext, reposName);
+        if ("".equals(requestContext)) {
+            requestContext = "/" + reposName;
+        } else {
+            requestContext = DAVPathUtil.append(requestContext, reposName);
+        }
         return SVNEncodingUtil.uriEncode(requestContext);
     }
 }
