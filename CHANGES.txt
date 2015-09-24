@@ -1,5 +1,8 @@
 == version 1.8.11 ==
 
++ Trilead SSH library updated to fix 'malformed network data' error.
++ Minor bugfixes.
+
 == version 1.8.10 ==
 
 + Fixed NPE when autoproperties included ChangedDate property.
