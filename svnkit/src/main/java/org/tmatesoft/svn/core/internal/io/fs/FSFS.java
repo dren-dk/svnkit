@@ -202,6 +202,10 @@ public class FSFS {
         return myReposFormat;
     }
 
+    public boolean isUseLogAddressing() {
+        return myUseLogAddressing;
+    }
+
     public void open() throws SVNException {
         openRoot();
         openDB();

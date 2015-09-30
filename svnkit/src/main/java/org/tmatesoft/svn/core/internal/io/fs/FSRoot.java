@@ -327,6 +327,10 @@ public abstract class FSRoot {
         return fileNode.getFileLength();
     }
 
+    public boolean isUseLogAddressing() {
+        return getOwner().isUseLogAddressing();
+    }
+
     private static final class RevisionCache {
 
         private LinkedList myKeys;

@@ -97,14 +97,23 @@ public class FSRevisionRoot extends FSRoot {
 
     public FSRevisionNode getRootRevisionNode() throws SVNException {
         if (myRootRevisionNode == null) {
-            FSFile file = getOwner().getPackOrRevisionFSFile(getRevision());
-            try {
-                loadOffsets(file);
-                file.seek(myRootOffset);
-                Map headers = file.readHeader();
-                myRootRevisionNode = FSRevisionNode.fromMap(headers);
-            } finally {
-                file.close();
+            if (isUseLogAddressing()) {
+                FSRevisionNode rootRevisionNode = new FSRevisionNode();
+                rootRevisionNode.setId(FSID.createRevId(null, null, myRevision, FSID.ITEM_INDEX_ROOT_NODE));
+                rootRevisionNode.setType(SVNNodeKind.DIR);
+                rootRevisionNode.setPredecessorId(null);
+                rootRevisionNode.setCreatedPath("/");
+                myRootRevisionNode = rootRevisionNode;
+            } else {
+                FSFile file = getOwner().getPackOrRevisionFSFile(getRevision());
+                try {
+                    loadOffsets(file);
+                    file.seek(myRootOffset);
+                    Map headers = file.readHeader();
+                    myRootRevisionNode = FSRevisionNode.fromMap(headers);
+                } finally {
+                    file.close();
+                }
             }
         }
         return myRootRevisionNode;
