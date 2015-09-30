@@ -45,3 +45,11 @@ ErrorLog "%home%/httpd.%port%.error.log"
      Allow from any
      %apache.options%
    </Location>
+
+   <Location /redirect301>
+     Redirect 301 /redirect301 http://localhost:%port%/repos
+   </Location>
+   
+   <Location /redirect302>
+     Redirect 302 /redirect302 http://localhost:%port%/repos
+   </Location>
