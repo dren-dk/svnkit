@@ -904,4 +904,17 @@ public class DefaultSVNOptions implements ISVNOptions, ISVNMergerFactory {
                 || "on".equalsIgnoreCase(value);
     }
 
+    public static long getLongValue(String value, long defaultValue) {
+        if (value == null) {
+            return defaultValue;
+        }
+        value = value.trim();
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            //ignore
+        }
+        return defaultValue;
+    }
+
 }

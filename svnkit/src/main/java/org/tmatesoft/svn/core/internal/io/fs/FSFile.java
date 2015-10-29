@@ -15,6 +15,7 @@ import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.util.SVNHashMap;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
+import org.tmatesoft.svn.core.internal.wc.SVNMergeInfoManager;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.util.SVNDebugLog;
 import org.tmatesoft.svn.util.SVNLogType;
@@ -49,7 +50,15 @@ public class FSFile {
     private ByteBuffer myReadLineBuffer;
     private CharsetDecoder myDecoder;
     private MessageDigest myDigest;
-    
+
+    // Logical address index is written to the end of the file
+    // and the footer of the index contains basic information about its size
+    private long myL2POffset;
+    private long myP2LOffset;
+    private String myL2PChecksum;
+    private String myP2LChecksum;
+    private long myFooterOffset;
+
     public FSFile(File file) {
         myFile = file;
         myData = null;
@@ -59,6 +68,8 @@ public class FSFile {
         myReadLineBuffer = ByteBuffer.allocate(1024);
         myDecoder = Charset.forName("UTF-8").newDecoder();
         myDecoder = myDecoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT);
+        myL2POffset = -1;
+        myP2LOffset = -1;
     }
 
     public FSFile(byte[] data) {
@@ -76,6 +87,8 @@ public class FSFile {
         myReadLineBuffer = ByteBuffer.allocate(1024);
         myDecoder = Charset.forName("UTF-8").newDecoder();
         myDecoder = myDecoder.onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT);
+        myL2POffset = -1;
+        myP2LOffset = -1;
     }
     
     public void seek(long position) {
@@ -308,7 +321,37 @@ public class FSFile {
         }
         return map;
     }
-    
+
+    public void ensureFooterLoaded() throws SVNException {
+        try {
+            if (myL2POffset == -1) {
+                long fileSize = size();
+
+                seek(fileSize - 1);
+                int footerSize = read() & 0xff;
+
+                long footerOffset = fileSize - 1 - footerSize;
+                if (footerOffset < 0 || footerOffset >= fileSize) {
+                    SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_CORRUPT, "Invalid footer size {0}", String.valueOf(footerSize));
+                    SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
+                }
+                seek(footerOffset);
+
+                byte[] footerBytes = new byte[footerSize];
+                int bytesRead = read(footerBytes, 0, footerBytes.length);
+
+                assert bytesRead == footerBytes.length;
+
+                parseFooter(new String(footerBytes));
+
+                myFooterOffset = footerOffset;
+            }//otherwise do nothing, it is already loaded
+        } catch (IOException e) {
+            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.IO_ERROR, e);
+            SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
+        }
+    }
+
     public int read() throws IOException {
         if (myData != null) {
             if (myPosition >= myLength) {
@@ -503,5 +546,43 @@ public class FSFile {
         }
         return SVNRepository.INVALID_REVISION;
     }
-    
+
+    private void parseFooter(String footerString) throws SVNException {
+        String[] fields = footerString.split(" ");
+        if (fields.length != 4) {
+            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_CORRUPT, "Invalid revision footer");
+            SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
+        }
+
+        long l2pOffset = -1;
+        try {
+            l2pOffset = Long.parseLong(fields[0]);
+        } catch (NumberFormatException e) {
+            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_CORRUPT, "Invalid revision footer");
+            SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
+        }
+        String l2pChecksum = fields[1];
+
+        long p2lOffset = -1;
+        try {
+            p2lOffset = Long.parseLong(fields[2]);
+        } catch (NumberFormatException e) {
+            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_CORRUPT, "Invalid revision footer");
+            SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
+        }
+        String p2lChecksum = fields[3];
+
+        myL2POffset = l2pOffset;
+        myP2LOffset = p2lOffset;
+        myL2PChecksum = l2pChecksum;
+        myP2LChecksum = p2lChecksum;
+    }
+
+    public long getL2POffset() {
+        return myL2POffset;
+    }
+
+    public long getP2LOffset() {
+        return myP2LOffset;
+    }
 }

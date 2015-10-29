@@ -19,13 +19,18 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
+import java.util.Map;
 
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.internal.delta.SVNDeltaCombiner;
+import org.tmatesoft.svn.core.internal.io.fs.index.FSLogicalAddressingIndex;
+import org.tmatesoft.svn.core.internal.io.fs.index.FSP2LProtoIndex;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.internal.wc.SVNFileType;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.io.ISVNDeltaConsumer;
 import org.tmatesoft.svn.core.io.SVNRepository;
@@ -133,7 +138,7 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
             txnLock = FSWriteLock.getWriteLockForTxn(txnRoot.getTxnID(), txnRoot.getOwner());
             txnLock.lock();
             
-            File targetFile = txnRoot.getTransactionProtoRevFile();
+            File targetFile = txnRoot.getWritableTransactionProtoRevFile();
             offset = targetFile.length();
             targetOS = SVNFileUtil.openFileForWriting(targetFile, true);
             CountingOutputStream revWriter = new CountingOutputStream(targetOS, offset);
@@ -143,7 +148,7 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
             String header;
 
             if (baseRep != null) {
-                header = FSRepresentation.REP_DELTA + " " + baseRep.getRevision() + " " + baseRep.getOffset() + " " + baseRep.getSize() + "\n";
+                header = FSRepresentation.REP_DELTA + " " + baseRep.getRevision() + " " + baseRep.getItemIndex() + " " + baseRep.getSize() + "\n";
             } else {
                 header = FSRepresentation.REP_DELTA + "\n";
             }
@@ -180,8 +185,8 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
     }
 
     public void write(int b) throws IOException {
-        write(new byte[] {
-            (byte) (b & 0xFF)
+        write(new byte[]{
+                (byte) (b & 0xFF)
         }, 0, 1);
     }
 
@@ -216,13 +221,12 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
             return;
         }
         myIsClosed = true;
-        final long truncateToSize[] = new long[] {-1};
         try {
             ByteArrayInputStream target = new ByteArrayInputStream(myTextBuffer.toByteArray());
             myDeltaGenerator.sendDelta(null, mySourceStream, mySourceOffset, target, this, false);
 
             final FSRepresentation rep = new FSRepresentation();
-            rep.setOffset(myRepOffset);
+            rep.setItemIndex(myRepOffset);
 
             long offset = myTargetFileOS.getPosition();
 
@@ -238,35 +242,31 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
             rep.setSHA1HexDigest(SVNFileUtil.toHexDigest(mySHA1Digest));
             
             FSFS fsfs = myTxnRoot.getOwner();
-            final IFSRepresentationCacheManager reposCacheManager = fsfs.getRepositoryCacheManager();
-            if (reposCacheManager != null) {
-                try {
-                    reposCacheManager.runReadTransaction(new IFSSqlJetTransaction() {
-                        public void run() throws SVNException {
-                            final FSRepresentation oldRep = reposCacheManager.getRepresentationByHash(rep.getSHA1HexDigest());
-                            if (oldRep != null) {
-                                oldRep.setUniquifier(rep.getUniquifier());
-                                oldRep.setMD5HexDigest(rep.getMD5HexDigest());
-                                truncateToSize[0] = myRepOffset;
-                                myRevNode.setTextRepresentation(oldRep);
-                            }
-                        }
-                    });
-                } catch (SVNException e) {
-                    // explicitly ignore.
-                    SVNDebugLog.getDefaultLog().logError(SVNLogType.FSFS, e);
-                }
-            } 
-            if (truncateToSize[0] < 0){
+            FSRepresentation oldRep = getSharedRepresentation(fsfs, rep, null);
+
+            if (oldRep != null) {
+                SVNFileUtil.truncate(myTargetFile, myRepOffset);
+                myRevNode.setTextRepresentation(oldRep);
+            } else {
+                rep.setItemIndex(myTxnRoot.allocateItemIndex(myRepOffset));
+
                 myTargetFileOS.write("ENDREP\n".getBytes("UTF-8"));
                 myRevNode.setTextRepresentation(rep);
             }
+
             myRevNode.setIsFreshTxnRoot(false);
             fsfs.putTxnRevisionNode(myRevNode.getId(), myRevNode);
+
+            if (oldRep == null) {
+                final int checksum = myTargetFileOS.finalizeChecksum();
+                storeSha1RepMapping(fsfs, myRevNode.getTextRepresentation()); //store_sha1_rep_mapping
+                final FSP2LProtoIndex.Entry entry = new FSP2LProtoIndex.Entry(myRepOffset, myTargetFileOS.getPosition(), FSP2LProtoIndex.ItemType.FILE_REP, checksum, SVNRepository.INVALID_REVISION, rep.getItemIndex());
+                myTxnRoot.storeP2LIndexEntry(entry);
+            }
         } catch (SVNException svne) {
             throw new IOException(svne.getMessage());
         } finally {
-            closeStreams(truncateToSize[0]);
+            closeStreams();
             try {
                 myTxnLock.unlock();
             } catch (SVNException e) {
@@ -276,12 +276,9 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
         }
     }
 
-    public void closeStreams(long truncateToSize) throws IOException {
+    public void closeStreams() throws IOException {
         SVNFileUtil.closeFile(myTargetFileOS);
         SVNFileUtil.closeFile(mySourceStream);
-        if (truncateToSize >= 0) {
-            SVNFileUtil.truncate(myTargetFile, truncateToSize);
-        }
     }
 
     public FSRevisionNode getRevisionNode() {
@@ -304,5 +301,128 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
     }
 
     public void applyTextDelta(String path, String baseChecksum) throws SVNException {
+    }
+
+    private FSRepresentation getSharedRepresentation(FSFS fsfs,  final FSRepresentation representation, Map<String, FSRepresentation> representationsMap) throws SVNException {
+        if (!fsfs.isRepSharingAllowed()) {
+            return null;
+        }
+        FSRepresentation oldRepresentation = null;
+        if (representationsMap != null) {
+            oldRepresentation = representationsMap.get(representation.getSHA1HexDigest());
+        }
+        if (oldRepresentation == null) {
+            final IFSRepresentationCacheManager reposCacheManager = fsfs.getRepositoryCacheManager();
+            if (reposCacheManager != null) {
+                try {
+                    reposCacheManager.runReadTransaction(new IFSSqlJetTransaction() {
+                        public void run() throws SVNException {
+                            final FSRepresentation oldRep = reposCacheManager.getRepresentationByHash(representation.getSHA1HexDigest());
+                            if (oldRep != null) {
+                                oldRep.setUniquifier(representation.getUniquifier());
+                                oldRep.setMD5HexDigest(representation.getMD5HexDigest());
+//                                myRevNode.setTextRepresentation(oldRep);
+                            }
+                        }
+                    });
+                } catch (SVNException e) {
+                    if (e.getErrorMessage().getErrorCode() == SVNErrorCode.FS_CORRUPT || e.getErrorMessage().getErrorCode().getCategory() == SVNErrorCode.MALFUNC_CATEGORY) {
+                        throw e;
+                    }
+
+                    // explicitly ignore.
+                    SVNDebugLog.getDefaultLog().logError(SVNLogType.FSFS, e);
+                }
+                if (oldRepresentation != null) {
+                    checkRepresentation(myTxnRoot.getOwner(), oldRepresentation, null);
+                }
+            }
+
+        }
+        if (oldRepresentation == null && representation.isTxn()) {
+            File file = pathTxnSha1(fsfs, representation, representation.getTxnId());
+            SVNFileType fileType = SVNFileType.getType(file);
+            if (fileType == SVNFileType.FILE) {
+                String representationString = SVNFileUtil.readFile(file);
+                oldRepresentation = FSRepresentation.parse(representationString);
+            }
+        }
+        if (oldRepresentation == null) {
+            return null;
+        }
+        if (oldRepresentation.getExpandedSize() != representation.getExpandedSize() ||
+                (representation.getExpandedSize() == 0 && oldRepresentation.getSize() != representation.getSize())) {
+            oldRepresentation = null;
+        } else {
+            oldRepresentation.setMD5HexDigest(representation.getMD5HexDigest());
+            oldRepresentation.setUniquifier(representation.getUniquifier());
+        }
+        return oldRepresentation;
+    }
+
+    private void checkRepresentation(FSFS fsfs, FSRepresentation representation, Object hint) throws SVNException {
+        if (fsfs.isUseLogAddressing()) {
+            final long startRevision = fsfs.getPackedBaseRevision(representation.getRevision());
+            if (hint != null) {
+                //TODO: this can speedup algorithm somehow
+            }
+            FSFile revFile = null;
+            if (revFile == null || true) {
+                revFile = fsfs.getPackOrRevisionFSFile(representation.getRevision());
+            }
+            hint = revFile;//TODO: this can speedup algorithm somehow
+
+            final long offset = fsfs.lookupOffsetInIndex(revFile, representation.getRevision(), representation.getItemIndex());
+
+            final FSP2LProtoIndex.Entry entry = lookupP2LEntry(revFile, representation.getRevision(), offset);
+
+            if (entry == null ||
+                    entry.getType().getCode() < FSP2LProtoIndex.ItemType.FILE_REP.getCode() ||
+                    entry.getType().getCode() > FSP2LProtoIndex.ItemType.DIR_PROPS.getCode()) {
+                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_CORRUPT, "No representation found at offset {0} for item %s in revision {1}", new Object[]{new Long(offset), new Long(representation.getItemIndex())});
+                SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
+            }
+        } else {
+            //TODO createRepresentationState(); this assigns the "hint"
+        }
+    }
+
+    private FSP2LProtoIndex.Entry lookupP2LEntry(FSFile revFile, long revision, long offset) throws SVNException {
+        boolean isCached = false;
+
+        //TODO: cache!
+
+        if (!isCached) {
+            FSLogicalAddressingIndex index = new FSLogicalAddressingIndex(myTxnRoot.getOwner(), revFile);
+            List<FSP2LProtoIndex.Entry> entries = index.lookupP2LEntries(revision, offset, offset + 1);
+            return lookupEntry(entries, offset, null);
+        }
+        return null;
+    }
+
+    private FSP2LProtoIndex.Entry lookupEntry(List<FSP2LProtoIndex.Entry> entries, long offset, Object hint) {
+        if (hint != null) {
+            //TODO: this can speedup algorithm somehow
+        }
+        int index = FSLogicalAddressingIndex.searchLowerBound(entries, offset);
+        if (hint != null) {
+            //TODO: this can speedup algorithm somehow
+        }
+        final FSP2LProtoIndex.Entry entry = entries.get(index);
+        return (FSLogicalAddressingIndex.compareEntryOffset(entry, offset) != 0) ? null : entry;
+    }
+
+    private static void storeSha1RepMapping(FSFS fsfs, FSRepresentation representation) throws SVNException {
+        if (fsfs.isRepSharingAllowed() && representation != null && representation.getSHA1HexDigest() != null) {
+            final File fileName = pathTxnSha1(fsfs, representation, representation.getTxnId());
+            final String stringRepresentation = representation.getStringRepresentation(fsfs.getDBFormat());
+            SVNFileUtil.writeToFile(fileName, stringRepresentation, "UTF-8");
+        }
+    }
+
+    private static File pathTxnSha1(FSFS fsfs, FSRepresentation representation, String txnId) {
+        final String checksum = representation.getSHA1HexDigest();
+        final File transactionDirectory = fsfs.getTransactionDir(txnId);
+        return SVNFileUtil.createFilePath(transactionDirectory, checksum);
     }
 }

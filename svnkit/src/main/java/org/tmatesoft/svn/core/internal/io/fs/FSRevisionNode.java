@@ -429,7 +429,7 @@ public class FSRevisionNode {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_CORRUPT, "Malformed text rep offset line in node-rev");
             SVNErrorManager.error(err, SVNLogType.FSFS);
         }
-        rep.setOffset(offset);
+        rep.setItemIndex(offset);
 
         representation = representation.substring(delimiterInd + 1);
         delimiterInd = representation.indexOf(' ');

@@ -21,6 +21,7 @@ import org.tmatesoft.svn.core.io.SVNRepository;
  */
 public class FSID implements Serializable {
 
+    public static final long ITEM_INDEX_UNUSED = 0;
     public static final long ITEM_INDEX_CHANGES = 1;
     public static final long ITEM_INDEX_ROOT_NODE = 2;
     public static final long ITEM_FIRST_USER = 3;

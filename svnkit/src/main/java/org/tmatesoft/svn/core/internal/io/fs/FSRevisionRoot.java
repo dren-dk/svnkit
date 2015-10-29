@@ -97,7 +97,7 @@ public class FSRevisionRoot extends FSRoot {
 
     public FSRevisionNode getRootRevisionNode() throws SVNException {
         if (myRootRevisionNode == null) {
-            if (isUseLogAddressing()) {
+            if (false && isUseLogAddressing()) {
                 FSRevisionNode rootRevisionNode = new FSRevisionNode();
                 rootRevisionNode.setId(FSID.createRevId(null, null, myRevision, FSID.ITEM_INDEX_ROOT_NODE));
                 rootRevisionNode.setType(SVNNodeKind.DIR);
@@ -207,7 +207,11 @@ public class FSRevisionRoot extends FSRoot {
         }
         long[] rootOffset = { -1 };
         long[] changesOffset = { -1 };
-        FSRepositoryUtil.loadRootChangesOffset(getOwner(), getRevision(), file, rootOffset, changesOffset);
+        if (isUseLogAddressing()) {
+            FSRepositoryUtil.loadRootChangesOffsetLogicalAddressing(getOwner(), getRevision(), file, FSID.ITEM_INDEX_ROOT_NODE, rootOffset, changesOffset);
+        } else {
+            FSRepositoryUtil.loadRootChangesOffset(getOwner(), getRevision(), file, rootOffset, changesOffset);
+        }
         myRootOffset = rootOffset[0];
         myChangesOffset = changesOffset[0];
     }

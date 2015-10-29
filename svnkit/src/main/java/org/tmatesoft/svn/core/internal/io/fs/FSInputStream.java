@@ -227,7 +227,7 @@ public class FSInputStream extends InputStream {
                     return null;
                 }
                 rep.setRevision(repState.myBaseRevision);
-                rep.setOffset(repState.myBaseOffset);
+                rep.setItemIndex(repState.myBaseOffset);
                 rep.setSize(repState.myBaseLength);
                 rep.setTxnId(null);
             }
