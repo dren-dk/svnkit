@@ -120,8 +120,6 @@ public class SVNSpillBuffer implements Closeable {
         } catch (IOException e) {
             SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.IO_ERROR, e);
             SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
-        } finally {
-            close();
         }
     }
 
