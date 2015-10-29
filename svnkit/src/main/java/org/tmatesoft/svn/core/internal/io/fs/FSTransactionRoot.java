@@ -32,11 +32,7 @@ import org.tmatesoft.svn.core.SVNProperties;
 import org.tmatesoft.svn.core.SVNProperty;
 import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.SVNRevisionProperty;
-import org.tmatesoft.svn.core.internal.delta.SVNDeltaCombiner;
-import org.tmatesoft.svn.core.internal.io.fs.index.FSFnv1aOutputStream;
-import org.tmatesoft.svn.core.internal.io.fs.index.FSL2PProtoIndex;
-import org.tmatesoft.svn.core.internal.io.fs.index.FSP2LProtoIndex;
-import org.tmatesoft.svn.core.internal.io.fs.index.FSTransactionItemIndex;
+import org.tmatesoft.svn.core.internal.io.fs.index.*;
 import org.tmatesoft.svn.core.internal.util.SVNDate;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
@@ -476,7 +472,7 @@ public class FSTransactionRoot extends FSRoot {
             long number = FSID.ITEM_INDEX_CHANGES;
             int checksum = protoFile.finalizeChecksum();
 
-            FSP2LProtoIndex.Entry entry = new FSP2LProtoIndex.Entry(offset, size, itemType, checksum, revision, number);
+            FSP2LEntry entry = new FSP2LEntry(offset, size, itemType, checksum, revision, number);
             storeP2LIndexEntry(entry);
             storeL2PIndexEntry(entry.getOffset(), FSID.ITEM_INDEX_CHANGES);
         }
@@ -659,7 +655,7 @@ public class FSTransactionRoot extends FSRoot {
 
         if (getOwner().isUseLogAddressing()) {
             final int checksum = checksumOutputStream.finalizeChecksum();
-            final FSP2LProtoIndex.Entry entry = new FSP2LProtoIndex.Entry(myOffset, protoFile.getPosition() - myOffset, FSP2LProtoIndex.ItemType.NODEREV, checksum, SVNRepository.INVALID_REVISION, itemIndex);
+            final FSP2LEntry entry = new FSP2LEntry(myOffset, protoFile.getPosition() - myOffset, FSP2LProtoIndex.ItemType.NODEREV, checksum, SVNRepository.INVALID_REVISION, itemIndex);
             storeP2LIndexEntry(entry);
         }
 
@@ -797,7 +793,7 @@ public class FSTransactionRoot extends FSRoot {
         }
     }
 
-    public void storeP2LIndexEntry(FSP2LProtoIndex.Entry entry) throws SVNException {
+    public void storeP2LIndexEntry(FSP2LEntry entry) throws SVNException {
         final FSFS fsfs = getOwner();
         final String txnID = getTxnID();
 
@@ -849,7 +845,7 @@ public class FSTransactionRoot extends FSRoot {
 
             representation.setItemIndex(itemIndex);
 
-            FSP2LProtoIndex.Entry entry = new FSP2LProtoIndex.Entry(offset, size, itemType, checksum, revision, number);
+            FSP2LEntry entry = new FSP2LEntry(offset, size, itemType, checksum, revision, number);
             storeP2LIndexEntry(entry);
 
             return targetFile.mySize;

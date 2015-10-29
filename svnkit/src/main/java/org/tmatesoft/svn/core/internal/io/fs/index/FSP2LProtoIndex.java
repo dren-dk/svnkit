@@ -55,7 +55,7 @@ public class FSP2LProtoIndex {
         }
     }
 
-    public Entry readEntry() throws SVNException {
+    public FSP2LEntry readEntry() throws SVNException {
         final long offset = readOffset();
         final long size = readOffset();
         final int type = readInt();
@@ -70,12 +70,12 @@ public class FSP2LProtoIndex {
                 SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
             }
             final long itemRevision = revision == 0 ? SVNRepository.INVALID_REVISION : (revision -1);
-            return new Entry(offset, size, ItemType.fromCode(type), fnv1Checksum, itemRevision, itemNumber);
+            return new FSP2LEntry(offset, size, ItemType.fromCode(type), fnv1Checksum, itemRevision, itemNumber);
         }
         return null;
     }
 
-    public void writeEntry(Entry entry) throws SVNException {
+    public void writeEntry(FSP2LEntry entry) throws SVNException {
         assert entry.getOffset() >= 0;
         assert entry.getSize() >= 0;
         assert (entry.getRevision() >= 0 || entry.getRevision() == SVNRepository.INVALID_REVISION);
@@ -100,9 +100,9 @@ public class FSP2LProtoIndex {
             if (offset == 0) {
                 return 0;
             } else {
-                offset -= Entry.SIZE_IN_BYTES;
+                offset -= FSP2LEntry.SIZE_IN_BYTES;
                 file.seek(offset);
-                final Entry entry = readEntry();
+                final FSP2LEntry entry = readEntry();
                 return entry.getOffset() + entry.getSize();
             }
         } catch (IOException e) {
@@ -146,74 +146,6 @@ public class FSP2LProtoIndex {
             SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
         }
         return -1;
-    }
-
-    public static class Entry {
-        public static final long SIZE_IN_BYTES = 6 * 8; //6x64bit fields
-
-        private long offset;
-        private long size;
-        private ItemType type;
-        private int checksum; //fnv-1a
-        private long revision;
-        private long number;
-
-        public Entry(long offset, long size, ItemType type, int checksum, long revision, long number) {
-            this.offset = offset;
-            this.size = size;
-            this.type = type;
-            this.checksum = checksum;
-            this.revision = revision;
-            this.number = number;
-        }
-
-        public long getOffset() {
-            return offset;
-        }
-
-        public long getSize() {
-            return size;
-        }
-
-        public ItemType getType() {
-            return type;
-        }
-
-        public int getChecksum() {
-            return checksum;
-        }
-
-        public long getRevision() {
-            return revision;
-        }
-
-        public long getNumber() {
-            return number;
-        }
-
-        public void setOffset(long offset) {
-            this.offset = offset;
-        }
-
-        public void setSize(long size) {
-            this.size = size;
-        }
-
-        public void setType(ItemType type) {
-            this.type = type;
-        }
-
-        public void setChecksum(int checksum) {
-            this.checksum = checksum;
-        }
-
-        public void setRevision(long revision) {
-            this.revision = revision;
-        }
-
-        public void setNumber(long number) {
-            this.number = number;
-        }
     }
 
     public static enum ItemType {

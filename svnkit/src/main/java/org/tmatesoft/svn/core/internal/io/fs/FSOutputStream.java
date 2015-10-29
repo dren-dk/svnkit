@@ -28,6 +28,7 @@ import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.internal.delta.SVNDeltaCombiner;
 import org.tmatesoft.svn.core.internal.io.fs.index.FSLogicalAddressingIndex;
+import org.tmatesoft.svn.core.internal.io.fs.index.FSP2LEntry;
 import org.tmatesoft.svn.core.internal.io.fs.index.FSP2LProtoIndex;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNFileType;
@@ -260,7 +261,7 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
             if (oldRep == null) {
                 final int checksum = myTargetFileOS.finalizeChecksum();
                 storeSha1RepMapping(fsfs, myRevNode.getTextRepresentation()); //store_sha1_rep_mapping
-                final FSP2LProtoIndex.Entry entry = new FSP2LProtoIndex.Entry(myRepOffset, myTargetFileOS.getPosition(), FSP2LProtoIndex.ItemType.FILE_REP, checksum, SVNRepository.INVALID_REVISION, rep.getItemIndex());
+                final FSP2LEntry entry = new FSP2LEntry(myRepOffset, myTargetFileOS.getPosition(), FSP2LProtoIndex.ItemType.FILE_REP, checksum, SVNRepository.INVALID_REVISION, rep.getItemIndex());
                 myTxnRoot.storeP2LIndexEntry(entry);
             }
         } catch (SVNException svne) {
@@ -374,7 +375,7 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
 
             final long offset = fsfs.lookupOffsetInIndex(revFile, representation.getRevision(), representation.getItemIndex());
 
-            final FSP2LProtoIndex.Entry entry = lookupP2LEntry(revFile, representation.getRevision(), offset);
+            final FSP2LEntry entry = lookupP2LEntry(revFile, representation.getRevision(), offset);
 
             if (entry == null ||
                     entry.getType().getCode() < FSP2LProtoIndex.ItemType.FILE_REP.getCode() ||
@@ -387,20 +388,20 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
         }
     }
 
-    private FSP2LProtoIndex.Entry lookupP2LEntry(FSFile revFile, long revision, long offset) throws SVNException {
+    private FSP2LEntry lookupP2LEntry(FSFile revFile, long revision, long offset) throws SVNException {
         boolean isCached = false;
 
         //TODO: cache!
 
         if (!isCached) {
             FSLogicalAddressingIndex index = new FSLogicalAddressingIndex(myTxnRoot.getOwner(), revFile);
-            List<FSP2LProtoIndex.Entry> entries = index.lookupP2LEntries(revision, offset, offset + 1);
+            List<FSP2LEntry> entries = index.lookupP2LEntries(revision, offset, offset + 1);
             return lookupEntry(entries, offset, null);
         }
         return null;
     }
 
-    private FSP2LProtoIndex.Entry lookupEntry(List<FSP2LProtoIndex.Entry> entries, long offset, Object hint) {
+    private FSP2LEntry lookupEntry(List<FSP2LEntry> entries, long offset, Object hint) {
         if (hint != null) {
             //TODO: this can speedup algorithm somehow
         }
@@ -408,7 +409,7 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
         if (hint != null) {
             //TODO: this can speedup algorithm somehow
         }
-        final FSP2LProtoIndex.Entry entry = entries.get(index);
+        final FSP2LEntry entry = entries.get(index);
         return (FSLogicalAddressingIndex.compareEntryOffset(entry, offset) != 0) ? null : entry;
     }
 

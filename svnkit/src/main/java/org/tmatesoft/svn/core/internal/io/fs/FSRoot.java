@@ -21,9 +21,7 @@ import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.internal.delta.SVNDeltaCombiner;
-import org.tmatesoft.svn.core.internal.io.fs.index.FSLogicalAddressingIndex;
-import org.tmatesoft.svn.core.internal.io.fs.index.FSL2PProtoIndex;
-import org.tmatesoft.svn.core.internal.io.fs.index.FSP2LProtoIndex;
+import org.tmatesoft.svn.core.internal.io.fs.index.*;
 import org.tmatesoft.svn.core.internal.util.SVNHashMap;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.util.SVNSpillBuffer;
@@ -386,7 +384,7 @@ public abstract class FSRoot {
             spillBuffer = new SVNSpillBuffer(0x10000, 0x1000000);
 
             for (int entryIndex = 0; ; entryIndex++) {
-                final FSL2PProtoIndex.Entry entry = index.readEntry();
+                final FSL2PEntry entry = index.readEntry();
 
                 if ((entry == null) || (entryIndex > 0 && entry.getOffset() == 0)) {
                     int entryCount = 0;
@@ -489,7 +487,7 @@ public abstract class FSRoot {
 
             while (true) {
                 boolean newPage = spillBuffer.getSize() == 0;
-                FSP2LProtoIndex.Entry entry = index.readEntry();
+                FSP2LEntry entry = index.readEntry();
                 long revDiff;
                 long compound;
                 long compoundDiff;
@@ -504,7 +502,7 @@ public abstract class FSRoot {
                     final long entryRevision = lastRevision;
                     final long entryNumber = 0;
 
-                    entry = new FSP2LProtoIndex.Entry(entryOffset, entrySize, entryType, entryChecksum, entryRevision, entryNumber);
+                    entry = new FSP2LEntry(entryOffset, entrySize, entryType, entryChecksum, entryRevision, entryNumber);
                     eof = true;
                 } else {
                     if (entry.getRevision() == SVNRepository.INVALID_REVISION) {

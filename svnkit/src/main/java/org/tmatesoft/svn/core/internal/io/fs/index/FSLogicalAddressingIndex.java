@@ -66,10 +66,10 @@ public class FSLogicalAddressingIndex {
         return -1;
     }
 
-    public List<FSP2LProtoIndex.Entry> lookupP2LEntries(long revision, long blockStart, long blockEnd) throws SVNException {
+    public List<FSP2LEntry> lookupP2LEntries(long revision, long blockStart, long blockEnd) throws SVNException {
         final boolean isCached = false;
 
-        List<FSP2LProtoIndex.Entry> entries = new ArrayList<FSP2LProtoIndex.Entry>();
+        List<FSP2LEntry> entries = new ArrayList<FSP2LEntry>();
         P2LPageInfo pageInfo = getP2LKeys(revision, blockStart);
 
         if (!isCached) {
@@ -82,14 +82,14 @@ public class FSLogicalAddressingIndex {
 
             //TODO: block read?
 
-            final List<FSP2LProtoIndex.Entry> pageEntries = getP2LPage(
+            final List<FSP2LEntry> pageEntries = getP2LPage(
                     pageInfo.getFirstRevision(),
                     pageInfo.getStartOffset(),
                     pageInfo.getNextOffset(),
                     pageInfo.getPageStart(),
                     pageInfo.getPageSize());
             if (pageEntries.size() > 0) {
-                FSP2LProtoIndex.Entry entry = pageEntries.get(pageEntries.size() - 1);
+                FSP2LEntry entry = pageEntries.get(pageEntries.size() - 1);
                 if (entry.getOffset() + entry.getSize() > pageInfo.getPageSize() * pageInfo.getPageCount()) {
                     SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_INDEX_OVERFLOW, "Last P2L index entry extends beyond the last page in revision {0}", new Long(revision));
                     SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
@@ -104,13 +104,13 @@ public class FSLogicalAddressingIndex {
         assert entries.size() > 0;
 
         if (pageInfo.getPageNumber() + 1 >= pageInfo.getPageCount()) {
-            FSP2LProtoIndex.Entry entry = entries.get(entries.size() - 1);
+            FSP2LEntry entry = entries.get(entries.size() - 1);
             long entryEnd = entry.getOffset() + entry.getSize();
             if (entryEnd < blockEnd) {
                 if (entry.getType() == FSP2LProtoIndex.ItemType.UNUSED) {
                     entry.setSize(blockEnd - entry.getOffset());
                 } else {
-                    entry = new FSP2LProtoIndex.Entry(entryEnd, blockEnd - entryEnd, FSP2LProtoIndex.ItemType.UNUSED, 0, SVNRepository.INVALID_REVISION, FSID.ITEM_INDEX_UNUSED);
+                    entry = new FSP2LEntry(entryEnd, blockEnd - entryEnd, FSP2LProtoIndex.ItemType.UNUSED, 0, SVNRepository.INVALID_REVISION, FSID.ITEM_INDEX_UNUSED);
                     entries.add(entry);
                 }
             }
@@ -214,8 +214,8 @@ public class FSLogicalAddressingIndex {
         return pageInfo;
     }
 
-    private void appendP2LEntries(List<FSP2LProtoIndex.Entry> entries, List<FSP2LProtoIndex.Entry> pageEntries, long blockStart, long blockEnd) {
-        FSP2LProtoIndex.Entry entry;
+    private void appendP2LEntries(List<FSP2LEntry> entries, List<FSP2LEntry> pageEntries, long blockStart, long blockEnd) {
+        FSP2LEntry entry;
         int idx = searchLowerBound(pageEntries, blockStart);
 
         if (idx > 0) {
@@ -234,7 +234,7 @@ public class FSLogicalAddressingIndex {
         }
     }
 
-    public static int searchLowerBound(List<FSP2LProtoIndex.Entry> list, long key) {
+    public static int searchLowerBound(List<FSP2LEntry> list, long key) {
         int lower = 0;
         int upper = list.size() - 1;
 
@@ -252,13 +252,13 @@ public class FSLogicalAddressingIndex {
         return lower;
     }
 
-    public static int compareEntryOffset(FSP2LProtoIndex.Entry entry, long offset) {
+    public static int compareEntryOffset(FSP2LEntry entry, long offset) {
         long diff = entry.getOffset() - offset;
         return diff < 0 ? -1 : (diff == 0 ? 0 : 1);
     }
 
-    private List<FSP2LProtoIndex.Entry> getP2LPage(long startRevision, long startOffset, long nextOffset, long pageStart, long pageSize) throws SVNException {
-        final List<FSP2LProtoIndex.Entry> result = new ArrayList<FSP2LProtoIndex.Entry>();
+    private List<FSP2LEntry> getP2LPage(long startRevision, long startOffset, long nextOffset, long pageStart, long pageSize) throws SVNException {
+        final List<FSP2LEntry> result = new ArrayList<FSP2LEntry>();
         final FSPackedNumbersStream packedNumbersStream = autoOpenP2LIndex();
         packedNumbersStream.seek(startOffset);
 
@@ -290,7 +290,7 @@ public class FSLogicalAddressingIndex {
         return result;
     }
 
-    private void readEntryToList(FSPackedNumbersStream packedNumbersStream, long[] itemOffset, long[] lastRevision, long[] lastCompound, List<FSP2LProtoIndex.Entry> result) throws SVNException {
+    private void readEntryToList(FSPackedNumbersStream packedNumbersStream, long[] itemOffset, long[] lastRevision, long[] lastCompound, List<FSP2LEntry> result) throws SVNException {
         long entryOffset = itemOffset[0];
         long entrySize = packedNumbersStream.read();
         lastCompound[0] += packedNumbersStream.readSigned();
@@ -321,7 +321,7 @@ public class FSLogicalAddressingIndex {
                 SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
             }
         }
-        FSP2LProtoIndex.Entry entry = new FSP2LProtoIndex.Entry(entryOffset, entrySize, entryType, (int) entryChecksum, entryRevision, entryNumber);
+        FSP2LEntry entry = new FSP2LEntry(entryOffset, entrySize, entryType, (int) entryChecksum, entryRevision, entryNumber);
         result.add(entry);
         itemOffset[0] += entry.getSize();
     }

@@ -73,7 +73,7 @@ public class FSL2PProtoIndex implements Closeable {
         return -1;
     }
 
-    public Entry readEntry() throws SVNException {
+    public FSL2PEntry readEntry() throws SVNException {
         final long[] entryOffset = new long[1];
         final long[] entryItemIndex = new long[1];
 
@@ -82,7 +82,7 @@ public class FSL2PProtoIndex implements Closeable {
         if (entryOffset[0] < 0 || entryItemIndex[0] < 0) {
             return null;
         }
-        return new Entry(entryOffset[0], entryItemIndex[0]);
+        return new FSL2PEntry(entryOffset[0], entryItemIndex[0]);
     }
 
     private void readEntry(long[] entryOffset, long[] entryItemIndex) throws SVNException {
@@ -107,53 +107,6 @@ public class FSL2PProtoIndex implements Closeable {
         } catch (IOException e) {
             SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.IO_ERROR, e);
             SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
-        }
-    }
-
-    /*
-    private Entry readEntry(Entry outputEntry, InputStream inputStream) throws SVNException {
-        Entry entry = outputEntry == null ? new Entry() : outputEntry;
-        entry.offset = readOffset(inputStream);
-        if (entry.offset < 0) { //EOF
-            return null;
-        }
-        entry.itemIndex = readItemIndex(inputStream);
-        if (entry.itemIndex < 0) { //EOF
-            return null;
-        }
-        return entry;
-    }
-
-    private long readOffset(InputStream inputStream) throws SVNException {
-        try {
-            final int bytesRead = inputStream.read(buffer);
-            if (bytesRead < 0) {
-                return -1;
-            }
-        } catch (IOException e) {
-            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.IO_ERROR, e);
-            SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
-        }
-    }
-
-    private long readItemIndex(InputStream inputStream) {
-    }
-    */
-    public static class Entry {
-        private long offset;
-        private long itemIndex;
-
-        public Entry(long offset, long itemIndex) {
-            this.offset = offset;
-            this.itemIndex = itemIndex;
-        }
-
-        public long getOffset() {
-            return offset;
-        }
-
-        public long getItemIndex() {
-            return itemIndex;
         }
     }
 }
