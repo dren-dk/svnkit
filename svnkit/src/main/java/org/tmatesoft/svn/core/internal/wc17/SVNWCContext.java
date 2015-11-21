@@ -1684,7 +1684,7 @@ public class SVNWCContext {
                 }
 
                 if (parentKind != SVNNodeKind.DIR) {
-                    SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_NOT_WORKING_COPY, "'{0}' is not a working copy", localAbspath);
+                    SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_NOT_WORKING_COPY, "''{0}'' is not a working copy", localAbspath);
                     SVNErrorManager.error(errorMessage, SVNLogType.WC);
                 }
                 localAbspath = parentAbspath;
