@@ -125,7 +125,7 @@ public class SVNCommandLine {
         // set of short options or set of short options with '[=]value', or -shortset value
         // process each option is set until binary one found. then process value.
         String argument = myInputArguments[myArgumentIndex];
-        String optionName = "-" + argument.charAt(myArgumentPosition++);
+        String optionName = ("-".equals(argument)) ? "" : ("-" + argument.charAt(myArgumentPosition++));
         AbstractSVNOption option = (AbstractSVNOption) ourOptions.get(optionName);
         if (option == null) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "invalid option: {0}", optionName);
