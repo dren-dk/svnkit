@@ -256,7 +256,7 @@ public class SVNRemoteStatusEditor17 extends SVNStatusEditor17 implements ISVNEd
 
             /* Now do the status reporting. */
             WCDbRepositoryInfo dirReposInfo = new WCDbRepositoryInfo();
-            if (dirReposInfo != null) {
+            if (dirReposInfo != null && dir_status != null) {
                 dirReposInfo.rootUrl = dir_status.getRepositoryRootUrl();
                 dirReposInfo.relPath = SVNFileUtil.createFilePath(dir_status.getRepositoryRelativePath());
                 dirReposInfo.uuid = dir_status.getRepositoryUuid();
