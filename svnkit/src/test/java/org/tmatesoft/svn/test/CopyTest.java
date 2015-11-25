@@ -778,6 +778,59 @@ public class CopyTest {
         }
     }
 
+    @Test
+    public void testMoveDirectoryWithMovedSubdirectory() throws Exception {
+        //SVNKIT-639
+        final TestOptions options = TestOptions.getInstance();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testMoveDirectoryWithMovedSubdirectory", options);
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        try {
+            SVNURL url = sandbox.createSvnRepository();
+
+            final CommitBuilder commitBuilder = new CommitBuilder(url);
+            commitBuilder.addFile("rep1/rep11/rep11.txt");
+            commitBuilder.addDirectory("rep1/rep12");
+            commitBuilder.addDirectory("rep2");
+            commitBuilder.commit();
+
+            final WorkingCopy workingCopy = sandbox.checkoutNewWorkingCopy(url);
+            final File workingCopyDirectory = workingCopy.getWorkingCopyDirectory();
+
+            final File srcFile = workingCopy.getFile("rep1/rep11/rep11.txt");
+            final File dstFile = workingCopy.getFile("rep1/rep12/rep11.txt");
+
+            final File srcDirectory = workingCopy.getFile("rep1/rep12");
+            final File dstDirectory = workingCopy.getFile("rep2/rep12");
+
+            final SVNClientManager clientManager = SVNClientManager.newInstance();
+            try {
+                final SVNCopyClient copyClient = clientManager.getCopyClient();
+                final SVNCopySource fileCopySource = new SVNCopySource(SVNRevision.WORKING, SVNRevision.WORKING, srcFile);
+                copyClient.doCopy(new SVNCopySource[]{fileCopySource}, dstFile, true, false, true);
+
+                final SVNCopySource directoryCopySource = new SVNCopySource(SVNRevision.WORKING, SVNRevision.WORKING, srcDirectory);
+                copyClient.doCopy(new SVNCopySource[]{directoryCopySource}, dstDirectory, true, false, true);
+
+            } finally {
+                clientManager.dispose();
+            }
+
+            final Map<File, SvnStatus> statuses = TestUtil.getStatuses(svnOperationFactory, workingCopyDirectory);
+            Assert.assertEquals(SVNStatusType.STATUS_DELETED, statuses.get(workingCopy.getFile("rep1/rep11/rep11.txt")).getNodeStatus());
+            Assert.assertEquals(workingCopy.getFile("rep2/rep12/rep11.txt"), statuses.get(workingCopy.getFile("rep1/rep11/rep11.txt")).getMovedToPath());
+            Assert.assertEquals(SVNStatusType.STATUS_DELETED, statuses.get(workingCopy.getFile("rep1/rep12")).getNodeStatus());
+            Assert.assertEquals(workingCopy.getFile("rep2/rep12"), statuses.get(workingCopy.getFile("rep1/rep12")).getMovedToPath());
+            Assert.assertEquals(SVNStatusType.STATUS_ADDED, statuses.get(workingCopy.getFile("rep2/rep12")).getNodeStatus());
+            Assert.assertEquals(workingCopy.getFile("rep1/rep12"), statuses.get(workingCopy.getFile("rep2/rep12")).getMovedFromPath());
+            Assert.assertEquals(SVNStatusType.STATUS_ADDED, statuses.get(workingCopy.getFile("rep2/rep12/rep11.txt")).getNodeStatus());
+            Assert.assertEquals(workingCopy.getFile("rep1/rep11/rep11.txt"), statuses.get(workingCopy.getFile("rep2/rep12/rep11.txt")).getMovedFromPath());
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
     private void assertNoRepositoryPathStartsWithSlash(SvnOperationFactory svnOperationFactory, File workingCopyDirectory) throws SVNException {
         final SVNWCContext context = new SVNWCContext(ISVNWCDb.SVNWCDbOpenMode.ReadOnly, svnOperationFactory.getOptions(), false, false, svnOperationFactory.getEventHandler());
         try {
