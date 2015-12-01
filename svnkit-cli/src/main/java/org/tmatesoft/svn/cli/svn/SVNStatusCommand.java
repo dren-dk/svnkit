@@ -64,6 +64,7 @@ public class SVNStatusCommand extends SVNXMLCommand implements ISVNStatusHandler
         options.add(SVNOption.XML);
         options.add(SVNOption.IGNORE_EXTERNALS);
         options.add(SVNOption.CHANGELIST);
+        options.add(SVNOption.REVISION);
         return options;
     }
 
@@ -72,6 +73,15 @@ public class SVNStatusCommand extends SVNXMLCommand implements ISVNStatusHandler
         targets = getSVNEnvironment().combineTargets(targets, true);
         if (targets.isEmpty()) {
             targets.add("");
+        }
+        SVNRevision revision = SVNRevision.HEAD;
+        if (getSVNEnvironment().getStartRevision() == SVNRevision.UNDEFINED) {
+            revision = SVNRevision.HEAD;
+        } else if (!getSVNEnvironment().isUpdate()) {
+            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "--revision (-r) option valid only with --show-updates (-u) option");
+            SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
+        } else {
+            revision = getSVNEnvironment().getStartRevision();
         }
         myStatusPrinter = new SVNStatusPrinter(getSVNEnvironment());
         SVNStatusClient client = getSVNEnvironment().getClientManager().getStatusClient();
@@ -98,7 +108,7 @@ public class SVNStatusCommand extends SVNXMLCommand implements ISVNStatusHandler
             }
 
             try {
-                long rev = client.doStatus(commandTarget.getFile(), SVNRevision.HEAD,
+                long rev = client.doStatus(commandTarget.getFile(), revision,
                         getSVNEnvironment().getDepth(), getSVNEnvironment().isUpdate(),
                         getSVNEnvironment().isVerbose(), getSVNEnvironment().isNoIgnore(),
                         false, this, changeLists);
