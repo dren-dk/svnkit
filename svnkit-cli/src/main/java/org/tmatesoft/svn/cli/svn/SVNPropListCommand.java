@@ -221,7 +221,7 @@ public class SVNPropListCommand extends SVNPropertiesCommand {
                 getSVNEnvironment().getOut().println("':");
             }
 
-            printProplist(props);
+            printProplist(props, false);
         }
     }
 
@@ -280,7 +280,7 @@ public class SVNPropListCommand extends SVNPropertiesCommand {
                 }
             }
             final List<SVNPropertyData> propdataList = getPropdataList(props.getProperties());
-            printProplist(propdataList);
+            printProplist(propdataList, false);
         }
     }
 

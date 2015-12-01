@@ -140,17 +140,17 @@ public abstract class SVNPropertiesCommand extends SVNXMLCommand implements ISVN
         return myRevisionProperties;
     }
 
-    protected void printProplist(List<SVNPropertyData> props) {
+    protected void printProplist(List<SVNPropertyData> props, boolean omitNewLine) {
         for (Iterator<SVNPropertyData> plist = props.iterator(); plist.hasNext();) {
             SVNPropertyData property = (SVNPropertyData) plist.next();
             getSVNEnvironment().getOut().println("  " + property.getName());
             if (getSVNEnvironment().isVerbose()) {
-                printProperty(property.getValue(), true);
+                printProperty(property.getValue(), true, omitNewLine);
             }
         }
     }
     
-    protected void printProperty(SVNPropertyValue value, boolean isPropListLike) {
+    protected void printProperty(SVNPropertyValue value, boolean isPropListLike, boolean omitNewLine) {
         if (value.isString()) {
             String stringValue = value.getString();
             if (isPropListLike) {
@@ -172,7 +172,9 @@ public abstract class SVNPropertiesCommand extends SVNXMLCommand implements ISVN
                 }
                 getSVNEnvironment().getOut().write(value.getBytes());
                 if (isPropListLike) {
-                    getSVNEnvironment().getOut().println();
+                    if (!omitNewLine) {
+                        getSVNEnvironment().getOut().println();
+                    }
                 }
             } catch (IOException e) {
             }

@@ -64,10 +64,15 @@ public class SVNPropGetCommand extends SVNPropertiesCommand {
         options.add(SVNOption.XML);
         options.add(SVNOption.CHANGELIST);
         options.add(SVNOption.SHOW_INHERITED_PROPS);
+        options.add(SVNOption.NO_NEWLINE);
         return options;
     }
 
     public void run() throws SVNException {
+        if (getSVNEnvironment().isVerbose() && (getSVNEnvironment().isRevprop() || getSVNEnvironment().isNoNewLine() || getSVNEnvironment().isXML())) {
+            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.CL_MUTUALLY_EXCLUSIVE_ARGS, "--verbose cannot be used with --revprop or --no-newline or --xml");
+            SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
+        }
         final String propertyName = getSVNEnvironment().popArgument();
         if (propertyName == null) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.CL_INSUFFICIENT_ARGS);
@@ -116,7 +121,7 @@ public class SVNPropGetCommand extends SVNPropertiesCommand {
                         }
                     }
 
-                    if (!getSVNEnvironment().isStrict()) {
+                    if (!getSVNEnvironment().isStrict() && !getSVNEnvironment().isNoNewLine()) {
                         getSVNEnvironment().getOut().println();
                     }
                 }
@@ -130,8 +135,13 @@ public class SVNPropGetCommand extends SVNPropertiesCommand {
             if (depth == SVNDepth.UNKNOWN) {
                 depth = SVNDepth.EMPTY;
             }
+
+            if (getSVNEnvironment().isNoNewLine() && (targets.size() > 1 || depth != SVNDepth.EMPTY || getSVNEnvironment().isShowInheritedProps())) {
+                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "--no-newline is only available for single-target, non-recursive propget operations");
+                SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
+            }
             
-            boolean likeProplist = getSVNEnvironment().isVerbose() && !getSVNEnvironment().isStrict();
+            boolean likeProplist = getSVNEnvironment().isVerbose() && !getSVNEnvironment().isStrict() && !getSVNEnvironment().isNoNewLine();
             Collection<String> changeLists = getSVNEnvironment().getChangelistsCollection();
             SVNWCClient client = getSVNEnvironment().getClientManager().getWCClient();
             for (Iterator<String> ts = targets.iterator(); ts.hasNext();) {
@@ -175,15 +185,16 @@ public class SVNPropGetCommand extends SVNPropertiesCommand {
                     });
                 }
                 if (target.isURL()) {
-                    printFileNames = !getSVNEnvironment().isStrict() && (getSVNEnvironment().isVerbose() || 
+                    printFileNames = !getSVNEnvironment().isStrict() && !getSVNEnvironment().isNoNewLine() && (getSVNEnvironment().isVerbose() ||
                             depth.compareTo(SVNDepth.EMPTY) > 0 || targets.size() > 1 || getURLProperties().size() > 1); 
                 } else {
-                    printFileNames = !getSVNEnvironment().isStrict() && (getSVNEnvironment().isVerbose() || 
+                    printFileNames = !getSVNEnvironment().isStrict() && !getSVNEnvironment().isNoNewLine() && (getSVNEnvironment().isVerbose() ||
                             depth.compareTo(SVNDepth.EMPTY) > 0 || targets.size() > 1 || getPathProperties().size() > 1); 
                 }
+                boolean omitNewLine = getSVNEnvironment().isNoNewLine();
                 pl.run();
                 if (!getSVNEnvironment().isXML()) {
-                    printCollectedProperties(printFileNames, target.isURL(), likeProplist);
+                    printCollectedProperties(printFileNames, target.isURL(), likeProplist, omitNewLine);
                 } else {
                     printCollectedPropertiesXML(target.isURL());
                 }
@@ -195,7 +206,7 @@ public class SVNPropGetCommand extends SVNPropertiesCommand {
         }
     }
     
-    protected void printCollectedProperties(boolean printFileName, boolean isURL, boolean likePropList) {
+    protected void printCollectedProperties(boolean printFileName, boolean isURL, boolean likePropList, boolean omitNewLine) {
         Map<Object, List<SVNPropertyData>> map = isURL ? getURLProperties() : getPathProperties();
         for (Iterator<Object> keys = map.keySet().iterator(); keys.hasNext();) {
             Object key = keys.next();
@@ -219,11 +230,11 @@ public class SVNPropGetCommand extends SVNPropertiesCommand {
                 }
             }
             if (likePropList) {
-                printProplist(props);
+                printProplist(props, omitNewLine);
             } else {
                 SVNPropertyData property = (SVNPropertyData) props.get(0);
-                printProperty(property.getValue(), likePropList);
-                if (!getSVNEnvironment().isStrict()) {
+                printProperty(property.getValue(), likePropList, omitNewLine);
+                if (!getSVNEnvironment().isStrict() && !getSVNEnvironment().isNoNewLine()) {
                     getSVNEnvironment().getOut().println();
                 }
             }
