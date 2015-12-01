@@ -155,6 +155,8 @@ public class SVN extends AbstractSVNLauncher {
         SVNCommandLine.registerOption(SVNOption.IGNORE_PROPERTIES);
         SVNCommandLine.registerOption(SVNOption.REVERSE_DIFF);
         SVNCommandLine.registerOption(SVNOption.IGNORE_WHITESPACE);
+        SVNCommandLine.registerOption(SVNOption.SHOW_ITEM);
+        SVNCommandLine.registerOption(SVNOption.NO_NEWLINE);
 
     }
 

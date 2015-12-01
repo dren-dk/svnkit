@@ -12,30 +12,16 @@
 package org.tmatesoft.svn.cli.svn;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.tmatesoft.svn.cli.SVNCommandUtil;
-import org.tmatesoft.svn.core.SVNDepth;
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNLock;
-import org.tmatesoft.svn.core.SVNNodeKind;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.util.SVNDate;
 import org.tmatesoft.svn.core.internal.util.SVNHashMap;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.util.SVNURLUtil;
 import org.tmatesoft.svn.core.internal.util.SVNXMLUtil;
-import org.tmatesoft.svn.core.internal.wc.SVNConflictVersion;
-import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
-import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
-import org.tmatesoft.svn.core.internal.wc.SVNPath;
-import org.tmatesoft.svn.core.internal.wc.SVNTreeConflictUtil;
+import org.tmatesoft.svn.core.internal.wc.*;
 import org.tmatesoft.svn.core.internal.wc17.SVNWCUtils;
 import org.tmatesoft.svn.core.wc.ISVNInfoHandler;
 import org.tmatesoft.svn.core.wc.SVNConflictAction;
@@ -53,6 +39,12 @@ import org.tmatesoft.svn.util.SVNLogType;
  */
 public class SVNInfoCommand extends SVNXMLCommand implements ISVNInfoHandler {
 
+    private boolean myIsMultipleTargets;
+    private boolean myIsStartNewLine;
+    private SVNInfoItemType myPrintWhat;
+    private boolean myTargetIsPath;
+    private static final int SIM_RANGE_MAX = 1000000;
+
     public SVNInfoCommand() {
         super("info", null);
     }
@@ -66,6 +58,8 @@ public class SVNInfoCommand extends SVNXMLCommand implements ISVNInfoHandler {
         options.add(SVNOption.INCREMENTAL);
         options.add(SVNOption.XML);
         options.add(SVNOption.CHANGELIST);
+        options.add(SVNOption.SHOW_ITEM);
+        options.add(SVNOption.NO_NEWLINE);
         return options;
     }
 
@@ -79,11 +73,36 @@ public class SVNInfoCommand extends SVNXMLCommand implements ISVNInfoHandler {
             targets.add("");
         }
         if (getSVNEnvironment().isXML()) {
+            if (getSVNEnvironment().getShowItem() != null) {
+                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "--show-item is not valid in --xml mode");
+                SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
+            }
+            if (getSVNEnvironment().isNoNewLine()) {
+                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "--no-newline is not valid in --xml mode");
+                SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
+            }
             if (!getSVNEnvironment().isIncremental()) {
                 printXMLHeader("info");
             }
-        } else if (getSVNEnvironment().isIncremental()) {
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "'incremental' option only valid in XML mode"), SVNLogType.CLIENT);
+        } else if (getSVNEnvironment().getShowItem() != null) {
+            if (getSVNEnvironment().isIncremental()) {
+                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "'incremental' option only valid in XML mode"), SVNLogType.CLIENT);
+            }
+            this.myIsMultipleTargets = (getSVNEnvironment().getDepth().compareTo(SVNDepth.EMPTY) > 0) || targets.size() > 1;
+            if (myIsMultipleTargets && getSVNEnvironment().isNoNewLine()) {
+                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "--no-newline is only available for single-target, non-recursive info operations");
+                SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
+            }
+            findPrintWhat(getSVNEnvironment().getShowItem());
+            myIsStartNewLine = false;
+        } else {
+            if (getSVNEnvironment().isIncremental()) {
+                SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "'incremental' option only valid in XML mode"), SVNLogType.CLIENT);
+            }
+            if (getSVNEnvironment().isNoNewLine()) {
+                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "--no-newline' is only valid with --show-item");
+                SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
+            }
         }
         SVNDepth depth = getSVNEnvironment().getDepth();
         if (depth == SVNDepth.UNKNOWN) {
@@ -95,9 +114,16 @@ public class SVNInfoCommand extends SVNXMLCommand implements ISVNInfoHandler {
             String targetName = (String) targets.get(i);
             SVNPath target = new SVNPath(targetName, true);
             SVNRevision pegRevision = target.getPegRevision();
-            if (target.isURL() && pegRevision == SVNRevision.UNDEFINED) {
-                pegRevision = SVNRevision.HEAD;
+
+            if (target.isURL()) {
+                if (pegRevision == SVNRevision.UNDEFINED) {
+                    pegRevision = SVNRevision.HEAD;
+                }
+                myTargetIsPath = false;
+            } else {
+                myTargetIsPath = true;
             }
+
             try {
                 if (target.isFile()) {
                     client.doInfo(target.getFile(), pegRevision, getSVNEnvironment().getStartRevision(), depth, 
@@ -119,6 +145,8 @@ public class SVNInfoCommand extends SVNXMLCommand implements ISVNInfoHandler {
         }
         if (getSVNEnvironment().isXML() && !getSVNEnvironment().isIncremental()) {
             printXMLFooter("info");
+        } else if (getSVNEnvironment().getShowItem() != null && !getSVNEnvironment().isNoNewLine() && myIsStartNewLine) {
+            getSVNEnvironment().getOut().print('\n');
         }
         if (seenNonExistingTargets) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, "Could not display info for all targets because some targets don't exist"), SVNLogType.CLIENT);
@@ -126,13 +154,15 @@ public class SVNInfoCommand extends SVNXMLCommand implements ISVNInfoHandler {
     }
 
     public void handleInfo(SVNInfo info) throws SVNException {
-        if (!getSVNEnvironment().isXML()) {
-            printInfo(info);
-        } else {
+        if (getSVNEnvironment().isXML()) {
             printInfoXML(info);
+        } else if (getSVNEnvironment().getShowItem() != null) {
+            printInfoItem(info);
+        } else {
+            printInfo(info);
         }
     }
-    
+
     protected void printInfo(SVNInfo info) {
         StringBuffer buffer = new StringBuffer();
         String path = null;
@@ -209,16 +239,16 @@ public class SVNInfoCommand extends SVNXMLCommand implements ISVNInfoHandler {
             buffer.append("Last Changed Rev: " + info.getCommittedRevision() + "\n");
         }
         if (info.getCommittedDate() != null) {
-            buffer.append("Last Changed Date: " + 
+            buffer.append("Last Changed Date: " +
                     SVNDate.formatHumanDate(info.getCommittedDate(), getSVNEnvironment().getClientManager().getOptions()) + "\n");
         }
         if (!info.isRemote()) {
             if (info.getTextTime() != null) {
-                buffer.append("Text Last Updated: " + 
+                buffer.append("Text Last Updated: " +
                         SVNDate.formatHumanDate(info.getTextTime(), getSVNEnvironment().getClientManager().getOptions()) + "\n");
             }
             if (info.getPropTime() != null) {
-                buffer.append("Properties Last Updated: " + 
+                buffer.append("Properties Last Updated: " +
                         SVNDate.formatHumanDate(info.getPropTime(), getSVNEnvironment().getClientManager().getOptions()) + "\n");
             }
             if (info.getChecksum() != null) {
@@ -254,15 +284,15 @@ public class SVNInfoCommand extends SVNXMLCommand implements ISVNInfoHandler {
                 buffer.append("Lock Owner: " + lock.getOwner() + "\n");
             }
             if (lock.getCreationDate() != null && lock.getCreationDate().getTime() != 0) {
-                buffer.append("Lock Created: " + 
+                buffer.append("Lock Created: " +
                         SVNDate.formatHumanDate(lock.getCreationDate(), getSVNEnvironment().getClientManager().getOptions()) + "\n");
             }
             if (lock.getExpirationDate() != null && lock.getExpirationDate().getTime() != 0) {
-                buffer.append("Lock Expires: " + 
+                buffer.append("Lock Expires: " +
                         SVNDate.formatHumanDate(lock.getExpirationDate(), getSVNEnvironment().getClientManager().getOptions()) + "\n");
             }
             if (lock.getComment() != null) {
-                buffer.append("Lock Comment "); 
+                buffer.append("Lock Comment ");
                 int lineCount = SVNCommandUtil.getLinesCount(lock.getComment());
                 buffer.append(lineCount > 1 ? "(" + lineCount + " lines)" : "(1 line)");
                 buffer.append(":\n");
@@ -285,7 +315,83 @@ public class SVNInfoCommand extends SVNXMLCommand implements ISVNInfoHandler {
         buffer.append("\n");
         getSVNEnvironment().getOut().print(buffer.toString());
     }
-    
+
+    private void printInfoItem(SVNInfo info) throws SVNException {
+        String targetPath = !myIsMultipleTargets ? null
+                : (!myTargetIsPath ? info.getURL().toString()
+        : getSVNEnvironment().getRelativePath(info.getFile()));
+
+        if (myIsStartNewLine) {
+            getSVNEnvironment().getOut().print('\n');
+        }
+
+        switch (myPrintWhat) {
+            case KIND:
+                printInfoItemString(info.getKind().toString(), targetPath);
+                break;
+            case URL:
+                printInfoItemString(info.getURL().toString(), targetPath);
+                break;
+            case RELATIVE_URL:
+                printInfoItemString(relativeUrl(info), targetPath);
+                break;
+            case REPS_ROOT_URL:
+                printInfoItemString(info.getRepositoryRootURL().toString(), targetPath);
+                break;
+            case REPOS_UUID:
+                printInfoItemString(info.getRepositoryUUID(), targetPath);
+                break;
+            case REVISION:
+                printInfoItemRevision(info.getRevision(), targetPath);
+                break;
+            case LAST_CHANGED_REV:
+                printInfoItemRevision(info.getCommittedRevision(), targetPath);
+                break;
+            case LAST_CHANGED_DATE:
+                printInfoItemString(info.getCommittedDate() == null ? null : SVNDate.formatDate(info.getCommittedDate()), targetPath);
+                break;
+            case LAST_CHANGED_AUTHOR:
+                printInfoItemString(info.getAuthor(), targetPath);
+                break;
+            case WC_ROOT:
+                printInfoItemString(info.getWorkingCopyRoot() == null ? null : SVNFileUtil.getFilePath(info.getWorkingCopyRoot().getAbsoluteFile()), targetPath);
+                break;
+            default:
+                SVNErrorManager.assertionFailure(false, null, SVNLogType.CLIENT);
+                break;
+        }
+        myIsStartNewLine = true;
+    }
+
+    private String relativeUrl(SVNInfo info) {
+        final String relativePath = SVNPathUtil.getRelativePath(info.getRepositoryRootURL().toString(), info.getURL().toString());
+        return "^/" + relativePath;
+    }
+
+    private void printInfoItemString(String text, String targetPath) {
+        if (text != null) {
+            if (targetPath != null) {
+                getSVNEnvironment().getOut().printf("%s %s", text, targetPath);
+            } else {
+                getSVNEnvironment().getOut().print(text);
+            }
+        } else if (targetPath != null) {
+            getSVNEnvironment().getOut().printf("%s %s", "", targetPath);
+        }
+    }
+
+    private void printInfoItemRevision(SVNRevision revision, String targetPath) {
+        if (SVNRevision.isValidRevisionNumber(revision.getNumber())) {
+            if (targetPath != null) {
+                getSVNEnvironment().getOut().printf("%s %s", revision.getNumber(), targetPath);
+            } else {
+                getSVNEnvironment().getOut().printf("%s", revision.getNumber());
+            }
+        } else if (targetPath != null) {
+            getSVNEnvironment().getOut().printf("%s %s", "", targetPath);
+        }
+    }
+
     protected void printInfoXML(SVNInfo info) {
         StringBuffer buffer = new StringBuffer();
         String path = null;
@@ -465,5 +571,171 @@ public class SVNInfoCommand extends SVNXMLCommand implements ISVNInfoHandler {
     		attributes.put("kind", version.getKind().toString());
     	}    	
     	return openXMLTag("version", SVNXMLUtil.XML_STYLE_SELF_CLOSING, attributes, target);
+    }
+
+    private void findPrintWhat(String keyword) throws SVNException {
+        final List<String> tokens = new ArrayList<String>();
+        for (SVNInfoItemType itemType : SVNInfoItemType.values()) {
+            tokens.add(itemType.getName());
+        }
+        final int similarity = similarityCheck(keyword, tokens);
+        switch (similarity) {
+            case 0:
+                myPrintWhat = SVNInfoItemType.forName(keyword);
+                break;
+            case 1:
+                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "''{0}'' is not a valid value for --show-item", keyword);
+                SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
+                break;
+            case 2:
+                errorMessage = SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "''{0}'' is not a valid value for --show-item; did you mean ''{1}''?", keyword, tokens.get(0));
+                SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
+                break;
+            case 3:
+                errorMessage = SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "''{0}'' is not a valid value for --show-item; did you mean ''{1}'' or ''{2}''?", keyword, tokens.get(0), tokens.get(1));
+                SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
+                break;
+            default:
+                errorMessage = SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "''{0}'' is not a valid value for --show-item; did you mean ''{1}'', ''{2}'' or ''{3}''?", keyword, tokens.get(0), tokens.get(1), tokens.get(2));
+                SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
+                break;
+        }
+    }
+
+    private int similarityCheck(String key, List<String> tokens) {
+        final int[] scores = new int[tokens.size()];
+        for (int i = 0; i < tokens.size(); i++) {
+            scores[i] = stringDiff(key, tokens.get(i));
+        }
+        final List<Integer> tokenIndices = new ArrayList<Integer>(tokens.size());
+        for (int i = 0; i < tokens.size(); i++) {
+            tokenIndices.add(i);
+        }
+        Collections.sort(tokenIndices, new Comparator<Integer>() {
+            @Override
+            public int compare(Integer index1, Integer index2) {
+                return -(scores[index1] - scores[index2]);
+            }
+        });
+        int result = 1;
+        for (Integer index : tokenIndices) {
+            if (scores[index] >= (2 * SIM_RANGE_MAX + 1) / 3) {
+                result++;
+            }
+        }
+        //exact match
+        if (tokens.get(tokenIndices.get(0)).equals(key)) {
+            return 0;
+        }
+        final List<String> sortedTokens = new ArrayList<String>(tokens.size());
+        for (Integer index : tokenIndices) {
+            sortedTokens.add(tokens.get(index));
+        }
+        tokens.clear();
+        tokens.addAll(sortedTokens);
+
+        return result;
+    }
+
+    private int stringDiff(String s1, String s2) {
+        int start1 = 0;
+        int start2 = 0;
+        int end1 = s1.length();
+        int end2 = s2.length();
+        int lcs = 0;
+        int total = s1.length() + s2.length();
+
+        while (start1 < end1 && start2 < end2 && s1.charAt(start1) == s2.charAt(start2)) {
+            start1++;
+            start2++;
+            lcs++;
+        }
+
+        while (start1 < end1 && start2 < end2 && s1.charAt(end1 - 1) == s2.charAt(end2 - 1)) {
+            end1--;
+            end2--;
+            lcs++;
+        }
+
+        if (start1 < end1 && start2 < end2) {
+            int rest1 = end1 - start1;
+            int rest2 = end2 - start2;
+            int slots = Math.min(rest1, rest2);
+
+            String s;
+            int p;
+
+            if (rest1 < rest2) {
+                p = start1;
+                start1 = start2;
+                start2 = p;
+
+                p = end1;
+                end1 = end2;
+                end2 = p;
+
+                s = s1;
+                s1 = s2;
+                s2 = s;
+            }
+
+            int[] curr = new int[2 * (slots + 1)];
+            int[] prev = new int[2 * (slots + 1)];
+
+            for (p = start1; p < end1; p++) {
+                for (int i = 1; i < slots; i++) {
+                    if (s1.charAt(p) == s2.charAt(i - 1)) {
+                        curr[i] = prev[i - 1];
+                    } else {
+                        curr[i] = (curr[i - 1] > prev[i]) ? curr[i - 1] : prev[i];
+                    }
+                }
+                {
+                    int[] tmp = curr;
+                    curr = prev;
+                    prev = tmp;
+                }
+                lcs += prev[slots];
+            }
+        }
+
+        if (total != 0) {
+            return (int) (((2L * SIM_RANGE_MAX * lcs + total / 2)) / total);
+        } else {
+            return SIM_RANGE_MAX;
+        }
+    }
+
+    private static enum SVNInfoItemType {
+        KIND("kind"),
+        URL("url"),
+        RELATIVE_URL("relative-url"),
+        REPS_ROOT_URL("repos-root-url"),
+        REPOS_UUID("repos-uuid"),
+        REVISION("revision"),
+        LAST_CHANGED_REV("last-changed-revision"),
+        LAST_CHANGED_DATE("last-changed-date"),
+        LAST_CHANGED_AUTHOR("last-changed-author"),
+        WC_ROOT("wc-root");
+
+        public static SVNInfoItemType forName(String name) {
+            final SVNInfoItemType[] values = values();
+            for (SVNInfoItemType value : values) {
+                if (value.getName().equals(name)) {
+                    return value;
+                }
+            }
+            return null;
+        }
+
+        private final String name;
+
+        private SVNInfoItemType(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 }

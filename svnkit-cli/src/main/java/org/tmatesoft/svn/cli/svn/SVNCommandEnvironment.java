@@ -149,6 +149,8 @@ public class SVNCommandEnvironment extends AbstractSVNCommandEnvironment impleme
     private int myStripCount;
     private boolean myIsShowInhertiedProps;
     private boolean myIsIncludeExternals;
+    private String myShowItem;
+    private boolean myIsNoNewLine;
 
     private SVNConflictStats myConflictStats;
 
@@ -669,6 +671,10 @@ public class SVNCommandEnvironment extends AbstractSVNCommandEnvironment impleme
             myIsTrustServerCertificate = true;
         } else if (option == SVNOption.SHOW_INHERITED_PROPS) {
             myIsShowInhertiedProps = true;
+        } else if (option == SVNOption.NO_NEWLINE) {
+            myIsNoNewLine = true;
+        } else if (option == SVNOption.SHOW_ITEM) {
+            myShowItem = optionValue.getValue();
         } else if (option == SVNOption.INCLUDE_EXTERNALS) {
             myIsIncludeExternals = true;
         } else if(option == SVNOption.STRIP ) {
@@ -1023,6 +1029,14 @@ public class SVNCommandEnvironment extends AbstractSVNCommandEnvironment impleme
     
     public boolean isShowInheritedProps() {
         return myIsShowInhertiedProps;
+    }
+
+    public String getShowItem() {
+        return myShowItem;
+    }
+
+    public boolean isNoNewLine() {
+        return myIsNoNewLine;
     }
 
     public boolean isIncludeExternals() {
