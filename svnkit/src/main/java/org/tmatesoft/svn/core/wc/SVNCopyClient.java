@@ -13,6 +13,8 @@ package org.tmatesoft.svn.core.wc;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 import org.tmatesoft.svn.core.SVNCommitInfo;
 import org.tmatesoft.svn.core.SVNDepth;
@@ -22,6 +24,7 @@ import org.tmatesoft.svn.core.SVNProperties;
 import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
+import org.tmatesoft.svn.core.internal.wc.SVNExternal;
 import org.tmatesoft.svn.core.internal.wc2.compat.SvnCodec;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc2.SvnCopy;
@@ -347,6 +350,22 @@ public class SVNCopyClient extends SVNBasicClient {
             cp.addCopySource(SvnCodec.copySource(sources[i]));
         }
         
+        cp.run();
+    }
+
+    public void doCopy(SVNCopySource[] sources, File dst, boolean isMove, boolean makeParents, boolean failWhenDstExists, boolean pinExternals, Map<SvnTarget, List<SVNExternal>> externalsToPin) throws SVNException {
+        SvnCopy cp = getOperationsFactory().createCopy();
+        cp.setSingleTarget(SvnTarget.fromFile(dst));
+        cp.setMove(isMove);
+        cp.setFailWhenDstExists(failWhenDstExists);
+        cp.setMakeParents(makeParents);
+        cp.setPinExternals(pinExternals);
+        cp.setExternalsToPin(externalsToPin);
+
+        for (int i = 0; i < sources.length; i++) {
+            cp.addCopySource(SvnCodec.copySource(sources[i]));
+        }
+
         cp.run();
     }
 

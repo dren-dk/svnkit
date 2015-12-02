@@ -47,6 +47,7 @@ public class SVNCopyCommand extends SVNCommand {
         options.add(SVNOption.QUIET);
         options.add(SVNOption.IGNORE_EXTERNALS);
         options.add(SVNOption.PARENTS);
+        options.add(SVNOption.PIN_EXTERNALS);
         options = SVNOption.addLogMessageOptions(options);
         return options;
     }
@@ -104,7 +105,7 @@ public class SVNCopyCommand extends SVNCommand {
                 getSVNEnvironment().printCommitInfo(info);
             }
         } else {
-            client.doCopy(copySources, dst.getFile(), false, getSVNEnvironment().isParents(), false);
+            client.doCopy(copySources, dst.getFile(), false, getSVNEnvironment().isParents(), false, getSVNEnvironment().isPinExternals(), null);
         }
     }
 

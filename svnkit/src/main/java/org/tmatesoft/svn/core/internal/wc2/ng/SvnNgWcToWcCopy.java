@@ -3,21 +3,12 @@ package org.tmatesoft.svn.core.internal.wc2.ng;
 import java.io.File;
 import java.util.*;
 
-import org.tmatesoft.svn.core.SVNDepth;
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNNodeKind;
-import org.tmatesoft.svn.core.SVNProperties;
-import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.util.SVNDate;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.util.SVNSkel;
-import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
-import org.tmatesoft.svn.core.internal.wc.SVNEventFactory;
-import org.tmatesoft.svn.core.internal.wc.SVNFileListUtil;
-import org.tmatesoft.svn.core.internal.wc.SVNFileType;
-import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
+import org.tmatesoft.svn.core.internal.wc.*;
+import org.tmatesoft.svn.core.internal.wc17.SVNExternalsStore;
 import org.tmatesoft.svn.core.internal.wc17.SVNStatusEditor17;
 import org.tmatesoft.svn.core.internal.wc17.SVNWCContext;
 import org.tmatesoft.svn.core.internal.wc17.SVNWCUtils;
@@ -30,7 +21,9 @@ import org.tmatesoft.svn.core.internal.wc17.db.StructureFields.AdditionInfo;
 import org.tmatesoft.svn.core.internal.wc17.db.StructureFields.ExternalNodeInfo;
 import org.tmatesoft.svn.core.internal.wc17.db.StructureFields.NodeInfo;
 import org.tmatesoft.svn.core.internal.wc2.SvnWcGeneration;
+import org.tmatesoft.svn.core.internal.wc2.remote.SvnRemoteGetProperties;
 import org.tmatesoft.svn.core.io.SVNRepository;
+import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
 import org.tmatesoft.svn.core.wc.*;
 import org.tmatesoft.svn.core.wc2.ISvnObjectReceiver;
 import org.tmatesoft.svn.core.wc2.SvnChecksum;
@@ -370,9 +363,27 @@ public class SvnNgWcToWcCopy extends SvnNgOperationRunner<Void, SvnCopy> {
             dstAncestor = context.acquireWriteLock(dstAncestor, false, true);
             try {
                 for (SvnCopyPair copyPair : copyPairs) {
+                    Map<String, SVNPropertyValue> pinnedExternals = null;
+
                     checkCancelled();
+                    if (getOperation().isPinExternals()) {
+                        final Structure<StructureFields.NodeOriginInfo> nodeOrigin = getWcContext().getNodeOrigin(copyPair.source, false, StructureFields.NodeOriginInfo.reposRootUrl);
+                        final SVNURL reposRootUrl = nodeOrigin.get(StructureFields.NodeOriginInfo.reposRootUrl);
+                        pinnedExternals = resolvePinnedExternals(getOperation().getExternalsToPin(), copyPair, null, reposRootUrl);
+                    }
+
                     File dstPath = SVNFileUtil.createFilePath(copyPair.dstParent, copyPair.baseName);
                     sleepForTimeStamp = sleepForTimeStamp || copy(context, copyPair.source, dstPath, getOperation().isMetadataOnly() || getOperation().isVirtual());
+
+                    if (pinnedExternals != null) {
+                        for (Map.Entry<String, SVNPropertyValue> entry : pinnedExternals.entrySet()) {
+                            String dstRelPath = entry.getKey();
+                            SVNPropertyValue externalsPropval = entry.getValue();
+
+                            File localAbsPath = SVNFileUtil.createFilePath(copyPair.dst, dstRelPath);
+                            SvnNgPropertiesManager.setProperty(getWcContext(), localAbsPath, SVNProperty.EXTERNALS, externalsPropval, SVNDepth.EMPTY, true, null, null);
+                        }
+                    }
                 }
             } finally {
                 context.releaseWriteLock(dstAncestor);
@@ -380,6 +391,221 @@ public class SvnNgWcToWcCopy extends SvnNgOperationRunner<Void, SvnCopy> {
         }
         
         return false;
+    }
+
+    private Map<String, SVNPropertyValue> resolvePinnedExternals(Map<SvnTarget, List<SVNExternal>> externalsToPin, SvnCopyPair copyPair, SVNRepository svnRepository, SVNURL reposRootUrl) throws SVNException {
+        return resolvePinnedExternals(externalsToPin, SvnTarget.fromFile(copyPair.source), SvnTarget.fromFile(copyPair.dst), -1, svnRepository, reposRootUrl);
+    }
+
+    private Map<String, SVNPropertyValue> resolvePinnedExternals(Map<SvnTarget, List<SVNExternal>> externalsToPin, SvnTarget pairSource, SvnTarget pairDst, long pairSourceRevision, SVNRepository svnRepository, SVNURL reposRootUrl) throws SVNException {
+        final Map<String, SVNPropertyValue> pinnedExternals = new HashMap<String, SVNPropertyValue>();
+        final Map<SvnTarget, SVNPropertyValue> externalsProps = new HashMap<SvnTarget, SVNPropertyValue>();
+
+        SVNURL oldUrl = null;
+        if (pairSource.isURL()) {
+            oldUrl = svnRepository.getLocation();
+
+            SvnRemoteGetProperties.remotePropertyGet(pairSource.getURL(), SVNNodeKind.DIR, "", svnRepository, pairSourceRevision, SVNDepth.INFINITY, new ISvnObjectReceiver<SVNProperties>() {
+                @Override
+                public void receive(SvnTarget target, SVNProperties properties) throws SVNException {
+                    if (properties != null) {
+                        final SVNPropertyValue externalsValue = properties.getSVNPropertyValue(SVNProperty.EXTERNALS);
+                        if (externalsValue != null) {
+                            externalsProps.put(target, externalsValue);
+                        }
+                    }
+                }
+            });
+        } else {
+            SVNExternalsStore externalsStore = new SVNExternalsStore();
+            getWcContext().getDb().gatherExternalDefinitions(pairSource.getFile(), externalsStore);
+
+            final Map<File, String> newExternals = externalsStore.getNewExternals();
+            for (Map.Entry<File, String> entry : newExternals.entrySet()) {
+                final File localAbsPath = entry.getKey();
+                final String externalsValue = entry.getValue();
+                externalsProps.put(SvnTarget.fromFile(localAbsPath), SVNPropertyValue.create(externalsValue));
+            }
+        }
+
+        if (externalsProps.size() == 0) {
+            if (oldUrl != null) {
+                svnRepository.setLocation(oldUrl, false);
+            }
+            return Collections.emptyMap();
+        }
+
+        for (Map.Entry<SvnTarget, SVNPropertyValue> entry : externalsProps.entrySet()) {
+            final SvnTarget localAbsPathOrUrl = entry.getKey();
+            final SVNPropertyValue externalsPropValue = entry.getValue();
+
+            SVNPropertyValue newPropVal = pinExternalProps(externalsPropValue, externalsToPin, reposRootUrl, localAbsPathOrUrl);
+
+            if (newPropVal != null) {
+                final String relativePath = SVNPathUtil.getRelativePath(pairSource.getPathOrUrlDecodedString(), localAbsPathOrUrl.getPathOrUrlDecodedString());
+                pinnedExternals.put(relativePath, newPropVal);
+            }
+        }
+
+        if (oldUrl != null) {
+            svnRepository.setLocation(oldUrl, false);
+        }
+
+        return pinnedExternals;
+    }
+
+    private SVNPropertyValue pinExternalProps(SVNPropertyValue externalsPropValue, Map<SvnTarget, List<SVNExternal>> externalsToPin, SVNURL reposRootUrl, SvnTarget localAbsPathOrUrl) throws SVNException {
+        final StringBuilder stringBuilder = new StringBuilder();
+
+        final SVNExternal[] externals = SVNExternal.parseExternals(localAbsPathOrUrl, SVNPropertyValue.getPropertyAsString(externalsPropValue));
+        List<SVNExternal> itemsToPin;
+        if (externalsToPin != null) {
+            itemsToPin = externalsToPin.get(localAbsPathOrUrl);
+            if (itemsToPin == null) {
+                return null;
+            }
+        } else {
+            itemsToPin = null;
+        }
+        int pinnedItems = 0;
+        for (SVNExternal item : externals) {
+            SVNRevision externalPegRev;
+            if (itemsToPin != null) {
+                SVNExternal itemToPin = null;
+
+                for (SVNExternal current : itemsToPin) {
+                    if (current != null && current.getUnresolvedUrl().equals(item.getUnresolvedUrl()) && current.getPath().equals(item.getPath())) {
+                        itemToPin = current;
+                        break;
+                    }
+                }
+
+                if (itemToPin == null) {
+                    externalPegRev = SVNRevision.UNDEFINED;
+                    String externalDescription = makeExternalDescription(localAbsPathOrUrl, item, externalPegRev);
+                    stringBuilder.append(externalDescription);
+                    continue;
+                }
+            }
+
+            if (item.getPegRevision().getDate() != null) {
+                externalPegRev = item.getPegRevision();
+            } else if (SVNRevision.isValidRevisionNumber(item.getPegRevision().getNumber())) {
+                externalPegRev = item.getPegRevision();
+            } else {
+                assert item.getPegRevision() == SVNRevision.HEAD || item.getPegRevision() == SVNRevision.UNDEFINED;
+
+                pinnedItems++;
+
+                if (localAbsPathOrUrl.isURL()) {
+                    SVNURL resolvedURL = item.resolveURL(reposRootUrl, localAbsPathOrUrl.getURL());
+                    SVNRepository svnRepository = getRepositoryAccess().createRepository(resolvedURL, null);
+                    externalPegRev = SVNRevision.create(svnRepository.getLatestRevision());
+                } else {
+                    File externalAbsPath = SVNFileUtil.createFilePath(localAbsPathOrUrl.getFile(), item.getPath());
+                    Structure<ExternalNodeInfo> externalNodeInfoStructure = SvnWcDbExternals.readExternal(getWcContext(), externalAbsPath, localAbsPathOrUrl.getFile(), ExternalNodeInfo.kind);
+                    assert externalNodeInfoStructure != null;
+                    SVNWCDbKind externalKind = externalNodeInfoStructure.get(ExternalNodeInfo.kind);
+                    long externalCheckedOutRevision = 0;
+                    if (externalKind == SVNWCDbKind.Unknown || externalKind == null) {
+                        SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_PATH_UNEXPECTED_STATUS, "Cannot pin external ''{0}'' defined in {1} at ''{2}'' because it is not checked out in the working copy at ''{3}''", item.getUnresolvedUrl(), SVNProperty.EXTERNALS, localAbsPathOrUrl.getFile(), externalAbsPath.getAbsolutePath(), SVNProperty.EXTERNALS);
+                        SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
+                    } else if (externalKind == SVNWCDbKind.Dir) {
+
+                        boolean isSwitched = SvnWcDbReader.hasSwitchedSubtrees((SVNWCDb) getWcContext().getDb(), externalAbsPath);
+                        if (isSwitched) {
+                            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_PATH_UNEXPECTED_STATUS, "Cannot pin external ''{0}'' defined in {1} at ''{2}'' because ''{3}'' has switched subtrees (switches cannot be represented in {4})", item.getUnresolvedUrl(), SVNProperty.EXTERNALS, localAbsPathOrUrl.getFile(), externalAbsPath.getAbsolutePath(), SVNProperty.EXTERNALS);
+                            SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
+                        }
+
+                        boolean isModified = SvnWcDbReader.hasLocalModifications(getWcContext(), externalAbsPath);
+                        if (isModified) {
+                            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_PATH_UNEXPECTED_STATUS, "Cannot pin external ''{0}'' defined in {1} at ''{2}'' because ''{3}'' has local modifications (local modifications cannot be represented in {4})", item.getUnresolvedUrl(), SVNProperty.EXTERNALS, localAbsPathOrUrl.getFile(), externalAbsPath.getAbsolutePath(), SVNProperty.EXTERNALS);
+                            SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
+                        }
+                        long[] minMaxRevisions = SvnWcDbReader.getMinAndMaxRevisions((SVNWCDb) getWcContext().getDb(), externalAbsPath);
+                        if (minMaxRevisions[0] != minMaxRevisions[1]) {
+                            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_PATH_UNEXPECTED_STATUS, "Cannot pin external ''{0}'' defined in {1} at ''{2}'' because ''{3}'' is a mixed-revision working copy (mixed-revisions cannot be represented in {4})", item.getUnresolvedUrl(), SVNProperty.EXTERNALS, localAbsPathOrUrl.getFile(), externalAbsPath.getAbsolutePath(), SVNProperty.EXTERNALS);
+                            SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
+                        }
+                        externalCheckedOutRevision = minMaxRevisions[0];
+                    } else {
+                        assert externalKind == SVNWCDbKind.File;
+                        SVNWCContext.SVNWCNodeReposInfo nodeReposInfo = getWcContext().getNodeReposInfo(externalAbsPath);
+                        externalCheckedOutRevision = nodeReposInfo.revision;
+                    }
+                    externalPegRev = SVNRevision.create(externalCheckedOutRevision);
+                }
+            }
+            assert externalPegRev.getDate() != null || SVNRevision.isValidRevisionNumber(externalPegRev.getNumber());
+            final String pinnedDescription = makeExternalDescription(localAbsPathOrUrl, item, externalPegRev);
+            stringBuilder.append(pinnedDescription);
+        }
+        if (pinnedItems > 0) {
+            return SVNPropertyValue.create(stringBuilder.toString());
+        } else {
+            return null;
+        }
+    }
+
+    private String makeExternalDescription(SvnTarget localAbsPathOrUrl, SVNExternal item, SVNRevision externalPegRevision) throws SVNException {
+        String parserRevisionString = item.getRevisionString();
+        String parserPegRevisionString = item.getPegRevisionString();
+
+        String revisionString;
+        String pegRevisionString;
+        switch (item.getFormat()) {
+            case 1:
+                if (externalPegRevision == SVNRevision.UNDEFINED) {
+                    revisionString = parserRevisionString + " ";
+                } else if (parserRevisionString != null && item.getRevision() == SVNRevision.HEAD) {
+                    revisionString = parserRevisionString + " ";
+                } else {
+                    assert SVNRevision.isValidRevisionNumber(externalPegRevision.getNumber());
+                    revisionString = "-r" + externalPegRevision.getNumber() + " ";
+                }
+                return maybeQuote(item.getPath()) + " " + revisionString + maybeQuote(item.getUnresolvedUrl());
+            case 2:
+                if (externalPegRevision == SVNRevision.UNDEFINED) {
+                    revisionString = parserRevisionString + " ";
+                } else if (parserRevisionString != null && item.getRevision() != SVNRevision.HEAD) {
+                    revisionString = parserRevisionString + " ";
+                } else {
+                    revisionString = "";
+                }
+
+                if (externalPegRevision == SVNRevision.UNDEFINED) {
+                    pegRevisionString = parserPegRevisionString != null ? parserPegRevisionString : "";
+                } else if (parserPegRevisionString != null && item.getRevision() != SVNRevision.HEAD) {
+                    pegRevisionString = parserPegRevisionString;
+                } else {
+                    assert SVNRevision.isValidRevisionNumber(externalPegRevision.getNumber());
+                    pegRevisionString = "@" + externalPegRevision.getNumber();
+                }
+                return revisionString + maybeQuote(item.getUnresolvedUrl() + pegRevisionString) + maybeQuote(item.getPath());
+            default:
+                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.CLIENT_INVALID_EXTERNALS_DESCRIPTION, "{0} property defined at ''{1}'' is using an unsupported syntax", SVNProperty.EXTERNALS, localAbsPathOrUrl.getFile());
+                SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
+                break;
+        }
+        return null;
+    }
+
+    private String maybeQuote(String s) {
+        final String[] argv = s.split("\\s");
+        if (argv.length == 1 && argv[0].equals(s)) {
+            return s;
+        }
+        final StringBuilder stringBuilder = new StringBuilder('\"');
+        for (int i = 0; i < s.length(); i++) {
+            final char c = s.charAt(i);
+            if (c == '\\' || c == '\"' || c == '\'') {
+                stringBuilder.append('\\');
+            }
+            stringBuilder.append(c);
+        }
+        stringBuilder.append('\"');
+        return stringBuilder.toString();
     }
 
     private boolean move(Collection<SvnCopyPair> pairs) throws SVNException {

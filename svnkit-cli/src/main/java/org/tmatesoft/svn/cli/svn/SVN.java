@@ -157,6 +157,7 @@ public class SVN extends AbstractSVNLauncher {
         SVNCommandLine.registerOption(SVNOption.IGNORE_WHITESPACE);
         SVNCommandLine.registerOption(SVNOption.SHOW_ITEM);
         SVNCommandLine.registerOption(SVNOption.NO_NEWLINE);
+        SVNCommandLine.registerOption(SVNOption.PIN_EXTERNALS);
 
     }
 

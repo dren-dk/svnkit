@@ -151,6 +151,7 @@ public class SVNCommandEnvironment extends AbstractSVNCommandEnvironment impleme
     private boolean myIsIncludeExternals;
     private String myShowItem;
     private boolean myIsNoNewLine;
+    private boolean myIsPinExternals;
 
     private SVNConflictStats myConflictStats;
 
@@ -672,6 +673,8 @@ public class SVNCommandEnvironment extends AbstractSVNCommandEnvironment impleme
         } else if (option == SVNOption.SHOW_INHERITED_PROPS) {
             myIsShowInhertiedProps = true;
         } else if (option == SVNOption.NO_NEWLINE) {
+            myIsPinExternals = true;
+        } else if (option == SVNOption.NO_NEWLINE) {
             myIsNoNewLine = true;
         } else if (option == SVNOption.SHOW_ITEM) {
             myShowItem = optionValue.getValue();
@@ -1037,6 +1040,10 @@ public class SVNCommandEnvironment extends AbstractSVNCommandEnvironment impleme
 
     public boolean isNoNewLine() {
         return myIsNoNewLine;
+    }
+
+    public boolean isPinExternals() {
+        return myIsPinExternals;
     }
 
     public boolean isIncludeExternals() {

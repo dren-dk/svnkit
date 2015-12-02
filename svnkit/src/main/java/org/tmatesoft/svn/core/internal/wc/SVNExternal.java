@@ -25,6 +25,7 @@ import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNProperty;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.util.SVNDate;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.util.SVNDebugLog;
@@ -93,6 +94,10 @@ public class SVNExternal {
     
     public boolean isNewFormat() {
         return myIsNewFormat;
+    }
+
+    public int getFormat() {
+        return isNewFormat() ? 2 : 1;
     }
 
     public SVNURL getResolvedURL() {
@@ -355,6 +360,28 @@ public class SVNExternal {
             }
         }
         return paths;
+    }
+
+    public String getRevisionString() {
+        return formatRevisionString("-r", getRevision());
+    }
+
+    public String getPegRevisionString() {
+        return formatRevisionString("@", getPegRevision());
+    }
+
+    private String formatRevisionString(String revisionPrefix, SVNRevision revision) {
+        if (revision == null) {
+            return null;
+        } else if (revision == SVNRevision.HEAD) {
+            return revisionPrefix + "HEAD";
+        } else if (revision.getDate() != null) {
+            return revisionPrefix + "{" + SVNDate.formatDate(revision.getDate(), true) + "}";
+        } else if (SVNRevision.isValidRevisionNumber(revision.getNumber())) {
+            return revisionPrefix + revision.getNumber();
+        } else {
+            return null;
+        }
     }
 
     private static class ExternalTokenizer implements Iterator {

@@ -93,6 +93,7 @@ public class SVNOption extends AbstractSVNOption {
     public static final SVNOption SHOW_INHERITED_PROPS = new SVNOption("show-inherited-props");
     public static final SVNOption SHOW_ITEM = new SVNOption("show-item", false);
     public static final SVNOption NO_NEWLINE = new SVNOption("no-newline");
+    public static final SVNOption PIN_EXTERNALS = new SVNOption("pin-externals");
 
     // auth options.
     public static final SVNOption USERNAME = new SVNOption("username", false);

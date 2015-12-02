@@ -2122,6 +2122,7 @@ public class SVNWCContext {
         public SVNURL reposRootUrl;
         public String reposUuid;
         public File reposRelPath;
+        public long revision;
     }
 
     public SVNWCNodeReposInfo getNodeReposInfo(File localAbspath) throws SVNException {
@@ -2129,15 +2130,17 @@ public class SVNWCContext {
         SVNWCNodeReposInfo info = new SVNWCNodeReposInfo();
         info.reposRootUrl = null;
         info.reposUuid = null;
+        info.revision = -1;
 
         SVNWCDbStatus status;
         try {
             // s1
-            WCDbInfo readInfo = db.readInfo(localAbspath, InfoField.status, InfoField.reposRootUrl, InfoField.reposUuid, InfoField.reposRelPath);
+            WCDbInfo readInfo = db.readInfo(localAbspath, InfoField.status, InfoField.reposRootUrl, InfoField.reposUuid, InfoField.reposRelPath, InfoField.revision);
             status = readInfo.status;
             info.reposRootUrl = readInfo.reposRootUrl;
             info.reposUuid = readInfo.reposUuid;
             info.reposRelPath = readInfo.reposRelPath;
+            info.revision = readInfo.revision;
         } catch (SVNException e) {
             if (e.getErrorMessage().getErrorCode() != SVNErrorCode.WC_PATH_NOT_FOUND && e.
                     getErrorMessage().getErrorCode() != SVNErrorCode.WC_NOT_WORKING_COPY) {
@@ -2161,6 +2164,8 @@ public class SVNWCContext {
                 // s4
                 addInfo = db.scanAddition(SVNFileUtil.getParentFile(dinfo.workDelAbsPath),
                         AdditionInfoField.reposRootUrl, AdditionInfoField.reposUuid, AdditionInfoField.reposRelPath);
+                WCDbBaseInfo baseInfo = db.getBaseInfo(localAbspath, BaseInfoField.revision);
+                info.revision = baseInfo.revision;
             }
         } else if (status == SVNWCDbStatus.Added) {
             // s5
