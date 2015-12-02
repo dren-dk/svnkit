@@ -790,7 +790,22 @@ public class PythonTests {
                 logHandler = createLogHandler(logsDirectory, type + "_" + suiteName + "_python");
 			    pythonLogger.addHandler(logHandler);
 			}
-			long startTime = System.currentTimeMillis();
+
+            final File testsDirectory = SVNFileUtil.createFilePath(testsLocation);
+
+            //since version 1.9, tests expect testsLocation to end with "tests/cmdline"
+            if (!testsDirectory.getAbsolutePath().endsWith("/tests/cmdline")) {
+                final File parentDirectory = testsDirectory.getParentFile().getAbsoluteFile();
+                final File parentParentDirectory = parentDirectory.getParentFile().getAbsoluteFile();
+
+                File cmdlineSymlink = new File(parentDirectory, "cmdline");
+                File testSymlink = new File(parentParentDirectory, "tests");
+
+                SVNFileUtil.createSymlink(cmdlineSymlink, testsDirectory.getAbsolutePath());
+                SVNFileUtil.createSymlink(testSymlink, parentDirectory.getAbsolutePath());
+            }
+
+            long startTime = System.currentTimeMillis();
 			try {
     			if (tokens.isEmpty() || (tokens.size() == 1 && "ALL".equals(tokens.get(0)))) {
                     processTestCase(pythonLauncher, testsLocation, testFile, options, null, url, libPath, fsfsConfig, pythonLogger);
