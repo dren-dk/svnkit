@@ -32,6 +32,7 @@ import org.tmatesoft.svn.core.internal.util.DefaultSVNDebugFormatter;
 import org.tmatesoft.svn.core.internal.util.SVNDate;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.internal.wc.SVNFileListUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc17.SVNWCUtils;
 import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSchema;
@@ -771,6 +772,24 @@ public class PythonTests {
 		File logsDirectory = getLogsDirectory();
         logsDirectory.mkdirs();
 
+        final File currentDirectory = SVNFileUtil.createFilePath(testsLocation);
+
+        //since version 1.9, tests expect testsLocation to end with "tests/cmdline"
+        if (!currentDirectory.getAbsolutePath().endsWith("/tests/cmdline")) {
+            final File parentDirectory = currentDirectory.getParentFile().getAbsoluteFile();
+            final File parentParentDirectory = parentDirectory.getParentFile().getAbsoluteFile();
+
+            final File testsDirectory = new File(parentParentDirectory, "tests");
+            testsDirectory.mkdirs();
+
+            final File cmdlineSymlink = new File(testsDirectory, "cmdline");
+            final File libsvnWcSymlink = new File(testsDirectory, "libsvn_wc");
+
+            File libsvn_wc = new File(parentDirectory, "libsvn_wc");
+            SVNFileUtil.createSymlink(libsvnWcSymlink, libsvn_wc.getAbsolutePath());
+            SVNFileUtil.createSymlink(cmdlineSymlink, currentDirectory.getAbsolutePath());
+        }
+
 		for (StringTokenizer tests = new StringTokenizer(testSuite, ","); tests.hasMoreTokens();) {
 			final String testFileString = tests.nextToken();
 			List tokens = tokenizeTestFileString(testFileString);
@@ -791,19 +810,7 @@ public class PythonTests {
 			    pythonLogger.addHandler(logHandler);
 			}
 
-            final File testsDirectory = SVNFileUtil.createFilePath(testsLocation);
 
-            //since version 1.9, tests expect testsLocation to end with "tests/cmdline"
-            if (!testsDirectory.getAbsolutePath().endsWith("/tests/cmdline")) {
-                final File parentDirectory = testsDirectory.getParentFile().getAbsoluteFile();
-                final File parentParentDirectory = parentDirectory.getParentFile().getAbsoluteFile();
-
-                File cmdlineSymlink = new File(parentDirectory, "cmdline");
-                File testSymlink = new File(parentParentDirectory, "tests");
-
-                SVNFileUtil.createSymlink(cmdlineSymlink, testsDirectory.getAbsolutePath());
-                SVNFileUtil.createSymlink(testSymlink, parentDirectory.getAbsolutePath());
-            }
 
             long startTime = System.currentTimeMillis();
 			try {
