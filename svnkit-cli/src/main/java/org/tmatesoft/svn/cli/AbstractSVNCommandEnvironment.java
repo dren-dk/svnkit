@@ -469,7 +469,7 @@ public abstract class AbstractSVNCommandEnvironment implements ISVNCanceller {
 
     public void printCommitInfo(SVNCommitInfo info) {
         if (info != null && info.getNewRevision() >= 0 && info != SVNCommitInfo.NULL) {
-            getOut().println("\nCommitted revision " + info.getNewRevision() + ".");
+            getOut().println("Committed revision " + info.getNewRevision() + ".");
             if (info.getErrorMessage() != null && info.getErrorMessage().isWarning()) {
                 getOut().println("\n" + info.getErrorMessage().getMessage());
             }
