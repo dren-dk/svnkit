@@ -786,7 +786,9 @@ public class DefaultSVNOptions implements ISVNOptions, ISVNMergerFactory {
 
     private SVNCompositeConfigFile getConfigFile() {
         if (myConfigFile == null) {
-            SVNConfigFile.createDefaultConfiguration(myConfigDirectory);
+            if (!myIsReadonly) {
+                SVNConfigFile.createDefaultConfiguration(myConfigDirectory);
+            }
             SVNConfigFile userConfig = new SVNConfigFile(new File(myConfigDirectory, "config"));
             SVNConfigFile systemConfig = new SVNConfigFile(new File(SVNFileUtil.getSystemConfigurationDirectory(), "config"));
             myConfigFile = new SVNCompositeConfigFile(systemConfig, userConfig);
