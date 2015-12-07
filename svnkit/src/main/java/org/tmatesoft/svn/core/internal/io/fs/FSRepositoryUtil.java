@@ -269,10 +269,13 @@ public class FSRepositoryUtil {
     }
     
     public static void loadRootChangesOffsetLogicalAddressing(FSFS fsfs, long revision, FSFile file, long index, long[] rootOffset, long[] changesOffset) throws SVNException {
+        final long offset = fsfs.lookupOffsetInIndex(file, revision, index);
         if (rootOffset != null) {
-            rootOffset[0] = fsfs.lookupOffsetInIndex(file, revision, index);
+            rootOffset[0] = offset;
         }
-        changesOffset[0] = 0;
+        if (changesOffset != null) {
+            changesOffset[0] = offset;
+        }
     }
 
     public static void loadRootChangesOffset(FSFS fsfs, long revision, FSFile file, long[] rootOffset, long[] changesOffset) throws SVNException {

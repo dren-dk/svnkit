@@ -47,7 +47,7 @@ public class FSRevisionRoot extends FSRoot {
     public Map getChangedPaths() throws SVNException {
         FSFile file = getOwner().getPackOrRevisionFSFile(getRevision());
         try {
-            loadOffsets(file);
+            loadOffsets(file, FSID.ITEM_INDEX_CHANGES);
             file.seek(myChangesOffset);
             return fetchAllChanges(file, true);
         } finally {
@@ -107,7 +107,7 @@ public class FSRevisionRoot extends FSRoot {
             } else {
                 FSFile file = getOwner().getPackOrRevisionFSFile(getRevision());
                 try {
-                    loadOffsets(file);
+                    loadOffsets(file, FSID.ITEM_INDEX_ROOT_NODE);
                     file.seek(myRootOffset);
                     Map headers = file.readHeader();
                     myRootRevisionNode = FSRevisionNode.fromMap(headers);
@@ -201,19 +201,28 @@ public class FSRevisionRoot extends FSRoot {
         return node.getCreatedRevision();
     }
     
-    private void loadOffsets(FSFile file) throws SVNException {
-        if (myRootOffset >= 0) {
+    private void loadOffsets(FSFile file, long itemIndex) throws SVNException {
+        if (myRootOffset >= 0 && itemIndex == FSID.ITEM_INDEX_ROOT_NODE) {
+            return;
+        }
+        if (myChangesOffset >= 0 && itemIndex == FSID.ITEM_INDEX_CHANGES) {
             return;
         }
         long[] rootOffset = { -1 };
         long[] changesOffset = { -1 };
         if (isUseLogAddressing()) {
-            FSRepositoryUtil.loadRootChangesOffsetLogicalAddressing(getOwner(), getRevision(), file, FSID.ITEM_INDEX_ROOT_NODE, rootOffset, changesOffset);
+            FSRepositoryUtil.loadRootChangesOffsetLogicalAddressing(getOwner(), getRevision(), file, itemIndex, rootOffset, changesOffset);
+            if (itemIndex == FSID.ITEM_INDEX_ROOT_NODE) {
+                myRootOffset = rootOffset[0];
+            }
+            if (itemIndex == FSID.ITEM_INDEX_CHANGES) {
+                myChangesOffset = changesOffset[0];
+            }
         } else {
             FSRepositoryUtil.loadRootChangesOffset(getOwner(), getRevision(), file, rootOffset, changesOffset);
+            myRootOffset = rootOffset[0];
+            myChangesOffset = changesOffset[0];
         }
-        myRootOffset = rootOffset[0];
-        myChangesOffset = changesOffset[0];
     }
 
 }
