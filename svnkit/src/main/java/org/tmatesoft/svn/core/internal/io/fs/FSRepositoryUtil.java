@@ -463,6 +463,8 @@ public class FSRepositoryUtil {
 
     public static int encodeUnsignedInt(byte[] bytes, long value) {
         //TODO: reuse some code?
+        value = value & 0x00000000ffffffffL;
+
         int i = 0;
 
         while (value >= 0x80) {

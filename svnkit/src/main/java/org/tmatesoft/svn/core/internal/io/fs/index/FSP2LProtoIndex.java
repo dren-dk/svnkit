@@ -59,7 +59,7 @@ public class FSP2LProtoIndex {
         final long offset = readOffset();
         final long size = readOffset();
         final int type = readInt();
-        final int fnv1Checksum = readInt();
+        final long fnv1Checksum = readLong();
         final long revision = readLong();
         final long itemNumber = readLong();
 
@@ -70,7 +70,7 @@ public class FSP2LProtoIndex {
                 SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
             }
             final long itemRevision = revision == 0 ? SVNRepository.INVALID_REVISION : (revision -1);
-            return new FSP2LEntry(offset, size, ItemType.fromCode(type), fnv1Checksum, itemRevision, itemNumber);
+            return new FSP2LEntry(offset, size, ItemType.fromCode(type), (int)fnv1Checksum, itemRevision, itemNumber);
         }
         return null;
     }
@@ -85,7 +85,7 @@ public class FSP2LProtoIndex {
             FSRepositoryUtil.writeLongLittleEndian(file, entry.getOffset());
             FSRepositoryUtil.writeLongLittleEndian(file, entry.getSize());
             FSRepositoryUtil.writeLongLittleEndian(file, entry.getType().getCode());
-            FSRepositoryUtil.writeLongLittleEndian(file, entry.getChecksum());
+            FSRepositoryUtil.writeLongLittleEndian(file, (long)(entry.getChecksum() & 0x00000000ffffffffL));
             FSRepositoryUtil.writeLongLittleEndian(file, revision);
             FSRepositoryUtil.writeLongLittleEndian(file, entry.getNumber());
         } catch (IOException e) {
