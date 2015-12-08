@@ -41,7 +41,6 @@ public class DefaultSVNHostOptionsProvider implements ISVNHostOptionsProvider {
 
     protected SVNCompositeConfigFile getServersFile() {
         if (myServersFile == null) {
-            SVNConfigFile.createDefaultConfiguration(myConfigDirectory);
             SVNConfigFile userConfig = new SVNConfigFile(new File(myConfigDirectory, "servers"));
             SVNConfigFile systemConfig = new SVNConfigFile(new File(SVNFileUtil.getSystemConfigurationDirectory(), "servers"));
             myServersFile = new SVNCompositeConfigFile(systemConfig, userConfig);
