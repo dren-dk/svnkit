@@ -221,6 +221,7 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
         if (myIsClosed) {
             return;
         }
+        boolean truncateToSize = false;
         myIsClosed = true;
         try {
             ByteArrayInputStream target = new ByteArrayInputStream(myTextBuffer.toByteArray());
@@ -246,8 +247,8 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
             FSRepresentation oldRep = getSharedRepresentation(fsfs, rep, null);
 
             if (oldRep != null) {
-                SVNFileUtil.truncate(myTargetFile, myRepOffset);
                 myRevNode.setTextRepresentation(oldRep);
+                truncateToSize = true;
             } else {
                 rep.setItemIndex(myTxnRoot.allocateItemIndex(myRepOffset));
 
@@ -261,13 +262,20 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
             if (oldRep == null) {
                 final int checksum = myTargetFileOS.finalizeChecksum();
                 storeSha1RepMapping(fsfs, myRevNode.getTextRepresentation()); //store_sha1_rep_mapping
-                final FSP2LEntry entry = new FSP2LEntry(myRepOffset, myTargetFileOS.getPosition(), FSP2LProtoIndex.ItemType.FILE_REP, checksum, SVNRepository.INVALID_REVISION, rep.getItemIndex());
+                final FSP2LEntry entry = new FSP2LEntry(myRepOffset, myTargetFileOS.getPosition() - myRepOffset, FSP2LProtoIndex.ItemType.FILE_REP, checksum, SVNRepository.INVALID_REVISION, rep.getItemIndex());
                 myTxnRoot.storeP2LIndexEntry(entry);
             }
         } catch (SVNException svne) {
             throw new IOException(svne.getMessage());
         } finally {
             closeStreams();
+            try {
+                if (truncateToSize) {
+                    SVNFileUtil.truncate(myTargetFile, myRepOffset);
+                }
+            } catch (IOException e) {
+                SVNDebugLog.getDefaultLog().logError(SVNLogType.FSFS, e);
+            }
             try {
                 myTxnLock.unlock();
             } catch (SVNException e) {
