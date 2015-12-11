@@ -392,7 +392,12 @@ public class SVNErrorCode implements Serializable {
     public static final SVNErrorCode FS_REP_BEING_WRITTEN = new SVNErrorCode(FS_CATEGORY, 44, "Representation is being written");
     public static final SVNErrorCode FS_TXN_NAME_TOO_LONG = new SVNErrorCode(FS_CATEGORY, 45, "The generated transaction name is too long");
     public static final SVNErrorCode FS_NO_SUCH_NODE_ORIGIN = new SVNErrorCode(FS_CATEGORY, 46, "Filesystem has no such node origin record");
-    
+    public static final SVNErrorCode FS_INDEX_CORRUPTION = new SVNErrorCode(FS_CATEGORY, 54, "Corrupt index file");
+    public static final SVNErrorCode FS_INDEX_REVISION = new SVNErrorCode(FS_CATEGORY, 55, "Revision not covered by index");
+    public static final SVNErrorCode FS_INDEX_OVERFLOW = new SVNErrorCode(FS_CATEGORY, 56, "Item index too large for this revision");
+    public static final SVNErrorCode FS_CONTAINER_INDEX = new SVNErrorCode(FS_CATEGORY, 57, "Container index out of range");
+    public static final SVNErrorCode FS_INDEX_INCONSISTENT = new SVNErrorCode(FS_CATEGORY, 58, "Index files are inconsistent");
+
     public static final SVNErrorCode REPOS_LOCKED = new SVNErrorCode(REPOS_CATEGORY, 0, "The repository is locked, perhaps for db recovery");
     public static final SVNErrorCode REPOS_HOOK_FAILURE = new SVNErrorCode(REPOS_CATEGORY, 1, "A repository hook failed");
     public static final SVNErrorCode REPOS_BAD_ARGS = new SVNErrorCode(REPOS_CATEGORY, 2, "Incorrect arguments supplied");

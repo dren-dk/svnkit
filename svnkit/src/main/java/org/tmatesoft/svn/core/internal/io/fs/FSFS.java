@@ -34,6 +34,8 @@ import org.tmatesoft.svn.core.SVNProperty;
 import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.SVNRevisionProperty;
 import org.tmatesoft.svn.core.internal.delta.SVNDeltaReader;
+import org.tmatesoft.svn.core.internal.io.fs.index.FSLogicalAddressingIndex;
+import org.tmatesoft.svn.core.internal.io.fs.index.FSL2PProtoIndex;
 import org.tmatesoft.svn.core.internal.io.fs.revprop.SVNFSFSPackedRevProps;
 import org.tmatesoft.svn.core.internal.io.fs.revprop.SVNFSFSPackedRevPropsManifest;
 import org.tmatesoft.svn.core.internal.util.SVNDate;
@@ -92,6 +94,11 @@ public class FSFS {
     public static final String COMPRESS_PACKED_REVPROPS_OPTION = "compress-packed-revprops";
     public static final String REVPROP_PACK_SIZE_OPTION = "revprop-pack-size";
 
+    public static final String IO_SECTION = "io";
+    public static final String BLOCK_SIZE_OPTION = "block-size";
+    public static final String L2P_PAGE_SIZE_OPTION = "l2p-page-size";
+    public static final String P2L_PAGE_SIZE_OPTION = "p2l-page-size";
+
     public static final String PATH_CONFIG = "fsfs.conf";
     public static final String TXN_PATH_EXT = ".txn";
     public static final String TXN_MERGEINFO_PATH = "mergeinfo";
@@ -119,6 +126,7 @@ public class FSFS {
     public static final int DB_FORMAT_PRE_17 = 4;
     public static final int DB_FORMAT = 7;
     public static final int DB_FORMAT_LOW = 1;
+    public static final int MIN_SVNDIFF1_FORMAT = 2;
     public static final int LAYOUT_FORMAT_OPTION_MINIMAL_FORMAT = 3;
     public static final int MIN_CURRENT_TXN_FORMAT = 3;
     public static final int MIN_PROTOREVS_DIR_FORMAT = 3;
@@ -129,7 +137,8 @@ public class FSFS {
     public static final int MIN_KIND_IN_CHANGED_FORMAT = 4;
     public static final int MIN_PACKED_REVPROP_SQLITE_DEV_FORMAT = 5;
     public static final int MIN_PACKED_REVPROP_FORMAT = 6;
-    public static final int LOG_ADDRESSING_MINIMAL_FORMAT = 7;
+    public static final int MIN_LOG_ADDRESSING_MINIMAL_FORMAT = 7;
+    public static final int MIN_MERGEINFO_IN_CHANGED_FORMAT = 7;
 
     //TODO: we should be able to change this via some option
     private static long DEFAULT_MAX_FILES_PER_DIRECTORY = 1000;
@@ -174,7 +183,12 @@ public class FSFS {
     
     private boolean myIsHooksEnabled;
     private boolean myCompressPackedRevprops;
+    private boolean myIsRepSharingAllowed;
     private long myRevpropPackSize;
+
+    private long myBlockSize;
+    private long myL2PPageSize;
+    private long myP2LPageSize;
 
     public FSFS(File repositoryRoot) {
         myRepositoryRoot = repositoryRoot;
@@ -200,6 +214,10 @@ public class FSFS {
 
     public int getReposFormat() {
         return myReposFormat;
+    }
+
+    public boolean isUseLogAddressing() {
+        return myUseLogAddressing;
     }
 
     public void open() throws SVNException {
@@ -280,6 +298,7 @@ public class FSFS {
             String optionValue = config.getPropertyValue(REP_SHARING_SECTION, ENABLE_REP_SHARING_OPTION);
             isRepSharingAllowed = DefaultSVNOptions.getBooleanValue(optionValue, true);
         }
+        myIsRepSharingAllowed = isRepSharingAllowed;
 
         if (myDBFormat >= MIN_REP_SHARING_FORMAT && isRepSharingAllowed) {
             myReposCacheManager = FSRepresentationCacheUtil.open(this);
@@ -316,6 +335,38 @@ public class FSFS {
         } else {
             myRevpropPackSize = 0x10000;
             myCompressPackedRevprops = false;
+        }
+        if (myDBFormat >= MIN_LOG_ADDRESSING_MINIMAL_FORMAT) {
+            final long blockSize = DefaultSVNOptions.getLongValue(config.getPropertyValue(IO_SECTION, BLOCK_SIZE_OPTION), 64);
+            final long l2pPageSize = DefaultSVNOptions.getLongValue(config.getPropertyValue(IO_SECTION, L2P_PAGE_SIZE_OPTION), 0x2000);
+            final long p2lPageSize = DefaultSVNOptions.getLongValue(config.getPropertyValue(IO_SECTION, P2L_PAGE_SIZE_OPTION), 0x400);
+
+            verifyBlockSize(blockSize, 0x400, BLOCK_SIZE_OPTION);
+            verifyBlockSize(blockSize, 0x400, P2L_PAGE_SIZE_OPTION);
+            verifyBlockSize(blockSize, 8, L2P_PAGE_SIZE_OPTION);
+
+            myBlockSize = blockSize * 0x400; //kbytes
+            myL2PPageSize = l2pPageSize;
+            myP2LPageSize = p2lPageSize * 0x400; //kbytes
+        } else {
+            myBlockSize = 0x1000;
+            myL2PPageSize = 0x2000;
+            myP2LPageSize = 0x100000;
+        }
+    }
+
+    private void verifyBlockSize(long blockSize, long itemSize, String name) throws SVNException {
+        if (blockSize <= 0) {
+            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.BAD_CONFIG_VALUE, "{0} is too small for fsfs.conf setting '{1}'", String.valueOf(blockSize), name);
+            SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
+        }
+        if (blockSize > Integer.MAX_VALUE / itemSize) {
+            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.BAD_CONFIG_VALUE, "{0} is too large for fsfs.conf setting '{1}'", String.valueOf(blockSize), name);
+            SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
+        }
+        if (0 != (blockSize & (blockSize - 1))) {
+            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.BAD_CONFIG_VALUE, "{0} is invalid for fsfs.conf setting '{1}' because it is not a power of 2", String.valueOf(blockSize), name);
+            SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
         }
     }
 
@@ -886,7 +937,7 @@ public class FSFS {
 
                     final FSRepresentation baseRepresentation = new FSRepresentation();
                     baseRepresentation.setRevision(baseRevision);
-                    baseRepresentation.setOffset(baseItemIndex);
+                    baseRepresentation.setItemIndex(baseItemIndex);
                     baseRepresentation.setSize(baseLength);
 
                     final byte[] baseBuffer = parseRawDeltaProperties(baseRepresentation, null);
@@ -1178,7 +1229,7 @@ public class FSFS {
 
     public FSFile openAndSeekRepresentation(FSRepresentation rep) throws SVNException {
         if (!rep.isTxn()) {
-            return openAndSeekRevision(rep.getRevision(), rep.getOffset());
+            return openAndSeekRevision(rep.getRevision(), rep.getItemIndex());
         }
         return openAndSeekTransaction(rep);
     }
@@ -1273,6 +1324,22 @@ public class FSFS {
 
     protected long getRevPropPackSize() {
         return myRevpropPackSize;
+    }
+
+    public boolean isRepSharingAllowed() {
+        return myIsRepSharingAllowed;
+    }
+
+    public long getBlockSize() {
+        return myBlockSize;
+    }
+
+    public long getL2PPageSize() {
+        return myL2PPageSize;
+    }
+
+    public long getP2LPageSize() {
+        return myP2LPageSize;
     }
 
     public SVNProperties getTransactionProperties(String txnID) throws SVNException {
@@ -1869,7 +1936,7 @@ public class FSFS {
                 }
             }
 
-            if (formatNumber >= LOG_ADDRESSING_MINIMAL_FORMAT && line.startsWith("addressing ")) {
+            if (formatNumber >= MIN_LOG_ADDRESSING_MINIMAL_FORMAT && line.startsWith("addressing ")) {
                 String optionValue = line.substring(11); //11 == "addressing ".length()
                 if (optionValue.equals("physical")) {
                     myUseLogAddressing = false;
@@ -1937,8 +2004,12 @@ public class FSFS {
         DEFAULT_MAX_FILES_PER_DIRECTORY = maxFilesPerDirectory;
     }
 
-    protected  boolean isPackedRevision(long revision) {
+    public boolean isPackedRevision(long revision) {
         return revision < myMinUnpackedRevision;
+    }
+
+    public long getPackedBaseRevision(long revision) {
+        return (isPackedRevision(revision) ? (revision - (revision % getMaxFilesPerDirectory())) : revision);
     }
 
     protected File getNodeOriginFile(String nodeID) {
@@ -2083,6 +2154,7 @@ public class FSFS {
         } finally {
             SVNFileUtil.closeFile(currentOS);
         }
+
         SVNFileUtil.rename(tmpCurrentFile, currentFile);
     }
 
@@ -2347,21 +2419,52 @@ public class FSFS {
         }
     }
 
-    private FSFile openAndSeekTransaction(FSRepresentation rep) {
+    private FSFile openAndSeekTransaction(FSRepresentation rep) throws SVNException {
         FSFile file = getTransactionRevisionPrototypeFile(rep.getTxnId());
-        file.seek(rep.getOffset());
+        long itemIndex = rep.getItemIndex();
+        long offset;
+        if (isUseLogAddressing()) {
+            offset = lookupOffsetInProtoIndex(file, rep.getTxnId(), itemIndex);
+        } else {
+            offset = itemIndex;
+        }
+        file.seek(itemIndex);
         return file;
     }
 
-    private FSFile openAndSeekRevision(long revision, long offset) throws SVNException {
+    private FSFile openAndSeekRevision(long revision, long itemIndex) throws SVNException {
         ensureRevisionsExists(revision);
         FSFile file = getPackOrRevisionFSFile(revision);
-        if (isPackedRevision(revision)) {
-            long revOffset = getPackedOffset(revision);
-            offset += revOffset;
+        long offset;
+        if (isUseLogAddressing()) {
+            offset = lookupOffsetInIndex(file, revision, itemIndex);
+        } else {
+            if (isPackedRevision(revision)) {
+                long revOffset = getPackedOffset(revision);
+                itemIndex += revOffset;
+            }
+            offset = itemIndex;
         }
         file.seek(offset);
         return file;
+    }
+
+    protected long lookupOffsetInIndex(FSFile file, long revision, long itemIndex) throws SVNException {
+        FSLogicalAddressingIndex index = new FSLogicalAddressingIndex(this, file);
+        return index.getOffsetByItemIndex(revision, itemIndex);
+    }
+
+    protected long lookupOffsetInProtoIndex(FSFile file, String txnId, long itemIndex) throws SVNException {
+        FSL2PProtoIndex index = null;
+        try {
+            index = FSL2PProtoIndex.open(this, txnId, false);
+            assert index != null;
+            return index.getOffsetByItemIndex(itemIndex);
+        } finally {
+            if (index != null) {
+                index.close();
+            }
+        }
     }
 
     private Map parsePlainRepresentation(SVNProperties entries, boolean mayContainNulls) throws SVNException {

@@ -679,6 +679,19 @@ public class SVNNotifyPrinter implements ISVNEventHandler {
                 buffer.append(event.getURL());
                 buffer.append("':\n");
             }
+        } else if (event.getAction() == SVNEventAction.MOVE_BROKEN) {
+            buffer.append("Breaking move with source path '");
+            buffer.append(path);
+            buffer.append("'\n");
+        } else if (event.getAction() == SVNEventAction.CLEANUP_EXTERNAL) {
+            buffer.append("Performing cleanup on external item at '");
+            buffer.append(path);
+            buffer.append("'\n");
+        } else if (event.getAction() == SVNEventAction.COMMIT_FINALIZING) {
+            if (myIsDeltaSent) {
+                buffer.append("done\n");
+            }
+            buffer.append("Committing transaction...\n");
         }
 
         if (buffer.length() > 0) {

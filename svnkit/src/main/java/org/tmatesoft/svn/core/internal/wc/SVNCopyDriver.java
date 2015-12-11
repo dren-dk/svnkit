@@ -370,6 +370,9 @@ public class SVNCopyDriver extends SVNBasicDelegate {
         SVNCommitInfo result = null;
         try {
             SVNCommitUtil.driveCommitEditor(committer, paths, commitEditor, latestRevision);
+            SVNEvent event = SVNEventFactory.createSVNEvent(null, SVNNodeKind.UNKNOWN, null, SVNRepository.INVALID_REVISION, SVNEventAction.COMMIT_FINALIZING, SVNEventAction.COMMIT_FINALIZING, null, null);
+            event.setURL(topURL);
+            handleEvent(event, -1);
             result = commitEditor.closeEdit();
         } catch (SVNCancelException cancel) {
             throw cancel;
@@ -926,7 +929,7 @@ public class SVNCopyDriver extends SVNBasicDelegate {
             SVNURL rootURL = repos.getRepositoryRoot(true);
             SVNPropertiesManager.validateRevisionProperties(revprops);
             commitEditor = repos.getCommitEditor(message, null, true, revprops, mediator);
-            info = SVNCommitter.commit(tmpFiles, allCommitables, rootURL.getPath(), commitEditor);
+            info = SVNCommitter.commit(tmpFiles, allCommitables, rootURL, commitEditor, getEventDispatcher());
             commitEditor = null;
 
         } catch (SVNCancelException cancel) {

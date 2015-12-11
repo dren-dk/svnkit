@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.tmatesoft.svn.core.SVNProperties;
 import org.tmatesoft.svn.core.SVNRevisionProperty;
 import org.tmatesoft.svn.core.internal.io.fs.FSFile;
+import org.tmatesoft.svn.core.internal.io.fs.index.FSPackedNumbersStream;
 
 import java.io.File;
 

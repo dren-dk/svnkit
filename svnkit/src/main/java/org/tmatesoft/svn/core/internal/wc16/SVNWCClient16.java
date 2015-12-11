@@ -898,6 +898,9 @@ public class SVNWCClient16 extends SVNBasicDelegate {
                 commitEditor.changeDirProperty(propName, propValue);
             }
             commitEditor.closeDir();
+            SVNEvent event = SVNEventFactory.createSVNEvent(null, SVNNodeKind.UNKNOWN, null, SVNRepository.INVALID_REVISION, SVNEventAction.COMMIT_FINALIZING, SVNEventAction.COMMIT_FINALIZING, null, null);
+            event.setURL(url);
+            handleEvent(event, -1);
             commitInfo = commitEditor.closeEdit();
         } catch (SVNException svne) {
             commitEditor.abortEdit();
