@@ -653,6 +653,10 @@ public class SvnDiffEditor implements ISVNEditor, ISVNUpdateEditor {
 
                 if (!info.haveBase) {
                     localOnly = true;
+
+                    if (info.status == ISVNWCDb.SVNWCDbStatus.Deleted) {
+                        continue;
+                    }
                 } else if (info.status == ISVNWCDb.SVNWCDbStatus.Normal) {
                     baseKind = info.kind;
                 } else if (info.status == ISVNWCDb.SVNWCDbStatus.Deleted && (!diffPristine || !info.haveMoreWork)) {
