@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.internal.util.SVNXMLUtil;
@@ -21,7 +22,7 @@ import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 public class JUnitTestLogger extends AbstractTestLogger {
     
     private static NumberFormat ourTestNumberFormat = new DecimalFormat("000");
-    
+
     private File myResultDirectory;
     
     private int myFailuresCount;
@@ -116,7 +117,8 @@ public class JUnitTestLogger extends AbstractTestLogger {
                     Map<String, String> failureAttributes = new HashMap<String, String>();
                     failureAttributes.put("type", "org.tmatesoft.test.python");
                     if (test.output != null) {
-                        xml = SVNXMLUtil.openCDataTag(null, "failure", test.output, failureAttributes, xml);
+                        final String testOutput = replaceInvalidXmlCharacters(test.output);
+                        xml = SVNXMLUtil.openCDataTag(null, "failure", testOutput, failureAttributes, xml);
                     } else {
                         xml = SVNXMLUtil.openXMLTag(null, "failure", SVNXMLUtil.XML_STYLE_SELF_CLOSING, failureAttributes, xml);
                     }
@@ -138,6 +140,21 @@ public class JUnitTestLogger extends AbstractTestLogger {
                     }
             }
         }
+    }
+
+    private static String replaceInvalidXmlCharacters(String s) {
+        final StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < s.length(); i++) {
+            final char c = s.charAt(i);
+
+            if (c == 0x09 || c == 0x0a || c == 0x0d ||
+                    ((c >= 0x20) && (c <= 0xd7ff)) || ((c >= 0xe000) && (c <= 0xfffd)) || (c >= 0x10000) && (c <= 0x10ffff)) {
+                stringBuilder.append(c);
+            } else {
+                stringBuilder.append('?');
+            }
+        }
+        return stringBuilder.toString();
     }
 
     private String getTimeString(long l) {
