@@ -24,12 +24,8 @@ import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
 import org.tmatesoft.svn.core.wc.ISVNEventHandler;
 import org.tmatesoft.svn.core.wc.SVNEvent;
 import org.tmatesoft.svn.core.wc.SVNEventAction;
-import org.tmatesoft.svn.core.wc2.SvnOperationFactory;
-import org.tmatesoft.svn.core.wc2.SvnRemoteDelete;
-import org.tmatesoft.svn.core.wc2.SvnScheduleForAddition;
-import org.tmatesoft.svn.core.wc2.SvnScheduleForRemoval;
-import org.tmatesoft.svn.core.wc2.SvnTarget;
-import org.tmatesoft.svn.core.wc2.SvnUpdate;
+import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc2.*;
 
 public class DeleteTest {
 
@@ -229,6 +225,7 @@ public class DeleteTest {
                 public void handleEvent(SVNEvent event, double progress) throws SVNException {
                     eventWasFired[0] = true;
                 }
+
                 public void checkCancelled() throws SVNCancelException {
                 }
             });
@@ -236,6 +233,64 @@ public class DeleteTest {
             doDelete(svnOperationFactory, file, true);
 
             Assert.assertFalse(eventWasFired[0]);
+
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
+    @Test
+    public void testDeleteInMove() throws Exception {
+        final TestOptions options = TestOptions.getInstance();
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testDeleteInMove", options);
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final CommitBuilder commitBuilder = new CommitBuilder(url);
+            commitBuilder.addFile("directory/subdirectory/file");
+            commitBuilder.commit();
+
+            final WorkingCopy workingCopy = sandbox.checkoutNewWorkingCopy(url);
+            final File workingCopyDirectory = workingCopy.getWorkingCopyDirectory();
+            final File subdirectory = workingCopy.getFile("directory/subdirectory");
+            final File movedDirectory = workingCopy.getFile("movedSubdirectory");
+            final File movedFile = workingCopy.getFile("movedSubdirectory/file");
+
+            final SvnCopy copy = svnOperationFactory.createCopy();
+            copy.addCopySource(SvnCopySource.create(SvnTarget.fromFile(subdirectory), SVNRevision.WORKING));
+            copy.setSingleTarget(SvnTarget.fromFile(movedDirectory));
+            copy.setMove(true);
+            copy.setFailWhenDstExists(true);
+            copy.run();
+
+            final SvnScheduleForRemoval scheduleForRemoval = svnOperationFactory.createScheduleForRemoval();
+            scheduleForRemoval.setSingleTarget(SvnTarget.fromFile(movedFile));
+            scheduleForRemoval.run();
+
+            final SvnDiff diff1 = svnOperationFactory.createDiff();
+            diff1.setSources(SvnTarget.fromURL(url.appendPath("directory/subdirectory/file", false), SVNRevision.HEAD), SvnTarget.fromFile(movedFile, SVNRevision.WORKING));
+            diff1.setOutput(SVNFileUtil.DUMMY_OUT);
+            diff1.run();
+
+            final SvnDiff diff2 = svnOperationFactory.createDiff();
+            diff2.setRevision(SVNRevision.create(1));
+            diff2.setSource(SvnTarget.fromFile(movedFile, SVNRevision.WORKING), SVNRevision.WORKING, SVNRevision.HEAD);
+            diff2.setOutput(SVNFileUtil.DUMMY_OUT);
+            diff2.run();
+
+            final CommitBuilder commitBuilder2 = new CommitBuilder(url);
+            commitBuilder2.addDirectory("movedSubdirectory");
+            commitBuilder2.commit();
+
+            final SvnDiff diff3 = svnOperationFactory.createDiff();
+            diff3.setSources(SvnTarget.fromFile(workingCopyDirectory, SVNRevision.WORKING), SvnTarget.fromURL(url, SVNRevision.HEAD));
+            diff3.setOutput(SVNFileUtil.DUMMY_OUT);
+            diff3.run();
+
+            //no exception should be thrown
 
         } finally {
             svnOperationFactory.dispose();
