@@ -236,7 +236,9 @@ public class FSInputStream extends InputStream {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.IO_ERROR, ioe.getLocalizedMessage());
             SVNErrorManager.error(err, ioe, SVNLogType.FSFS);
         } catch (SVNException svne) {
-            file.close();
+            if (file != null) {
+                file.close();
+            }
             throw svne;
         }
         return null;
