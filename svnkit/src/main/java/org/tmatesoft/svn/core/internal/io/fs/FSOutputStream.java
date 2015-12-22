@@ -250,7 +250,9 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
                 myRevNode.setTextRepresentation(oldRep);
                 truncateToSize = true;
             } else {
-                rep.setItemIndex(myTxnRoot.allocateItemIndex(myRepOffset));
+                if (fsfs.isUseLogAddressing()) {
+                    rep.setItemIndex(myTxnRoot.allocateItemIndex(myRepOffset));
+                }
 
                 myTargetFileOS.write("ENDREP\n".getBytes("UTF-8"));
                 myRevNode.setTextRepresentation(rep);
@@ -259,7 +261,7 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
             myRevNode.setIsFreshTxnRoot(false);
             fsfs.putTxnRevisionNode(myRevNode.getId(), myRevNode);
 
-            if (oldRep == null) {
+            if (oldRep == null && fsfs.isUseLogAddressing()) {
                 final int checksum = myTargetFileOS.finalizeChecksum();
                 storeSha1RepMapping(fsfs, myRevNode.getTextRepresentation()); //store_sha1_rep_mapping
                 final FSP2LEntry entry = new FSP2LEntry(myRepOffset, myTargetFileOS.getPosition() - myRepOffset, FSP2LProtoIndex.ItemType.FILE_REP, checksum, SVNRepository.INVALID_REVISION, rep.getItemIndex());
