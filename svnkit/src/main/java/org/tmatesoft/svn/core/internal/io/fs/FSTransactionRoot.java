@@ -836,18 +836,18 @@ public class FSTransactionRoot extends FSRoot {
         */
             String trailer = FSRepresentation.REP_TRAILER + "\n";
             protoFile.write(trailer.getBytes("UTF-8"));
+            if (getOwner().isUseLogAddressing()) {
+                final long itemIndex = allocateItemIndex(offset);
+                final long size = protoFile.getPosition() - offset;
+                final long revision = SVNRepository.INVALID_REVISION;
+                final long number = itemIndex;
+                final int checksum = protoFile.finalizeChecksum();
 
-            final long itemIndex = allocateItemIndex(offset);
-            final long size = protoFile.getPosition() - offset;
-            final long revision = SVNRepository.INVALID_REVISION;
-            final long number = itemIndex;
-            final int checksum = protoFile.finalizeChecksum();
+                representation.setItemIndex(itemIndex);
 
-            representation.setItemIndex(itemIndex);
-
-            FSP2LEntry entry = new FSP2LEntry(offset, size, itemType, checksum, revision, number);
-            storeP2LIndexEntry(entry);
-
+                FSP2LEntry entry = new FSP2LEntry(offset, size, itemType, checksum, revision, number);
+                storeP2LIndexEntry(entry);
+            }
             return targetFile.mySize;
         /*
         }
