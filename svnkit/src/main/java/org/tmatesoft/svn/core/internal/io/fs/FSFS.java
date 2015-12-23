@@ -2428,7 +2428,7 @@ public class FSFS {
         } else {
             offset = itemIndex;
         }
-        file.seek(itemIndex);
+        file.seek(offset);
         return file;
     }
 
