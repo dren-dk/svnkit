@@ -59,9 +59,9 @@ public class SVNSocketFactory {
 
     private static boolean ourIsSocketStaleCheck = false;
     private static int ourSocketReceiveBufferSize = 0; // default
-    private static ISVNThreadPool ourThreadPool = SVNClassLoader.getThreadPool(); 
+    private static ISVNThreadPool ourThreadPool = SVNClassLoader.getThreadPool();
     private static String ourSSLProtocols = System.getProperty("svnkit.http.sslProtocols");
-    
+
     public static Socket createPlainSocket(String host, int port, int connectTimeout, int readTimeout, ISVNCanceller cancel) throws IOException, SVNException {
         InetAddress address = createAddres(host);
         Socket socket = new Socket();
@@ -78,7 +78,7 @@ public class SVNSocketFactory {
         socket.setSoTimeout(readTimeout);
         return socket;
     }
-    
+
     public static synchronized void setSSLProtocols(String sslProtocols) {
         ourSSLProtocols = sslProtocols;
     }
@@ -88,13 +88,29 @@ public class SVNSocketFactory {
     }
 
     public static Socket createSSLSocket(KeyManager[] keyManagers, TrustManager trustManager, String host, int port, int connectTimeout, int readTimeout, ISVNCanceller cancel) throws IOException, SVNException {
+        try {
+            final SSLSocket socket = (SSLSocket) _createSSLSocket(keyManagers, trustManager, host, port, connectTimeout, readTimeout, cancel, true);
+            // To verify that handshake works with regard to SNI
+            socket.startHandshake();
+            return socket;
+        } catch (javax.net.ssl.SSLProtocolException e) {
+            if (e.getMessage() != null && e.getMessage().contains("handshake alert:  unrecognized_name")) {
+                return _createSSLSocket(keyManagers, trustManager, host, port, connectTimeout, readTimeout, cancel, false);
+            }
+            throw e;
+        }
+    }
+
+    private static Socket _createSSLSocket(KeyManager[] keyManagers, TrustManager trustManager, String host, int port, int connectTimeout, int readTimeout, ISVNCanceller cancel, boolean withSNIsupport) throws IOException, SVNException {
         InetAddress address = createAddres(host);
         Socket sslSocket = createSSLContext(keyManagers, trustManager).getSocketFactory().createSocket();
         int bufferSize = getSocketReceiveBufferSize();
         if (bufferSize > 0) {
             sslSocket.setReceiveBufferSize(bufferSize);
         }
-        sslSocket = setSSLSocketHost(sslSocket, host);
+        if (withSNIsupport) {
+            sslSocket = setSSLSocketHost(sslSocket, host);
+        }
         InetSocketAddress socketAddress = new InetSocketAddress(address, port);
         sslSocket.setReuseAddress(true);
         sslSocket.setTcpNoDelay(true);
@@ -117,7 +133,7 @@ public class SVNSocketFactory {
         sslSocket.setSoLinger(true, 0);
         sslSocket.setSoTimeout(readTimeout);
         sslSocket = configureSSLSocket(sslSocket);
-        
+
         return sslSocket;
     }
 
@@ -126,8 +142,8 @@ public class SVNSocketFactory {
             Method m = sslSocket.getClass().getMethod("setHost", String.class);
             if (m != null) {
                 m.invoke(sslSocket, host);
-                SVNDebugLog.getDefaultLog().logFinest(SVNLogType.NETWORK, "Host set on an SSL socket"); 
-            } 
+                SVNDebugLog.getDefaultLog().logFinest(SVNLogType.NETWORK, "Host set on an SSL socket");
+            }
         } catch (SecurityException e) {
         } catch (NoSuchMethodException e) {
         } catch (IllegalArgumentException e) {
@@ -140,7 +156,7 @@ public class SVNSocketFactory {
     public static ISVNThreadPool getThreadPool() {
         return ourThreadPool;
     }
-    
+
     public static void connect(Socket socket, InetSocketAddress address, int timeout, ISVNCanceller cancel) throws IOException, SVNException {
         if (cancel == null || cancel == ISVNCanceller.NULL) {
             socket.connect(address, timeout);
@@ -158,9 +174,9 @@ public class SVNSocketFactory {
                 throw e;
             }
         }
-        
+
         if (socketConnection.getError() != null) {
-            throw socketConnection.getError();           
+            throw socketConnection.getError();
         }
     }
 
@@ -188,7 +204,7 @@ public class SVNSocketFactory {
         }
         return InetAddress.getByName(hostName);
     }
-    
+
     public static synchronized void setSocketReceiveBufferSize(int size) {
         ourSocketReceiveBufferSize = size;
     }
@@ -196,7 +212,7 @@ public class SVNSocketFactory {
     public static synchronized int getSocketReceiveBufferSize() {
         return ourSocketReceiveBufferSize;
     }
-    
+
     public static void setSocketStaleCheckEnabled(boolean enabled) {
         ourIsSocketStaleCheck = enabled;
     }
@@ -209,7 +225,7 @@ public class SVNSocketFactory {
         if (!isSocketStaleCheckEnabled()) {
             return socket == null || socket.isClosed() || !socket.isConnected();
         }
-        
+
         boolean isStale = true;
         if (socket != null) {
             isStale = false;
@@ -239,7 +255,7 @@ public class SVNSocketFactory {
         }
         return isStale;
     }
-    
+
     private static X509TrustManager EMPTY_TRUST_MANAGER = new X509TrustManager() {
         public X509Certificate[] getAcceptedIssuers() {
             return null;
@@ -248,14 +264,14 @@ public class SVNSocketFactory {
         }
         public void checkServerTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {
         }
-    }; 
+    };
 
     private static KeyManager[] EMPTY_KEY_MANAGERS = new KeyManager[0];
 
 	public static SSLContext createSSLContext(KeyManager[] keyManagers, TrustManager trustManager) throws IOException {
         final TrustManager[] trustManagers = new TrustManager[] {trustManager != null ? trustManager : EMPTY_TRUST_MANAGER};
         keyManagers = keyManagers != null ? keyManagers : EMPTY_KEY_MANAGERS;
-        
+
         try {
             return createSSLContext(keyManagers, trustManagers, getEnabledSSLProtocols(true));
         } catch (NoSuchAlgorithmException e) {
@@ -289,9 +305,9 @@ public class SVNSocketFactory {
         }
         throw new NoSuchAlgorithmException();
     }
-	
+
 	private static final List<String> getEnabledSSLProtocols(boolean includeUserDefined) {
-	    // in case there is a user-defined list of protocols, 
+	    // in case there is a user-defined list of protocols,
 	    // use it. if all failed or was not provided, use TLS, then SSLv3.
         final String sslProtocols;
         synchronized (SVNSocketFactory.class) {
@@ -324,7 +340,7 @@ public class SVNSocketFactory {
         final List<String> defaultEnabledProtocols = Arrays.asList(sslSocket.getEnabledProtocols());
         final List<String> supportedProtocols = Arrays.asList(sslSocket.getSupportedProtocols());
         final List<String> protocolsToEnable = new ArrayList<String>();
-        
+
         for (String enabledProtocol : enabledProtocols) {
             for (String supportedProtocol : supportedProtocols) {
                 if (supportedProtocol.startsWith(enabledProtocol)) {
