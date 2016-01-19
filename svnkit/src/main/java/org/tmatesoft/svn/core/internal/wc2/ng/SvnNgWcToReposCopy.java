@@ -36,10 +36,7 @@ import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.SVNEvent;
 import org.tmatesoft.svn.core.wc.SVNEventAction;
 import org.tmatesoft.svn.core.wc.SVNRevision;
-import org.tmatesoft.svn.core.wc2.SvnCommitItem;
-import org.tmatesoft.svn.core.wc2.SvnCommitPacket;
-import org.tmatesoft.svn.core.wc2.SvnCopySource;
-import org.tmatesoft.svn.core.wc2.SvnRemoteCopy;
+import org.tmatesoft.svn.core.wc2.*;
 import org.tmatesoft.svn.core.wc2.hooks.ISvnCommitHandler;
 import org.tmatesoft.svn.util.SVNLogType;
 
@@ -198,13 +195,34 @@ public class SvnNgWcToReposCopy extends SvnNgOperationRunner<SVNCommitInfo, SvnR
                 mergeInfo = wcMergeInfo;
             }
             String extendedMergeInfoValue = null;
-            if (wcMergeInfo != null) {
+            if (mergeInfo != null) {
                 extendedMergeInfoValue = SVNMergeInfoUtil.formatMergeInfoToString(wcMergeInfo, null);
                 item.addOutgoingProperty(SVNProperty.MERGE_INFO, SVNPropertyValue.create(extendedMergeInfoValue));
             }
             // append externals changes
             if (externals != null && !externals.isEmpty()) {
                 includeExternalsChanges(repository, packet, externals, svnCopyPair);
+            }
+            if (getOperation().isPinExternals()) {
+                final Map<String, SVNPropertyValue> pinnedExternals = SvnNgWcToWcCopy.resolvePinnedExternals(getWcContext(), getRepositoryAccess(), getOperation().getExternalsToPin(), SvnTarget.fromFile(svnCopyPair.source), SvnTarget.fromURL(svnCopyPair.dst), -1, repository, repositoryRoot);
+                for (Map.Entry<String, SVNPropertyValue> entry : pinnedExternals.entrySet()) {
+                    final String dstRelPath = entry.getKey();
+                    final SVNPropertyValue externalsPropertyValue = entry.getValue();
+
+                    SVNURL dstUrl;
+
+                    boolean dstIsUrl = true;//TODO: can we really copy path-to-path as wc to repos?
+                    if (dstIsUrl) {
+                        dstUrl = svnCopyPair.dst;
+                    } else {
+                        File dstAbsPath = null;//TODO
+                        dstUrl = getWcContext().getNodeUrl(dstAbsPath);
+                    }
+                    final SVNURL commitUrl = dstUrl.appendPath(dstRelPath, false);
+                    final File srcAbsPath = SVNFileUtil.createFilePath(svnCopyPair.source, dstRelPath);
+
+                    items = queuePropChangeCommitItems(srcAbsPath, commitUrl, items, SVNProperty.EXTERNALS, externalsPropertyValue);
+                }
             }
         }
 
@@ -230,6 +248,34 @@ public class SvnNgWcToReposCopy extends SvnNgOperationRunner<SVNCommitInfo, SvnR
         SVNCommitInfo info = commitEditor.closeEdit();
         deleteDeleteFiles(committer, getOperation().getCommitParameters());
         return info;
+    }
+
+    private SvnCommitItem[] queuePropChangeCommitItems(File localAbsPath, SVNURL commitUrl, SvnCommitItem[] items, String propName, SVNPropertyValue externalsPropertyValue) {
+        final List<SvnCommitItem> resultItems = new ArrayList<SvnCommitItem>();
+        for (SvnCommitItem item : items) {
+            resultItems.add(item);
+        }
+
+        SvnCommitItem item = null;
+        for (SvnCommitItem existingItem : items) {
+            if (existingItem.getUrl().equals(commitUrl)) {
+                item = existingItem;
+                break;
+            }
+        }
+        if (item == null) {
+            item = new SvnCommitItem();
+            item.setPath(localAbsPath);
+            item.setUrl(commitUrl);
+            item.setKind(SVNNodeKind.DIR);
+            item.setFlags(SvnCommitItem.PROPS_MODIFIED);
+            resultItems.add(item);
+        } else {
+            item.setFlags(item.getFlags() | SvnCommitItem.PROPS_MODIFIED);
+        }
+        item.addOutgoingProperty(propName, externalsPropertyValue);
+
+        return resultItems.toArray(new SvnCommitItem[resultItems.size()]);
     }
 
     private String buildErrorMessageWithDebugInformation(SvnCommitPacket oldPacket) {
