@@ -10,12 +10,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.tmatesoft.svn.core.*;
-import org.tmatesoft.svn.core.internal.util.SVNDate;
-import org.tmatesoft.svn.core.internal.util.SVNEncodingUtil;
-import org.tmatesoft.svn.core.internal.util.SVNMergeInfoUtil;
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
-import org.tmatesoft.svn.core.internal.util.SVNSkel;
-import org.tmatesoft.svn.core.internal.util.SVNURLUtil;
+import org.tmatesoft.svn.core.internal.util.*;
 import org.tmatesoft.svn.core.internal.wc.*;
 import org.tmatesoft.svn.core.internal.wc.admin.SVNTranslator;
 import org.tmatesoft.svn.core.internal.wc17.SVNExternalsStore;
@@ -451,7 +446,7 @@ public class SvnNgReposToWcCopy extends SvnNgOperationRunner<Void, SvnCopy> {
                 SVNURL repositoryRoot = repository.getRepositoryRoot(false);
                 final Structure<RevisionsPair> sourceRevision = getRepositoryAccess().getRevisionNumber(repository, null, pair.sourceRevision, null);
                 final long sourceRevisionNumber = sourceRevision.lng(RevisionsPair.revNumber);
-                final Map<String, SVNPropertyValue> pinnedExternals = SvnNgWcToWcCopy.resolvePinnedExternals(getWcContext(), getRepositoryAccess(), getOperation().getExternalsToPin(), SvnTarget.fromURL(pair.source), SvnTarget.fromFile(pair.dst), sourceRevisionNumber, repository, repositoryRoot);
+                final Map<String, SVNPropertyValue> pinnedExternals = SVNExternalsUtil.resolvePinnedExternals(getWcContext(), getRepositoryAccess(), getOperation().getExternalsToPin(), SvnTarget.fromURL(pair.source), SvnTarget.fromFile(pair.dst), sourceRevisionNumber, repository, repositoryRoot);
 
                 for (Map.Entry<String, SVNPropertyValue> entry : pinnedExternals.entrySet()) {
                     String dstRelPath = entry.getKey();

@@ -19,6 +19,7 @@ import org.tmatesoft.svn.core.SVNProperties;
 import org.tmatesoft.svn.core.SVNProperty;
 import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.util.SVNExternalsUtil;
 import org.tmatesoft.svn.core.internal.util.SVNMergeInfoUtil;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.util.SVNURLUtil;
@@ -204,7 +205,7 @@ public class SvnNgWcToReposCopy extends SvnNgOperationRunner<SVNCommitInfo, SvnR
                 includeExternalsChanges(repository, packet, externals, svnCopyPair);
             }
             if (getOperation().isPinExternals()) {
-                final Map<String, SVNPropertyValue> pinnedExternals = SvnNgWcToWcCopy.resolvePinnedExternals(getWcContext(), getRepositoryAccess(), getOperation().getExternalsToPin(), SvnTarget.fromFile(svnCopyPair.source), SvnTarget.fromURL(svnCopyPair.dst), -1, repository, repositoryRoot);
+                final Map<String, SVNPropertyValue> pinnedExternals = SVNExternalsUtil.resolvePinnedExternals(getWcContext(), getRepositoryAccess(), getOperation().getExternalsToPin(), SvnTarget.fromFile(svnCopyPair.source), SvnTarget.fromURL(svnCopyPair.dst), -1, repository, repositoryRoot);
                 for (Map.Entry<String, SVNPropertyValue> entry : pinnedExternals.entrySet()) {
                     final String dstRelPath = entry.getKey();
                     final SVNPropertyValue externalsPropertyValue = entry.getValue();
