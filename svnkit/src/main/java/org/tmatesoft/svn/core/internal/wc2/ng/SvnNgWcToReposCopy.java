@@ -222,7 +222,7 @@ public class SvnNgWcToReposCopy extends SvnNgOperationRunner<SVNCommitInfo, SvnR
                     final SVNURL commitUrl = dstUrl.appendPath(dstRelPath, false);
                     final File srcAbsPath = SVNFileUtil.createFilePath(svnCopyPair.source, dstRelPath);
 
-                    items = queuePropChangeCommitItems(srcAbsPath, commitUrl, items, SVNProperty.EXTERNALS, externalsPropertyValue);
+                    queuePropChangeCommitItems(srcAbsPath, commitUrl, packet, SVNProperty.EXTERNALS, externalsPropertyValue, repositoryRoot);
                 }
             }
         }
@@ -251,13 +251,11 @@ public class SvnNgWcToReposCopy extends SvnNgOperationRunner<SVNCommitInfo, SvnR
         return info;
     }
 
-    private SvnCommitItem[] queuePropChangeCommitItems(File localAbsPath, SVNURL commitUrl, SvnCommitItem[] items, String propName, SVNPropertyValue externalsPropertyValue) {
-        final List<SvnCommitItem> resultItems = new ArrayList<SvnCommitItem>();
-        for (SvnCommitItem item : items) {
-            resultItems.add(item);
-        }
-
+    private void queuePropChangeCommitItems(File localAbsPath, SVNURL commitUrl, SvnCommitPacket packet, String propName, SVNPropertyValue externalsPropertyValue, SVNURL repositoryRoot) {
         SvnCommitItem item = null;
+
+        Collection<SvnCommitItem> items = packet.getItems(repositoryRoot);
+
         for (SvnCommitItem existingItem : items) {
             if (existingItem.getUrl().equals(commitUrl)) {
                 item = existingItem;
@@ -270,13 +268,11 @@ public class SvnNgWcToReposCopy extends SvnNgOperationRunner<SVNCommitInfo, SvnR
             item.setUrl(commitUrl);
             item.setKind(SVNNodeKind.DIR);
             item.setFlags(SvnCommitItem.PROPS_MODIFIED);
-            resultItems.add(item);
+            packet.addItem(item, repositoryRoot);
         } else {
             item.setFlags(item.getFlags() | SvnCommitItem.PROPS_MODIFIED);
         }
         item.addOutgoingProperty(propName, externalsPropertyValue);
-
-        return resultItems.toArray(new SvnCommitItem[resultItems.size()]);
     }
 
     private String buildErrorMessageWithDebugInformation(SvnCommitPacket oldPacket) {

@@ -4,24 +4,20 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.tmatesoft.sqljet.core.SqlJetException;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNProperty;
-import org.tmatesoft.svn.core.SVNPropertyValue;
-import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNExternal;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSchema;
+import org.tmatesoft.svn.core.io.SVNRepository;
+import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNStatusType;
 import org.tmatesoft.svn.core.wc2.*;
 import org.tmatesoft.svn.core.wc2.hooks.ISvnExternalsHandler;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ExternalsTest {
 
@@ -368,6 +364,55 @@ public class ExternalsTest {
             final Map<File, SvnStatus> statuses = TestUtil.getStatuses(svnOperationFactory, workingCopyDirectory);
             Assert.assertFalse(statuses.containsKey(externalFile));
 
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
+    @Test
+    public void testPinExternalsWcToRepos() throws Exception {
+        final TestOptions options = TestOptions.getInstance();
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testPinExternalsWcToRepos", options);
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final SVNExternal external = new SVNExternal("directory/external", url.appendPath("trunk/directory/file", false).toString(), SVNRevision.HEAD, SVNRevision.HEAD, false, false, true);
+
+            final CommitBuilder commitBuilder = new CommitBuilder(url);
+            commitBuilder.addDirectory("tags");
+            commitBuilder.addFile("trunk/directory/file");
+            commitBuilder.setDirectoryProperty("trunk", SVNProperty.EXTERNALS, SVNPropertyValue.create(external.toString()));
+            commitBuilder.commit();
+
+            final File workingCopyDirectory = sandbox.createDirectory("wc");
+
+            final SvnCheckout checkout = svnOperationFactory.createCheckout();
+            checkout.setSource(SvnTarget.fromURL(url.appendPath("trunk", false)));
+            checkout.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
+            checkout.setIgnoreExternals(false);
+            checkout.run();
+
+            final File externalDirectory = new File(workingCopyDirectory, "directory");
+
+            final SvnRemoteCopy copy = svnOperationFactory.createRemoteCopy();
+            copy.addCopySource(SvnCopySource.create(SvnTarget.fromFile(workingCopyDirectory), SVNRevision.WORKING));
+            copy.setSingleTarget(SvnTarget.fromURL(url.appendPath("tags/tag", false)));
+            copy.setPinExternals(true);
+            copy.run();
+
+            final SVNRepository svnRepository = SVNRepositoryFactory.create(url);
+            try {
+                final SVNProperties properties = new SVNProperties();
+                svnRepository.getDir("tags/tag", 2, properties, (Collection)null);
+
+                final String externalsValue = SVNPropertyValue.getPropertyAsString(properties.getSVNPropertyValue(SVNProperty.EXTERNALS));
+                Assert.assertEquals(url + "/trunk/directory/file@1 directory/external", externalsValue);
+            } finally {
+                svnRepository.closeSession();
+            }
         } finally {
             svnOperationFactory.dispose();
             sandbox.dispose();
