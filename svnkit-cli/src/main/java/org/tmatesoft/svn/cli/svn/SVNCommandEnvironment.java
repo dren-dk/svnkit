@@ -672,7 +672,7 @@ public class SVNCommandEnvironment extends AbstractSVNCommandEnvironment impleme
             myIsTrustServerCertificate = true;
         } else if (option == SVNOption.SHOW_INHERITED_PROPS) {
             myIsShowInhertiedProps = true;
-        } else if (option == SVNOption.NO_NEWLINE) {
+        } else if (option == SVNOption.PIN_EXTERNALS) {
             myIsPinExternals = true;
         } else if (option == SVNOption.NO_NEWLINE) {
             myIsNoNewLine = true;
