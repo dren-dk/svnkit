@@ -600,6 +600,28 @@ public class SVNCopyClient extends SVNBasicClient {
         return cp.run();
     }
 
+    public SVNCommitInfo doCopy(SVNCopySource[] sources, SVNURL dst, boolean isMove, boolean makeParents, boolean failWhenDstExists, String commitMessage, SVNProperties revisionProperties, boolean pinExternals, Map<SvnTarget, List<SVNExternal>> externalsToPin)
+            throws SVNException {
+        SvnRemoteCopy cp = getOperationsFactory().createRemoteCopy();
+        cp.setSingleTarget(SvnTarget.fromURL(dst));
+        cp.setMove(isMove);
+        cp.setFailWhenDstExists(failWhenDstExists);
+        cp.setMakeParents(makeParents);
+        cp.setCommitMessage(commitMessage);
+        cp.setRevisionProperties(revisionProperties);
+        cp.setExternalsHandler(SvnCodec.externalsHandler(getExternalsHandler()));
+        cp.setCommitHandler(SvnCodec.commitHandler(getCommitHandler()));
+        cp.setDisableLocalModifications(disableLocalModifications);
+        cp.setCommitParameters(SvnCodec.commitParameters(getCommitParameters()));
+        cp.setPinExternals(pinExternals);
+        cp.setExternalsToPin(externalsToPin);
+
+        for (int i = 0; i < sources.length; i++) {
+            cp.addCopySource(SvnCodec.copySource(sources[i]));
+        }
+        return cp.run();
+    }
+
     /**
      * Converts a disjoint working copy to a copied one.
      * 

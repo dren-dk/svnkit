@@ -99,7 +99,7 @@ public class SVNCopyCommand extends SVNCommand {
         if (dst.isURL()) {
             SVNCommitInfo info = client.doCopy(copySources, dst.getURL(), false, getSVNEnvironment().isParents(), false,
                     getSVNEnvironment().getMessage(), 
-                    getSVNEnvironment().getRevisionProperties());
+                    getSVNEnvironment().getRevisionProperties(), getSVNEnvironment().isPinExternals(), null);
                     
             if (!getSVNEnvironment().isQuiet()) {
                 getSVNEnvironment().printCommitInfo(info);

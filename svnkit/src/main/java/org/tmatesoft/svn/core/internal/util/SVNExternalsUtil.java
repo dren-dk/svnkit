@@ -191,7 +191,7 @@ public class SVNExternalsUtil {
                     assert SVNRevision.isValidRevisionNumber(externalPegRevision.getNumber());
                     revisionString = "-r" + externalPegRevision.getNumber() + " ";
                 }
-                return maybeQuote(item.getPath()) + " " + revisionString + maybeQuote(item.getUnresolvedUrl());
+                return maybeQuote(item.getPath()) + " " + revisionString + maybeQuote(item.getUnresolvedUrl()) + "\n";
             case 2:
                 if (externalPegRevision == SVNRevision.UNDEFINED) {
                     revisionString = parserRevisionString + " ";
@@ -209,7 +209,7 @@ public class SVNExternalsUtil {
                     assert SVNRevision.isValidRevisionNumber(externalPegRevision.getNumber());
                     pegRevisionString = "@" + externalPegRevision.getNumber();
                 }
-                return revisionString + maybeQuote(item.getUnresolvedUrl() + pegRevisionString) + " " + maybeQuote(item.getPath());
+                return revisionString + maybeQuote(item.getUnresolvedUrl() + pegRevisionString) + " " + maybeQuote(item.getPath()) + "\n";
             default:
                 SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.CLIENT_INVALID_EXTERNALS_DESCRIPTION, "{0} property defined at ''{1}'' is using an unsupported syntax", SVNProperty.EXTERNALS, localAbsPathOrUrl.getFile());
                 SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
