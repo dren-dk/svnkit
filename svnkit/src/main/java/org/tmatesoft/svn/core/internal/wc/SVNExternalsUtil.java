@@ -1,14 +1,11 @@
-package org.tmatesoft.svn.core.internal.util;
+package org.tmatesoft.svn.core.internal.wc;
 
 import org.tmatesoft.svn.core.*;
-import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
-import org.tmatesoft.svn.core.internal.wc.SVNExternal;
-import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
+import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc17.SVNExternalsStore;
 import org.tmatesoft.svn.core.internal.wc17.SVNWCContext;
 import org.tmatesoft.svn.core.internal.wc17.db.*;
 import org.tmatesoft.svn.core.internal.wc2.SvnRepositoryAccess;
-import org.tmatesoft.svn.core.internal.wc2.ng.SvnNgRepositoryAccess;
 import org.tmatesoft.svn.core.internal.wc2.remote.SvnRemoteGetProperties;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.SVNRevision;
@@ -130,11 +127,39 @@ public class SVNExternalsUtil {
                     externalPegRev = SVNRevision.create(svnRepository.getLatestRevision());
                 } else {
                     File externalAbsPath = SVNFileUtil.createFilePath(localAbsPathOrUrl.getFile(), item.getPath());
-                    Structure<StructureFields.ExternalNodeInfo> externalNodeInfoStructure = SvnWcDbExternals.readExternal(context, externalAbsPath, localAbsPathOrUrl.getFile(), StructureFields.ExternalNodeInfo.kind);
-                    assert externalNodeInfoStructure != null;
-                    ISVNWCDb.SVNWCDbKind externalKind = externalNodeInfoStructure.get(StructureFields.ExternalNodeInfo.kind);
+                    ISVNWCDb.SVNWCDbKind externalKind;
+                    try {
+                        Structure<StructureFields.ExternalNodeInfo> externalNodeInfoStructure = SvnWcDbExternals.readExternal(context, externalAbsPath, localAbsPathOrUrl.getFile(), StructureFields.ExternalNodeInfo.kind, StructureFields.ExternalNodeInfo.presence);
+                        assert externalNodeInfoStructure != null;
+                        assert externalNodeInfoStructure.hasField(StructureFields.ExternalNodeInfo.presence);
+
+                        ISVNWCDb.SVNWCDbStatus status = externalNodeInfoStructure.get(StructureFields.ExternalNodeInfo.presence);
+
+                        if (status != ISVNWCDb.SVNWCDbStatus.Normal) {
+                            externalKind = ISVNWCDb.SVNWCDbKind.Unknown;
+                        } else {
+                            ISVNWCDb.SVNWCDbKind kind = externalNodeInfoStructure.get(StructureFields.ExternalNodeInfo.kind);
+                            switch (kind) {
+                                case File:
+                                case Symlink:
+                                    externalKind = ISVNWCDb.SVNWCDbKind.File;
+                                    break;
+                                case Dir:
+                                    externalKind = ISVNWCDb.SVNWCDbKind.Dir;
+                                    break;
+                                default:
+                                    externalKind = null;
+                                    break;
+                            }
+                        }
+                    } catch (SVNException e) {
+                        if (e.getErrorMessage().getErrorCode() != SVNErrorCode.WC_PATH_NOT_FOUND) {
+                            throw e;
+                        }
+                        externalKind = null;
+                    }
                     long externalCheckedOutRevision = 0;
-                    if (externalKind == ISVNWCDb.SVNWCDbKind.Unknown || externalKind == null) {
+                    if (externalKind == null) {
                         SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_PATH_UNEXPECTED_STATUS, "Cannot pin external ''{0}'' defined in {1} at ''{2}'' because it is not checked out in the working copy at ''{3}''", item.getUnresolvedUrl(), SVNProperty.EXTERNALS, localAbsPathOrUrl.getFile(), externalAbsPath.getAbsolutePath(), SVNProperty.EXTERNALS);
                         SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
                     } else if (externalKind == ISVNWCDb.SVNWCDbKind.Dir) {
@@ -185,13 +210,13 @@ public class SVNExternalsUtil {
             case 1:
                 if (externalPegRevision == SVNRevision.UNDEFINED) {
                     revisionString = parserRevisionString + " ";
-                } else if (parserRevisionString != null && item.getRevision() == SVNRevision.HEAD) {
+                } else if (parserRevisionString != null && item.getRevision() != SVNRevision.HEAD) {
                     revisionString = parserRevisionString + " ";
                 } else {
                     assert SVNRevision.isValidRevisionNumber(externalPegRevision.getNumber());
                     revisionString = "-r" + externalPegRevision.getNumber() + " ";
                 }
-                return maybeQuote(item.getPath()) + " " + revisionString + maybeQuote(item.getUnresolvedUrl()) + "\n";
+                return maybeQuote(item.getPath()) + " " + revisionString + maybeQuote(item.getRawURL()) + "\n";
             case 2:
                 if (externalPegRevision == SVNRevision.UNDEFINED) {
                     revisionString = parserRevisionString + " ";
@@ -209,7 +234,7 @@ public class SVNExternalsUtil {
                     assert SVNRevision.isValidRevisionNumber(externalPegRevision.getNumber());
                     pegRevisionString = "@" + externalPegRevision.getNumber();
                 }
-                return revisionString + maybeQuote(item.getUnresolvedUrl() + pegRevisionString) + " " + maybeQuote(item.getPath()) + "\n";
+                return revisionString + maybeQuote(item.getRawURL() + pegRevisionString) + " " + maybeQuote(item.getPath()) + "\n";
             default:
                 SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.CLIENT_INVALID_EXTERNALS_DESCRIPTION, "{0} property defined at ''{1}'' is using an unsupported syntax", SVNProperty.EXTERNALS, localAbsPathOrUrl.getFile());
                 SVNErrorManager.error(errorMessage, SVNLogType.CLIENT);
@@ -223,7 +248,8 @@ public class SVNExternalsUtil {
         if (argv.length == 1 && argv[0].equals(s)) {
             return s;
         }
-        final StringBuilder stringBuilder = new StringBuilder('\"');
+        final StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append('\"');
         for (int i = 0; i < s.length(); i++) {
             final char c = s.charAt(i);
             if (c == '\\' || c == '\"' || c == '\'') {

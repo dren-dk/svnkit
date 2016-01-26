@@ -5,7 +5,7 @@ import java.util.*;
 
 import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.util.SVNDate;
-import org.tmatesoft.svn.core.internal.util.SVNExternalsUtil;
+import org.tmatesoft.svn.core.internal.wc.SVNExternalsUtil;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.util.SVNSkel;
 import org.tmatesoft.svn.core.internal.wc.*;

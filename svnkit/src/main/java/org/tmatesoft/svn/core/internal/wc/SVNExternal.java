@@ -41,6 +41,7 @@ public class SVNExternal {
     private SVNRevision myRevision;
     private SVNRevision myPegRevision;
     private String myURL;
+    private String myRawURL; //non-canonicalized string used in the property value
     private String myPath;
     private SVNURL myResolvedURL;
     private boolean myIsRevisionExplicit;
@@ -57,6 +58,7 @@ public class SVNExternal {
             boolean isRevisionExplicit, boolean isPegRevisionExplicit, boolean isNewFormat) {
         myPath = target;
         myURL = url;
+        myRawURL = url;
         myRevision = revision;
         myPegRevision = pegRevision;
         myIsRevisionExplicit = isRevisionExplicit;
@@ -82,6 +84,12 @@ public class SVNExternal {
 
     public String getRawValue() {
         return myRawValue;
+    }
+
+    //use getUnresolvedUrl() instead; use getRawURL() only if you really know what it returns
+    @Deprecated
+    protected String getRawURL() {
+        return myRawURL;
     }
 
     public boolean isRevisionExplicit() {
@@ -242,6 +250,7 @@ public class SVNExternal {
             
                 SVNPath path = new SVNPath(token0, true);
                 external.myURL = schemeRelative ? "//" + path.getTarget() : path.getTarget();
+                external.myRawURL = ((schemeRelative ? "//" : "") + (token0.contains("@") ? token0.substring(0, token0.lastIndexOf('@')) : token0));
                 external.myPegRevision = path.getPegRevision();
                 if (external.myPegRevision == SVNRevision.BASE) {
                     external.myPegRevision = SVNRevision.HEAD;
@@ -255,6 +264,7 @@ public class SVNExternal {
             } else {
                 external.myPath = token0;
                 external.myURL = token1;
+                external.myRawURL = token1;
                 external.myPegRevision = external.myRevision;
             }
             
@@ -363,11 +373,11 @@ public class SVNExternal {
     }
 
     public String getRevisionString() {
-        return formatRevisionString("-r", getRevision());
+        return isRevisionExplicit() ? formatRevisionString("-r", getRevision()) : null;
     }
 
     public String getPegRevisionString() {
-        return formatRevisionString("@", getPegRevision());
+        return isPegRevisionExplicit() ? formatRevisionString("@", getPegRevision()) : null;
     }
 
     private String formatRevisionString(String revisionPrefix, SVNRevision revision) {
