@@ -409,7 +409,7 @@ public class ExternalsTest {
                 svnRepository.getDir("tags/tag", 2, properties, (Collection)null);
 
                 final String externalsValue = SVNPropertyValue.getPropertyAsString(properties.getSVNPropertyValue(SVNProperty.EXTERNALS));
-                Assert.assertEquals(url + "/trunk/directory/file@1 directory/external", externalsValue);
+                Assert.assertEquals(url + "/trunk/directory/file@1 directory/external" + "\n", externalsValue);
             } finally {
                 svnRepository.closeSession();
             }
