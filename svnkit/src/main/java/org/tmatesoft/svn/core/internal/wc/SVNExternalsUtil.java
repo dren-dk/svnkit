@@ -29,6 +29,8 @@ public class SVNExternalsUtil {
         if (pairSource.isURL()) {
             oldUrl = svnRepository.getLocation();
 
+            svnRepository.setLocation(pairSource.getURL(), false);
+
             SvnRemoteGetProperties.remotePropertyGet(pairSource.getURL(), SVNNodeKind.DIR, "", svnRepository, pairSourceRevision, SVNDepth.INFINITY, new ISvnObjectReceiver<SVNProperties>() {
                 @Override
                 public void receive(SvnTarget target, SVNProperties properties) throws SVNException {

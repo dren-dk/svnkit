@@ -23,19 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.tmatesoft.svn.core.SVNCancelException;
-import org.tmatesoft.svn.core.SVNCommitInfo;
-import org.tmatesoft.svn.core.SVNDepth;
-import org.tmatesoft.svn.core.SVNDirEntry;
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNMergeInfoInheritance;
-import org.tmatesoft.svn.core.SVNNodeKind;
-import org.tmatesoft.svn.core.SVNProperties;
-import org.tmatesoft.svn.core.SVNProperty;
-import org.tmatesoft.svn.core.SVNPropertyValue;
-import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.internal.util.SVNEncodingUtil;
 import org.tmatesoft.svn.core.internal.util.SVNHashMap;
@@ -47,6 +35,7 @@ import org.tmatesoft.svn.core.internal.wc.admin.SVNEntry;
 import org.tmatesoft.svn.core.internal.wc.admin.SVNLog;
 import org.tmatesoft.svn.core.internal.wc.admin.SVNVersionedProperties;
 import org.tmatesoft.svn.core.internal.wc.admin.SVNWCAccess;
+import org.tmatesoft.svn.core.internal.wc2.old.SvnOldRepositoryAccess;
 import org.tmatesoft.svn.core.io.ISVNEditor;
 import org.tmatesoft.svn.core.io.SVNLocationEntry;
 import org.tmatesoft.svn.core.io.SVNRepository;
@@ -62,6 +51,8 @@ import org.tmatesoft.svn.core.wc.SVNEvent;
 import org.tmatesoft.svn.core.wc.SVNEventAction;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNWCUtil;
+import org.tmatesoft.svn.core.wc2.ISvnOperationOptionsProvider;
+import org.tmatesoft.svn.core.wc2.SvnTarget;
 import org.tmatesoft.svn.util.SVNDebugLog;
 import org.tmatesoft.svn.util.SVNLogType;
 import org.tmatesoft.svn.core.internal.wc16.*;
@@ -145,8 +136,9 @@ public class SVNCopyDriver extends SVNBasicDelegate {
         return (SVNCopySource[]) expanded.toArray(new SVNCopySource[expanded.size()]);
     }
 
-    private SVNCommitInfo copyReposToRepos(List copyPairs, boolean makeParents, boolean isMove, String message, SVNProperties revprops, ISVNCommitHandler commitHandler) throws SVNException {
+    private SVNCommitInfo copyReposToRepos(List copyPairs, boolean makeParents, boolean isMove, boolean pinExternals, Map<SvnTarget, List<SVNExternal>> externalsToPin, String message, SVNProperties revprops, ISVNCommitHandler commitHandler) throws SVNException {
         List pathInfos = new ArrayList();
+        List pinExternalsOnlyInfos = new ArrayList();
         Map pathsMap = new SVNHashMap();
         for (int i = 0; i < copyPairs.size(); i++) {
             CopyPathInfo info = new CopyPathInfo();
@@ -272,6 +264,31 @@ public class SVNCopyDriver extends SVNBasicDelegate {
             }
             info.mySource = pair.mySource;
             info.myDstPath = pair.myDst;
+
+            if (pinExternals) {
+                final ISVNAuthenticationManager authenticationManager = nonTopRepos.getAuthenticationManager();
+
+                SvnOldRepositoryAccess oldRepositoryAccess = new SvnOldRepositoryAccess(new ISvnOperationOptionsProvider() {
+                    public ISVNEventHandler getEventHandler() {
+                        return SVNCopyDriver.this;
+                    }
+                    public ISVNOptions getOptions() {
+                        return SVNCopyDriver.this.getOptions();
+                    }
+                    public ISVNRepositoryPool getRepositoryPool() {
+                        return SVNCopyDriver.this.getRepositoryPool();
+                    }
+                    public ISVNAuthenticationManager getAuthenticationManager() {
+                        return authenticationManager;
+                    }
+                    public ISVNCanceller getCanceller() {
+                        return getEventHandler();
+                    }
+                });
+
+                Map<String, SVNPropertyValue> pinnedExternals = SVNExternalsUtil.resolvePinnedExternals(null, oldRepositoryAccess, externalsToPin, SvnTarget.fromURL(SVNURL.parseURIEncoded(pair.mySource), pair.mySourcePegRevision), SvnTarget.fromURL(SVNURL.parseURIEncoded(pair.myDst)), pair.mySourceRevisionNumber, nonTopRepos, SVNURL.parseURIEncoded(rootURL));
+                queueExternalsChangePathInfos(pinExternalsOnlyInfos, pathInfos, pinnedExternals, info);
+            }
         }
 
         List paths = new ArrayList(copyPairs.size() * 2);
@@ -324,6 +341,15 @@ public class SVNCopyDriver extends SVNBasicDelegate {
                 paths.add(info.mySource);
             }
         }
+
+        if (pinExternalsOnlyInfos != null) {
+            for (Iterator iterator = pinExternalsOnlyInfos.iterator(); iterator.hasNext(); ) {
+                final CopyPathInfo info = (CopyPathInfo) iterator.next();
+                paths.add(info.myDstPath);
+                pathsMap.put(info.myDstPath, info);
+            }
+        }
+
 
         SVNCommitItem[] commitables = (SVNCommitItem[]) commitItems.toArray(new SVNCommitItem[commitItems.size()]);
         message = commitHandler.getCommitMessage(message, commitables);
@@ -394,6 +420,33 @@ public class SVNCopyDriver extends SVNBasicDelegate {
         return result != null ? result : SVNCommitInfo.NULL;
     }
 
+    private void queueExternalsChangePathInfos(List<CopyPathInfo> newPathInfos, List<CopyPathInfo> pathInfos, Map<String, SVNPropertyValue> pinnedExternals, CopyPathInfo parentInfo) throws SVNException {
+        for (Map.Entry<String, SVNPropertyValue> entry : pinnedExternals.entrySet()) {
+            String dstRelpath = entry.getKey();
+            SVNPropertyValue externalsProperyValue = entry.getValue();
+
+            SVNURL srcUrl = SVNURL.parseURIEncoded(parentInfo.mySource).appendPath(dstRelpath, false);
+
+            CopyPathInfo info = null;
+            for (CopyPathInfo existingInfo : pathInfos) {
+                if (srcUrl.toString().equals(existingInfo.mySource)) {
+                    info = existingInfo;
+                    break;
+                }
+            }
+            if (info == null) {
+                info = new CopyPathInfo();
+                info.mySource = srcUrl.toString();
+                info.mySourcePath = null;
+                info.myDstPath = SVNPathUtil.append(parentInfo.myDstPath, dstRelpath);
+                info.mySourceKind = SVNNodeKind.DIR;
+                info.myIsOnlyPinExternals = true;
+                newPathInfos.add(info);
+            }
+            info.myExternalsProp = SVNPropertyValue.getPropertyAsString(externalsProperyValue);
+        }
+    }
+
     private String getUUIDFromPath(SVNWCAccess wcAccess, File path) throws SVNException {
         SVNEntry entry = wcAccess.getVersionedEntry(path, true);
         String uuid = null;
@@ -462,7 +515,7 @@ public class SVNCopyDriver extends SVNBasicDelegate {
         }
     }
 
-    protected SVNCommitInfo setupCopy(SVNCopySource[] sources, SVNPath dst, boolean isMove, boolean makeParents,
+    protected SVNCommitInfo setupCopy(SVNCopySource[] sources, SVNPath dst, boolean isMove, boolean makeParents, boolean pinExternals, Map<SvnTarget, List<SVNExternal>> externalsToPin,
             String message, SVNProperties revprops, ISVNCommitHandler commitHandler, ISVNCommitParameters commitParameters, ISVNExternalsHandler externalsHandler) throws SVNException {
         List pairs = new ArrayList(sources.length);
         for (int i = 0; i < sources.length; i++) {
@@ -627,7 +680,7 @@ public class SVNCopyDriver extends SVNBasicDelegate {
             copyReposToWC(pairs, makeParents);
             return SVNCommitInfo.NULL;
         } else {
-            return copyReposToRepos(pairs, makeParents, isMove, message, revprops, commitHandler);
+            return copyReposToRepos(pairs, makeParents, isMove, pinExternals, externalsToPin, message, revprops, commitHandler);
         }
     }
 
@@ -1760,7 +1813,7 @@ public class SVNCopyDriver extends SVNBasicDelegate {
                         doAdd = true;
                     }
                 } else {
-                    doAdd = true;
+                    doAdd = !pathInfo.myIsOnlyPinExternals;
                 }
             }
             if (doDelete) {
@@ -1783,6 +1836,14 @@ public class SVNCopyDriver extends SVNBasicDelegate {
                     commitEditor.closeFile(commitPath, null);
                 }
             }
+            if (pathInfo.myExternalsProp != null) {
+                if (!closeDir) {
+                    commitEditor.openDir(commitPath, SVNRepository.INVALID_REVISION);
+                    closeDir = true;
+                }
+                commitEditor.changeDirProperty(SVNProperty.EXTERNALS, SVNPropertyValue.create(pathInfo.myExternalsProp));
+            }
+
             return closeDir;
         }
     }
@@ -1800,6 +1861,8 @@ public class SVNCopyDriver extends SVNBasicDelegate {
 
         public String myMergeInfoProp;
         public long mySourceRevisionNumber;
+        public String myExternalsProp;
+        public boolean myIsOnlyPinExternals;
     }
 
     private static class CopyPair {
