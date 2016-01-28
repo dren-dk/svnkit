@@ -158,6 +158,8 @@ public class SVN extends AbstractSVNLauncher {
         SVNCommandLine.registerOption(SVNOption.SHOW_ITEM);
         SVNCommandLine.registerOption(SVNOption.NO_NEWLINE);
         SVNCommandLine.registerOption(SVNOption.PIN_EXTERNALS);
+        SVNCommandLine.registerOption(SVNOption.REMOVE_UNVERSIONED);
+        SVNCommandLine.registerOption(SVNOption.REMOVE_IGNORED);
 
     }
 

@@ -94,6 +94,8 @@ public class SVNOption extends AbstractSVNOption {
     public static final SVNOption SHOW_ITEM = new SVNOption("show-item", false);
     public static final SVNOption NO_NEWLINE = new SVNOption("no-newline");
     public static final SVNOption PIN_EXTERNALS = new SVNOption("pin-externals");
+    public static final SVNOption REMOVE_UNVERSIONED = new SVNOption("remove-unversioned");
+    public static final SVNOption REMOVE_IGNORED = new SVNOption("remove-ignored");
 
     // auth options.
     public static final SVNOption USERNAME = new SVNOption("username", false);

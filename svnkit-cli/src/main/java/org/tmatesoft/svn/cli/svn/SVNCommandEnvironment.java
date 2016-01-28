@@ -152,6 +152,8 @@ public class SVNCommandEnvironment extends AbstractSVNCommandEnvironment impleme
     private String myShowItem;
     private boolean myIsNoNewLine;
     private boolean myIsPinExternals;
+    private boolean myIsRemoveUnversioned;
+    private boolean myIsRemoveIgnored;
 
     private SVNConflictStats myConflictStats;
 
@@ -674,6 +676,10 @@ public class SVNCommandEnvironment extends AbstractSVNCommandEnvironment impleme
             myIsShowInhertiedProps = true;
         } else if (option == SVNOption.PIN_EXTERNALS) {
             myIsPinExternals = true;
+        } else if (option == SVNOption.REMOVE_UNVERSIONED) {
+            myIsRemoveUnversioned = true;
+        } else if (option == SVNOption.REMOVE_IGNORED) {
+            myIsRemoveIgnored = true;
         } else if (option == SVNOption.NO_NEWLINE) {
             myIsNoNewLine = true;
         } else if (option == SVNOption.SHOW_ITEM) {
@@ -1044,6 +1050,14 @@ public class SVNCommandEnvironment extends AbstractSVNCommandEnvironment impleme
 
     public boolean isPinExternals() {
         return myIsPinExternals;
+    }
+
+    public boolean isRemoveUnversioned() {
+        return myIsRemoveUnversioned;
+    }
+
+    public boolean isRemoveIgnored() {
+        return myIsRemoveIgnored;
     }
 
     public boolean isIncludeExternals() {
