@@ -19,29 +19,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.StringTokenizer;
+import java.util.*;
 
-import org.tmatesoft.svn.cli.AbstractSVNCommand;
-import org.tmatesoft.svn.cli.AbstractSVNCommandEnvironment;
-import org.tmatesoft.svn.cli.AbstractSVNOption;
-import org.tmatesoft.svn.cli.SVNCommandLine;
-import org.tmatesoft.svn.cli.SVNCommandUtil;
-import org.tmatesoft.svn.cli.SVNConsoleAuthenticationProvider;
-import org.tmatesoft.svn.cli.SVNOptionValue;
+import org.tmatesoft.svn.cli.*;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNProperties;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
+import org.tmatesoft.svn.core.internal.util.SVNCertificateFailureKind;
 import org.tmatesoft.svn.core.internal.util.SVNHashSet;
 import org.tmatesoft.svn.core.internal.wc.DefaultSVNAuthenticationManager;
 import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
@@ -130,7 +117,8 @@ public class SVNCommandEnvironment extends AbstractSVNCommandEnvironment impleme
     private boolean myIsRevisionOptionUsed;
     private boolean myIsWithAllRevprops;
     private boolean myIsReIntegrate;
-    private boolean myIsTrustServerCertificate;
+    private boolean myIsTrustServerCertificate; //since 1.9 this is an equivalent of myIsTrustServerCertificate.contains(UNKNOWN_CA)
+    private EnumSet<SVNCertificateFailureKind> myIsTrustServerCertificateFailures;
     private boolean myIsAllowMixedRevisions;
     private List myRevisionRanges;
     private SVNShowRevisionType myShowRevsType;
@@ -264,7 +252,7 @@ public class SVNCommandEnvironment extends AbstractSVNCommandEnvironment impleme
         final ISVNAuthStoreHandler authStoreHandler;
         final ISVNGnomeKeyringPasswordProvider gnomeKeyringPasswordProvider;
         if (!myIsNonInteractive) {
-            SVNConsoleAuthenticationProvider consoleAuthProvider = new SVNConsoleAuthenticationProvider(myIsTrustServerCertificate);
+            SVNConsoleAuthenticationProvider consoleAuthProvider = new SVNConsoleAuthenticationProvider(myIsTrustServerCertificateFailures);
             authManager.setAuthenticationProvider(consoleAuthProvider);
             authStoreHandler = consoleAuthProvider;
             gnomeKeyringPasswordProvider = consoleAuthProvider;
@@ -352,6 +340,12 @@ public class SVNCommandEnvironment extends AbstractSVNCommandEnvironment impleme
         if (myIsTrustServerCertificate && !myIsNonInteractive) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "--trust-server-cert requires --non-interactive");
             SVNErrorManager.error(err, SVNLogType.CLIENT);
+        }
+
+        if (myIsTrustServerCertificateFailures != null && myIsTrustServerCertificateFailures.size() > 0 && !myIsNonInteractive) {
+            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "--trust-server-cert-failures requires " +
+                    "--non-interactive");
+            SVNErrorManager.error(errorMessage, SVNLogType.WC);
         }
     }
     
@@ -672,6 +666,30 @@ public class SVNCommandEnvironment extends AbstractSVNCommandEnvironment impleme
             myRegularExpression = optionValue.getValue();
         } else if (option == SVNOption.TRUST_SERVER_CERT) {
             myIsTrustServerCertificate = true;
+            myIsTrustServerCertificateFailures = EnumSet.of(SVNCertificateFailureKind.UNKNOWN_CA);
+        } else if (option == SVNOption.TRUST_SERVER_CERT_FAILURES) {
+            myIsTrustServerCertificateFailures = EnumSet.noneOf(SVNCertificateFailureKind.class);
+
+            String failuesCommaSeparated = optionValue.getValue();
+            if (failuesCommaSeparated != null) {
+                String[] failures = failuesCommaSeparated.split(",");
+                for (String failure : failures) {
+                    failure = failure.trim();
+                    if (failure.length() > 0) {
+                        SVNCertificateFailureKind failureKind = SVNCertificateFailureKind.fromString(failure);
+                        if (failureKind != null) {
+                            myIsTrustServerCertificateFailures.add(failureKind);
+                        } else {
+                            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, "Unknown value ''{0}'' for {1}.\n" +
+                                    "Supported values: {2}", new Object[]{failure,
+                                    "--trust-server-cert-failures",
+                                    "unknown-ca, cn-mismatch, expired, " +
+                                    "not-yet-valid, other"});
+                            SVNErrorManager.error(errorMessage, SVNLogType.WC);
+                        }
+                    }
+                }
+            }
         } else if (option == SVNOption.SHOW_INHERITED_PROPS) {
             myIsShowInhertiedProps = true;
         } else if (option == SVNOption.PIN_EXTERNALS) {

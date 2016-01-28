@@ -19,6 +19,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.cert.X509Certificate;
 import java.text.MessageFormat;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,6 +34,7 @@ import org.tmatesoft.svn.core.auth.SVNSSHAuthentication;
 import org.tmatesoft.svn.core.auth.SVNSSLAuthentication;
 import org.tmatesoft.svn.core.auth.SVNUserNameAuthentication;
 import org.tmatesoft.svn.core.internal.io.svn.SVNSSHPrivateKeyUtil;
+import org.tmatesoft.svn.core.internal.util.SVNCertificateFailureKind;
 import org.tmatesoft.svn.core.internal.util.SVNSSLUtil;
 import org.tmatesoft.svn.core.internal.wc.ISVNAuthStoreHandler;
 import org.tmatesoft.svn.core.internal.wc.ISVNGnomeKeyringPasswordProvider;
@@ -81,10 +83,16 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
     private static final String OUR_PASSPHRASE_PROMPT_STRING = "Store passphrase unencrypted (yes/no)? ";
     private static final int MAX_PROMPT_COUNT = 3;
     private Map<String,Integer> myRequestsCount = new HashMap<String,Integer>();
-    private boolean myIsTrustServerCertificate;
-    
+    private final boolean myIsTrustServerCertificate;
+    private final EnumSet<SVNCertificateFailureKind> trustServerCertificateFailureKinds;
+
+    public SVNConsoleAuthenticationProvider(EnumSet<SVNCertificateFailureKind> trustServerCertificateFailureKinds) {
+        this.trustServerCertificateFailureKinds = trustServerCertificateFailureKinds;
+        this.myIsTrustServerCertificate = trustServerCertificateFailureKinds != null && trustServerCertificateFailureKinds.contains(SVNCertificateFailureKind.UNKNOWN_CA);
+    }
+
     public SVNConsoleAuthenticationProvider(boolean trustServerCertificate) {
-        myIsTrustServerCertificate = trustServerCertificate;
+        this(trustServerCertificate ? EnumSet.of(SVNCertificateFailureKind.UNKNOWN_CA) : EnumSet.noneOf(SVNCertificateFailureKind.class));
     }
     
     public int acceptServerAuthentication(SVNURL url, String realm, Object certificate, boolean resultMayBeStored) {
@@ -131,7 +139,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
         }
         String hostName = url.getHost();
         X509Certificate cert = (X509Certificate) certificate;
-        StringBuffer prompt = SVNSSLUtil.getServerCertificatePrompt(cert, realm, hostName);
+        StringBuffer prompt = SVNSSLUtil.getServerCertificatePrompt(cert, realm, hostName, trustServerCertificateFailureKinds);
         if (resultMayBeStored) {
             prompt.append("\n(R)eject, accept (t)emporarily or accept (p)ermanently? "); 
         } else {

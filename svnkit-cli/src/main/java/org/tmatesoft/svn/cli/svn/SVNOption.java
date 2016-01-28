@@ -104,6 +104,7 @@ public class SVNOption extends AbstractSVNOption {
     public static final SVNOption NON_INTERACTIVE = new SVNOption("non-interactive");
     public static final SVNOption FORCE_INTERACTIVE = new SVNOption("force-interactive");
     public static final SVNOption TRUST_SERVER_CERT = new SVNOption("trust-server-cert");
+    public static final SVNOption TRUST_SERVER_CERT_FAILURES = new SVNOption("trust-server-cert-failures", false);
 
     public static final SVNOption STRIP = new SVNOption("strip", "p", false);
     public static final SVNOption ALLOW_MIXED_REVISIONS = new SVNOption("allow-mixed-revisions");

@@ -146,6 +146,7 @@ public class SVN extends AbstractSVNLauncher {
         SVNCommandLine.registerOption(SVNOption.ALLOW_MIXED_REVISIONS);
         SVNCommandLine.registerOption(SVNOption.DIFF_CMD);
         SVNCommandLine.registerOption(SVNOption.TRUST_SERVER_CERT);
+        SVNCommandLine.registerOption(SVNOption.TRUST_SERVER_CERT_FAILURES);
         SVNCommandLine.registerOption(SVNOption.CONFIG_OPTION);
 
         SVNCommandLine.registerOption(SVNOption.STRIP);
