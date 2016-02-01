@@ -1410,6 +1410,40 @@ public class UpdateTest {
         }
     }
 
+    @Test
+    public void testUpdateUnversionedFile() throws Exception {
+        final TestOptions options = TestOptions.getInstance();
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testUpdateUnversionedFile", options);
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final WorkingCopy workingCopy = sandbox.checkoutNewWorkingCopy(url);
+            final File workingCopyDirectory = workingCopy.getWorkingCopyDirectory();
+
+            final File immediate = new File(workingCopyDirectory, "immediate");
+            final File unversioned = new File(immediate, "unversioned");
+
+            SVNFileUtil.ensureDirectoryExists(immediate);
+            SVNFileUtil.createEmptyFile(unversioned);
+
+            final SvnUpdate update = svnOperationFactory.createUpdate();
+            update.setSingleTarget(SvnTarget.fromFile(unversioned));
+            try {
+                update.run();
+                Assert.fail("An exception should be thrown");
+            } catch (SVNException e) {
+                //expected
+                Assert.assertEquals(SVNErrorCode.WC_NOT_WORKING_COPY, e.getErrorMessage().getErrorCode());
+                Assert.assertEquals("svn: E155007: None of the targets are working copies", e.getMessage());
+            }
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
     private void assertDavPropertiesAreCleaned(WorkingCopy workingCopy) throws SqlJetException, SVNException {
         final SqlJetDb db = SqlJetDb.open(workingCopy.getWCDbFile(), false);
         try {
