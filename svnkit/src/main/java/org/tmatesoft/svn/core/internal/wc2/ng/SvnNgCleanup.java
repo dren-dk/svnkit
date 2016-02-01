@@ -43,7 +43,8 @@ public class SvnNgCleanup extends SvnNgOperationRunner<Void, SvnCleanup> {
         } else {
             wcContext = context;
         }
-        String[] ignores = wcContext.getOptions().getIgnorePatterns();
+        ISVNOptions options = wcContext.getOptions();
+        String[] ignores = options == null ? new String[]{} : options.getIgnorePatterns();
 
         doCleanup(localAbsPath, wcContext, Arrays.asList(ignores));
         return null;
