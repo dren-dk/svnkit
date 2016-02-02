@@ -3381,7 +3381,7 @@ public class SVNWCContext {
         File resultTarget = SVNFileUtil.createUniqueFile(tempDir, baseName, ".tmp", false);
 
         //TODO: external merger
-        boolean containsConflicts = doTextMerge(customMerger, resultTarget, targetAbspath, detranslatedTargetAbspath, leftAbspath, rightAbspath, targetLabel, leftLabel, rightLabel, options, SVNDiffConflictChoiceStyle.CHOOSE_MODIFIED_LATEST);
+        boolean containsConflicts = doTextMerge(customMerger, resultTarget, targetAbspath, detranslatedTargetAbspath, leftAbspath, rightAbspath, targetLabel, leftLabel, rightLabel, options, SVNDiffConflictChoiceStyle.CHOOSE_MODIFIED_ORIGINAL_LATEST);
         if (containsConflicts && !dryRun) {
             info.mergeOutcome = SVNStatusType.CONFLICTED;
 
