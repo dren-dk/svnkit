@@ -59,21 +59,13 @@ import org.tmatesoft.svn.core.internal.wc17.db.StructureFields.RepositoryInfo;
 import org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbConflicts.ConflictInfo;
 import org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbConflicts.TextConflictInfo;
 import org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbConflicts.TreeConflictInfo;
-import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbCreateSchema;
-import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSchema;
+import org.tmatesoft.svn.core.internal.wc17.db.statement.*;
 import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSchema.ACTUAL_NODE__Fields;
 import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSchema.DELETE_LIST__Fields;
 import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSchema.NODES__Fields;
 import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSchema.PRISTINE__Fields;
 import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSchema.REPOSITORY__Fields;
 import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSchema.WC_LOCK__Fields;
-import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSelectCommittableExternalsImmediatelyBelow;
-import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSelectDeletionInfo;
-import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSelectMinMaxRevisions;
-import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSelectMovedForDelete;
-import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSelectMovedFromForDelete;
-import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSelectOpDepthMovedPair;
-import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbStatements;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.ISVNEventHandler;
 import org.tmatesoft.svn.core.wc.ISVNOptions;
@@ -2431,10 +2423,15 @@ public class SVNWCDb implements ISVNWCDb {
         final SVNWCDbDir pdh = parsed.wcDbDir;
         final File localRelpath = parsed.localRelPath;
         verifyDirUsable(pdh);
+        SVNWCDbRoot wcRoot = pdh.getWCRoot();
 
+        opMarkResolvedInternal(wcRoot, localRelpath, resolvedText, resolvedProps, resolvedTree, workItems);
+    }
+
+    private void opMarkResolvedInternal(SVNWCDbRoot wcRoot, File localRelpath, boolean resolvedText, boolean resolvedProps, boolean resolvedTree, SVNSkel workItems) throws SVNException {
         SVNSkel conflicts;
 
-        SVNWCDbRoot wcRoot = pdh.getWCRoot();
+
         SVNSqlJetStatement stmt = wcRoot.getSDb().getStatement(SVNWCDbStatements.SELECT_ACTUAL_NODE);
         try {
             stmt.bindf("is", wcRoot.getWcId(), localRelpath);
@@ -4276,25 +4273,25 @@ public class SVNWCDb implements ISVNWCDb {
                 stmt.reset();
             }
         }
+    }
 
-        private void clearMovedHere(File srcRelpath, SVNWCDbRoot wcRoot) throws SVNException {
-            SVNSqlJetStatement stmt = wcRoot.getSDb().getStatement(SVNWCDbStatements.SELECT_MOVED_TO);
-            File dstRelpath;
-            try {
-                stmt.bindf("isi", wcRoot.getWcId(), srcRelpath, SVNWCUtils.relpathDepth(srcRelpath));
-                stmt.next();
-                dstRelpath = SVNFileUtil.createFilePath(stmt.getColumnString(NODES__Fields.moved_to));
-            } finally {
-                stmt.reset();
-            }
+    private static void clearMovedHere(File srcRelpath, SVNWCDbRoot wcRoot) throws SVNException {
+        SVNSqlJetStatement stmt = wcRoot.getSDb().getStatement(SVNWCDbStatements.SELECT_MOVED_TO);
+        File dstRelpath;
+        try {
+            stmt.bindf("isi", wcRoot.getWcId(), srcRelpath, SVNWCUtils.relpathDepth(srcRelpath));
+            stmt.next();
+            dstRelpath = SVNFileUtil.createFilePath(stmt.getColumnString(NODES__Fields.moved_to));
+        } finally {
+            stmt.reset();
+        }
 
-            stmt = wcRoot.getSDb().getStatement(SVNWCDbStatements.CLEAR_MOVED_HERE_RECURSIVE);
-            try {
-                stmt.bindf("isi", wcRoot.getWcId(), dstRelpath, SVNWCUtils.relpathDepth(dstRelpath));
-                stmt.done();
-            } finally {
-                stmt.reset();
-            }
+        stmt = wcRoot.getSDb().getStatement(SVNWCDbStatements.CLEAR_MOVED_HERE_RECURSIVE);
+        try {
+            stmt.bindf("isi", wcRoot.getWcId(), dstRelpath, SVNWCUtils.relpathDepth(dstRelpath));
+            stmt.done();
+        } finally {
+            stmt.reset();
         }
     }
 
@@ -6612,20 +6609,47 @@ public class SVNWCDb implements ISVNWCDb {
         return nodeInstallInfo;
     }
 
-    public void resolveBreakMovedAway(File localAbsPath, ISVNEventHandler eventHandler) throws SVNException {
+    public void resolveBreakMovedAway(File localAbsPath, File srcOpRootAbsPath, boolean markTreeConflictResolved, ISVNEventHandler eventHandler) throws SVNException {
         DirParsedInfo parsed = parseDir(localAbsPath, Mode.ReadOnly);
         SVNWCDbDir pdh = parsed.wcDbDir;
         File localRelPath = parsed.localRelPath;
         verifyDirUsable(pdh);
 
+        File delRelPath;
+        if (srcOpRootAbsPath != null) {
+            delRelPath = SVNFileUtil.skipAncestor(pdh.getWCRoot().getAbsPath(), srcOpRootAbsPath);
+        } else {
+            delRelPath = null;
+        }
+
         ResolveBreakMovedAway resolveBreakMovedAway = new ResolveBreakMovedAway();
         resolveBreakMovedAway.wcRoot = parsed.wcDbDir.getWCRoot();
         resolveBreakMovedAway.localRelPath = localRelPath;
+        resolveBreakMovedAway.eventHandler = eventHandler;
+        resolveBreakMovedAway.delRelPath = delRelPath;
+        resolveBreakMovedAway.markTreeConflictResolved = markTreeConflictResolved;
         pdh.getWCRoot().getSDb().runTransaction(resolveBreakMovedAway);
 
-        if (eventHandler != null) {
-            eventHandler.handleEvent(SVNEventFactory.createSVNEvent(localAbsPath, SVNNodeKind.UNKNOWN, null, -1,
-                    SVNStatusType.INAPPLICABLE, SVNStatusType.INAPPLICABLE, SVNStatusType.LOCK_UNKNOWN, SVNEventAction.MOVE_BROKEN, SVNEventAction.MOVE_BROKEN,null, null), ISVNEventHandler.UNKNOWN);
+//        if (eventHandler != null) {
+//            eventHandler.handleEvent(SVNEventFactory.createSVNEvent(localAbsPath, SVNNodeKind.UNKNOWN, null, -1,
+//                    SVNStatusType.INAPPLICABLE, SVNStatusType.INAPPLICABLE, SVNStatusType.LOCK_UNKNOWN, SVNEventAction.MOVE_BROKEN, SVNEventAction.MOVE_BROKEN,null, null), ISVNEventHandler.UNKNOWN);
+//        }
+    }
+
+    private static long findSrcOpDepth(SVNWCDbRoot wcRoot, File srcRelPath, long deleteOpDepth) throws SVNException {
+        SVNSqlJetStatement stmt = wcRoot.getSDb().getStatement(SVNWCDbStatements.SELECT_HIGHEST_WORKING_NODE);
+        try {
+            stmt.bindf("isi", wcRoot.getWcId(), srcRelPath, deleteOpDepth);
+            boolean haveRow = stmt.next();
+            if (haveRow) {
+                return stmt.getColumnLong(NODES__Fields.op_depth);
+            } else {
+                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_PATH_UNEXPECTED_STATUS, "''{0}'' is not deleted", new Object[]{srcRelPath});
+                SVNErrorManager.error(errorMessage, SVNLogType.WC);
+                return -1;
+            }
+        } finally {
+            stmt.reset();
         }
     }
 
@@ -6633,21 +6657,64 @@ public class SVNWCDb implements ISVNWCDb {
 
         public SVNWCDbRoot wcRoot;
         public File localRelPath;
+        public File delRelPath;
+        public boolean markTreeConflictResolved;
+        private ISVNEventHandler eventHandler;
 
         public void transaction(SVNSqlJetDb db) throws SqlJetException, SVNException {
-            BaseMovedTo movedTo = wcRoot.getDb().opDepthMovedTo(SVNWCUtils.relpathDepth(localRelPath) - 1, wcRoot, localRelPath);
+            long srcOpDepth = findSrcOpDepth(wcRoot, localRelPath, delRelPath != null ? SVNWCUtils.relpathDepth(delRelPath) : SVNWCUtils.relpathDepth(localRelPath));
 
-            BreakMove breakMove = new BreakMove();
-            breakMove.wcRoot = wcRoot;
-            breakMove.srcRelPath = localRelPath;
-            breakMove.srcOpDepth = SVNWCUtils.relpathDepth(movedTo.moveSrcOpRootRelPath);
-            breakMove.dstRelPath = movedTo.moveDstOpRootRelPath;
-            breakMove.dstOpDepth = SVNWCUtils.relpathDepth(movedTo.moveDstOpRootRelPath);
-            breakMove.transaction(db);
+            breakMovedAway(wcRoot, localRelPath, srcOpDepth);
+
+            if (markTreeConflictResolved) {
+                wcRoot.getDb().opMarkResolvedInternal(wcRoot, localRelPath, false, false, true, null);
+            }
+
+            wcRoot.getDb().updateMoveListNotify(wcRoot, SVNRepository.INVALID_REVISION, SVNRepository.INVALID_REVISION, eventHandler);
+        }
+
+        public void breakMovedAway(SVNWCDbRoot wcRoot, File localRelPath, long parentSrcOpDepth) throws SVNException, SqlJetException {
+            SVNSqlJetDb db = wcRoot.getSDb();
+
+            SVNSqlJetStatement stmt;
+
+            stmt = new SVNWCDbCreateSchema(db.getTemporaryDb(), SVNWCDbCreateSchema.CREATE_UPDATE_MOVE_LIST, -1, false);
+            try {
+                stmt.done();
+            } finally {
+                stmt.reset();
+            }
+
+            stmt = db.getStatement(SVNWCDbStatements.SELECT_MOVED_DESCENDANTS_SRC);
+            try {
+                stmt.bindf("isi", wcRoot.getWcId(), localRelPath, parentSrcOpDepth);
+                while (stmt.next()) {
+                    long srcOpDepth = ((SVNWCDbSelectMovedDescendantsSrc) stmt).getInternalSelect().getColumnLong(NODES__Fields.op_depth);
+                    File srcRelpath = SVNFileUtil.createFilePath(stmt.getColumnString(NODES__Fields.local_relpath));
+                    SVNWCDbKind srcKind = SvnWcDbStatementUtil.getColumnKind(stmt, NODES__Fields.kind);
+//                    File srcReposRelpath = SVNFileUtil.createFilePath(stmt.getColumnString(NODES__Fields.repos_path));
+                    File dstRelpath = SVNFileUtil.createFilePath(((SVNWCDbSelectMovedDescendantsSrc) stmt).getInternalSelect().getColumnString(NODES__Fields.moved_to));
+
+//                    verifyWriteLock(srcRelpath);
+//                    verifyWriteLock(dstRelpath);
+
+                    BreakMove breakMove = new BreakMove();
+                    breakMove.wcRoot = wcRoot;
+                    breakMove.srcRelPath = srcRelpath;
+                    breakMove.deleteOpDepth = srcOpDepth;
+                    breakMove.dstRelPath = dstRelpath;
+                    breakMove.workItems = null;
+                    breakMove.transaction(db);
+
+                    updateMoveListAdd(wcRoot, srcRelpath, SVNEventAction.MOVE_BROKEN, srcKind.toNodeKind(), SVNStatusType.INAPPLICABLE, SVNStatusType.INAPPLICABLE);
+                }
+            } finally {
+                stmt.reset();
+            }
         }
     }
 
-    private static class BreakMove implements SVNSqlJetTransaction {
+    private static class BreakMove17 implements SVNSqlJetTransaction {
 
         public SVNWCDbRoot wcRoot;
         public File srcRelPath;
@@ -6673,6 +6740,33 @@ public class SVNWCDb implements ISVNWCDb {
             } finally {
                 stmt.reset();
             }
+        }
+    }
+
+    private static class BreakMove implements SVNSqlJetTransaction {
+
+        public SVNWCDbRoot wcRoot;
+        public File srcRelPath;
+        public long deleteOpDepth;
+        public File dstRelPath;
+        public SVNSkel workItems;
+
+        public void transaction(SVNSqlJetDb db) throws SqlJetException, SVNException {
+            SVNSqlJetStatement stmt;
+
+            stmt = db.getStatement(SVNWCDbStatements.CLEAR_MOVE_TO_RELPATH);
+            try {
+                stmt.bindf("isi", wcRoot.getWcId(), srcRelPath, deleteOpDepth);
+                long affected = stmt.done();
+                if (affected != 1) {
+                    SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_PATH_UNEXPECTED_STATUS, "Path ''{0}'' is not moved");
+                    SVNErrorManager.error(errorMessage, SVNLogType.WC);
+                }
+            } finally {
+                stmt.reset();
+            }
+            clearMovedHere(dstRelPath, wcRoot);
+            addWorkItems(db, workItems);
         }
     }
 

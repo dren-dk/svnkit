@@ -1671,7 +1671,7 @@ public interface ISVNWCDb {
         public SVNDate changedDate;
     }
 
-    void resolveBreakMovedAway(File localAbsPath, ISVNEventHandler eventHandler) throws SVNException;
+    void resolveBreakMovedAway(File localAbsPath, File srcOpRootAbsPath, boolean markTreeConflictResolved, ISVNEventHandler eventHandler) throws SVNException;
 
     void resolveDeleteRaiseMovedAway(File localAbsPath, ISVNEventHandler eventHandler) throws SVNException;
 

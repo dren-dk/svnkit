@@ -5721,11 +5721,16 @@ public class SVNWCContext {
         final Structure<SvnWcDbConflicts.TreeConflictInfo> treeConflictInfoStructure = SvnWcDbConflicts.readTreeConflict(getDb(), localAbsPath, conflicts);
         final SVNConflictReason reason = treeConflictInfoStructure.get(SvnWcDbConflicts.TreeConflictInfo.localChange);
         final SVNConflictAction action = treeConflictInfoStructure.get(SvnWcDbConflicts.TreeConflictInfo.incomingChange);
+        File srcOpRootAbsPath = treeConflictInfoStructure.get(SvnWcDbConflicts.TreeConflictInfo.moveSrcOpRootAbsPath);
 
         if (operation == SVNOperation.UPDATE || operation == SVNOperation.SWITCH) {
             if (reason == SVNConflictReason.DELETED || reason == SVNConflictReason.REPLACED) {
                 if (conflictChoice == SVNConflictChoice.MERGED) {
-                    getDb().resolveBreakMovedAway(localAbsPath, getEventHandler());
+                    if (action != SVNConflictAction.DELETE) {
+                        getDb().resolveBreakMovedAway(localAbsPath, srcOpRootAbsPath, true, getEventHandler());
+                        didResolve = true;
+                        return didResolve;
+                    }
                     didResolve = true;
                 } else if (conflictChoice == SVNConflictChoice.MINE_CONFLICT) {
                     getDb().resolveDeleteRaiseMovedAway(localAbsPath, getEventHandler());
@@ -5740,7 +5745,7 @@ public class SVNWCContext {
                     getDb().updateMovedAwayConflictVictim(localAbsPath, getEventHandler());
                     didResolve = true;
                 } else if (conflictChoice == SVNConflictChoice.MERGED) {
-                    getDb().resolveBreakMovedAway(localAbsPath, getEventHandler());
+                    getDb().resolveBreakMovedAway(localAbsPath, srcOpRootAbsPath, true, getEventHandler());
                     didResolve = true;
                 } else {
                     SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_CONFLICT_RESOLVER_FAILURE,
