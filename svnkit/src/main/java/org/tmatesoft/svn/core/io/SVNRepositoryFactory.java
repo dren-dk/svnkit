@@ -214,7 +214,7 @@ public abstract class SVNRepositoryFactory {
             }
         }
         if ("file".equalsIgnoreCase(url.getProtocol())) {
-            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_LOCAL_REPOS_OPEN_FAILED, "Unable to open an ra_local session to URL");
+            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_LOCAL_REPOS_OPEN_FAILED, "Unable to open repository ''{0}''", new Object[]{url});
             SVNErrorManager.error(err, SVNLogType.NETWORK);
         }
         SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.BAD_URL, "Unable to create SVNRepository object for ''{0}''", url);
