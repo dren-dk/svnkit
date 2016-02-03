@@ -4183,8 +4183,9 @@ public class SVNWCDb implements ISVNWCDb {
                     boolean haveRow = stmt.next();
 
                     while (haveRow) {
-                        File childRelpath = SVNFileUtil.createFilePath(stmt.getColumnString(NODES__Fields.local_relpath));
-                        clearMovedHere(childRelpath, root);
+//                        File childRelpath = SVNFileUtil.createFilePath(stmt.getColumnString(NODES__Fields.local_relpath));
+                        File movedToRelpath = SVNFileUtil.createFilePath(stmt.getColumnString(NODES__Fields.moved_to));
+                        clearMovedHere(movedToRelpath, root);
                         haveRow = stmt.next();
                     }
                 } finally {
@@ -4275,21 +4276,26 @@ public class SVNWCDb implements ISVNWCDb {
         }
     }
 
-    private static void clearMovedHere(File srcRelpath, SVNWCDbRoot wcRoot) throws SVNException {
-        SVNSqlJetStatement stmt = wcRoot.getSDb().getStatement(SVNWCDbStatements.SELECT_MOVED_TO);
-        File dstRelpath;
-        try {
-            stmt.bindf("isi", wcRoot.getWcId(), srcRelpath, SVNWCUtils.relpathDepth(srcRelpath));
-            stmt.next();
-            dstRelpath = SVNFileUtil.createFilePath(stmt.getColumnString(NODES__Fields.moved_to));
-        } finally {
-            stmt.reset();
-        }
-
+    private static void clearMovedHere(File movedToRelPath, SVNWCDbRoot wcRoot) throws SVNException {
+        SVNSqlJetStatement stmt;
+//        stmt = wcRoot.getSDb().getStatement(SVNWCDbStatements.SELECT_MOVED_TO);
+//        File dstRelpath;
+//        try {
+//            stmt.bindf("isi", wcRoot.getWcId(), srcRelpath, SVNWCUtils.relpathDepth(srcRelpath));
+//            stmt.next();
+//            dstRelpath = SVNFileUtil.createFilePath(stmt.getColumnString(NODES__Fields.moved_to));
+//        } finally {
+//            stmt.reset();
+//        }
+//
         stmt = wcRoot.getSDb().getStatement(SVNWCDbStatements.CLEAR_MOVED_HERE_RECURSIVE);
         try {
-            stmt.bindf("isi", wcRoot.getWcId(), dstRelpath, SVNWCUtils.relpathDepth(dstRelpath));
-            stmt.done();
+            stmt.bindf("isi", wcRoot.getWcId(), movedToRelPath, SVNWCUtils.relpathDepth(movedToRelPath));
+            long affected = stmt.done();
+            if (affected == 0) {
+                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_PATH_NOT_FOUND, "The node ''{0}'' was not found.", new Object[]{movedToRelPath});
+                SVNErrorManager.error(errorMessage, SVNLogType.WC);
+            }
         } finally {
             stmt.reset();
         }

@@ -72,9 +72,10 @@ public class SVNWCDbSelectMovedDescendantsSrc extends SVNSqlJetSelectFieldsState
         internalSelect = new InternalSelect(sDb);
         internalSelect.bindf("isi",
                 getColumnLong(SVNWCDbSchema.NODES__Fields.wc_id),
-                getColumnLong(SVNWCDbSchema.NODES__Fields.local_relpath),
+                getColumnString(SVNWCDbSchema.NODES__Fields.local_relpath),
                 getNestedStatementMinOpDepth());
-        return internalSelect.next();
+        boolean next = internalSelect.next();
+        return next && !internalSelect.isColumnNull(SVNWCDbSchema.NODES__Fields.moved_to);
     }
 
     @Override
@@ -96,7 +97,7 @@ public class SVNWCDbSelectMovedDescendantsSrc extends SVNSqlJetSelectFieldsState
 
     private SVNWCDbNodesMinOpDepth getMinOpDepthSelect() throws SVNException {
         if (minOpDepthSelect == null) {
-            minOpDepthSelect = new SVNWCDbNodesMinOpDepth(sDb, (Long)getBind(3));
+            minOpDepthSelect = new SVNWCDbNodesMinOpDepth(sDb, (Long)getBind(3) + 1); //add 1 to get strict > instead of >=
         }
         return minOpDepthSelect;
     }
