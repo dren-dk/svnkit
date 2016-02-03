@@ -22,6 +22,58 @@ import java.util.List;
 public class DiffTest {
 
     @Test
+    public void testDiffRootUnavailable() throws Exception {
+        final TestOptions options = TestOptions.getInstance();
+        Assume.assumeTrue(TestUtil.areAllApacheOptionsSpecified(options));
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".test", options);
+        try {
+            final SVNURL url = sandbox.createSvnRepositoryWithDavAccess();
+
+            final CommitBuilder commitBuilder1 = new CommitBuilder(url);
+            commitBuilder1.addFile("subproject/directory/file");
+            commitBuilder1.commit();
+
+            final CommitBuilder commitBuilder2 = new CommitBuilder(url);
+            commitBuilder2.changeFile("subproject/directory/file", "changed".getBytes());
+            commitBuilder2.commit();
+
+            sandbox.writeActiveAuthzContents(url,
+                    "[/]" + "\n" +
+                            "*=" + "\n" +
+                            "[/subproject]" + "\n" +
+                            "*=rw" + "\n"
+            );
+
+            final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            final SvnDiffGenerator diffGenerator = new SvnDiffGenerator();
+            diffGenerator.setBasePath(new File(""));
+
+            final SvnDiff diff = svnOperationFactory.createDiff();
+            diff.setSources(SvnTarget.fromURL(url.appendPath("subproject", false), SVNRevision.create(1)), SvnTarget.fromURL(url.appendPath("subproject", false), SVNRevision.create(2)));
+            diff.setDiffGenerator(diffGenerator);
+            diff.setOutput(byteArrayOutputStream);
+            diff.run();
+
+            final String actualDiffOutput = new String(byteArrayOutputStream.toByteArray()).replace(System.getProperty("line.separator"), "\n");
+            final String expectedDiffOutput = "Index: directory/file\n" +
+                    "===================================================================\n" +
+                    "--- directory/file      (revision 1)\n" +
+                    "+++ directory/file      (revision 2)\n" +
+                    "@@ -0,0 +1 @@\n" +
+                    "+changed\n" +
+                    "\\ No newline at end of file\n";
+
+            Assert.assertEquals(expectedDiffOutput, actualDiffOutput);
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+
+    }
+
+    @Test
     public void testRemoteDiffTwoFiles() throws Exception {
         final TestOptions options = TestOptions.getInstance();
 
