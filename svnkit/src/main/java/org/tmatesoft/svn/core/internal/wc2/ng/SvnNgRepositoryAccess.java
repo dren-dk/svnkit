@@ -6,6 +6,7 @@ import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.util.SVNPathRevision;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc17.SVNWCContext;
@@ -225,6 +226,20 @@ public class SvnNgRepositoryAccess extends SvnRepositoryAccess {
         origin.release();
         localCopySource = SvnCopySource.create(SvnTarget.fromURL(url, pegRevision), revision);
         return localCopySource;
+    }
+
+    public SVNPathRevision resolveRevisionAndUrl(SVNRepository svnRepository, SvnTarget svnTarget, SVNRevision pegRevision, SVNRevision revision) throws SVNException {
+        SVNRevision startRevision = revision;
+
+        SVNRevision[] svnRevisions = resolveRevisions(pegRevision, revision, svnTarget.isURL(), true);
+        pegRevision = svnRevisions[0];
+        startRevision = svnRevisions[1];
+
+        Structure<LocationsInfo> locationsInfoStructure = getLocations(svnRepository, svnTarget, pegRevision, startRevision, SVNRevision.UNDEFINED);
+        SVNURL url = locationsInfoStructure.get(LocationsInfo.startUrl);
+        long rev = locationsInfoStructure.lng(LocationsInfo.startRevision);
+
+        return SVNPathRevision.createWithRepository(svnRepository, url, rev);
     }
     
     protected SVNURL getTargetURL(SvnTarget target) throws SVNException {

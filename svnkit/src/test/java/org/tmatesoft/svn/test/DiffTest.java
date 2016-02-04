@@ -59,8 +59,8 @@ public class DiffTest {
             final String actualDiffOutput = new String(byteArrayOutputStream.toByteArray()).replace(System.getProperty("line.separator"), "\n");
             final String expectedDiffOutput = "Index: directory/file\n" +
                     "===================================================================\n" +
-                    "--- directory/file      (revision 1)\n" +
-                    "+++ directory/file      (revision 2)\n" +
+                    "--- directory/file\t(revision 1)\n" +
+                    "+++ directory/file\t(revision 2)\n" +
                     "@@ -0,0 +1 @@\n" +
                     "+changed\n" +
                     "\\ No newline at end of file\n";

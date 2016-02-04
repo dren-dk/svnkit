@@ -44,7 +44,7 @@ import org.tmatesoft.svn.core.internal.wc.SVNFileType;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc.admin.SVNChecksumOutputStream;
 import org.tmatesoft.svn.core.internal.wc.admin.SVNTranslator;
-import org.tmatesoft.svn.core.internal.wc17.db.ISVNWCDb;
+import org.tmatesoft.svn.core.internal.wc17.db.*;
 import org.tmatesoft.svn.core.internal.wc17.db.ISVNWCDb.SVNWCDbKind;
 import org.tmatesoft.svn.core.internal.wc17.db.ISVNWCDb.SVNWCDbLock;
 import org.tmatesoft.svn.core.internal.wc17.db.ISVNWCDb.SVNWCDbOpenMode;
@@ -60,21 +60,15 @@ import org.tmatesoft.svn.core.internal.wc17.db.ISVNWCDb.WCDbInfo.InfoField;
 import org.tmatesoft.svn.core.internal.wc17.db.ISVNWCDb.WCDbRepositoryInfo;
 import org.tmatesoft.svn.core.internal.wc17.db.ISVNWCDb.WCDbRepositoryInfo.RepositoryInfoField;
 import org.tmatesoft.svn.core.internal.wc17.db.ISVNWCDb.WCDbWorkQueueInfo;
-import org.tmatesoft.svn.core.internal.wc17.db.SVNWCDb;
 import org.tmatesoft.svn.core.internal.wc17.db.SVNWCDb.DirParsedInfo;
 import org.tmatesoft.svn.core.internal.wc17.db.SVNWCDb.ReposInfo;
-import org.tmatesoft.svn.core.internal.wc17.db.Structure;
 import org.tmatesoft.svn.core.internal.wc17.db.StructureFields.AdditionInfo;
 import org.tmatesoft.svn.core.internal.wc17.db.StructureFields.DeletionInfo;
 import org.tmatesoft.svn.core.internal.wc17.db.StructureFields.NodeInfo;
 import org.tmatesoft.svn.core.internal.wc17.db.StructureFields.NodeOriginInfo;
 import org.tmatesoft.svn.core.internal.wc17.db.StructureFields.PristineInfo;
 import org.tmatesoft.svn.core.internal.wc17.db.StructureFields.WalkerChildInfo;
-import org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbConflicts;
-import org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbPristines;
-import org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbReader;
 import org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbReader.InstallInfo;
-import org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbShared;
 import org.tmatesoft.svn.core.internal.wc2.old.SvnOldUpgrade;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.ISVNConflictHandler;
@@ -423,27 +417,42 @@ public class SVNWCContext {
     }
 
     public SVNNodeKind readKind(File localAbsPath, boolean showHidden) throws SVNException {
-        try {
-            final WCDbInfo info = db.readInfo(localAbsPath, InfoField.status, InfoField.kind);
-            /* Make sure hidden nodes return svn_node_none. */
-            if (!showHidden) {
-                switch (info.status) {
-                    case NotPresent:
-                    case ServerExcluded:
-                    case Excluded:
-                        return SVNNodeKind.NONE;
+        return readKind(localAbsPath, true, showHidden);
+    }
 
-                    default:
-                        break;
-                }
-            }
-            return info.kind.toNodeKind();
-        } catch (SVNException e) {
-            if (e.getErrorMessage().getErrorCode() == SVNErrorCode.WC_PATH_NOT_FOUND) {
-                return SVNNodeKind.NONE;
-            }
-            throw e;
+    public SVNNodeKind readKind(File localAbsPath, boolean showDeleted, boolean showHidden) throws SVNException {
+        assert SVNFileUtil.isAbsolute(localAbsPath);
+
+        SVNNodeKind dbKind = db.readKind(localAbsPath, true, showDeleted, showHidden);
+        if (dbKind == SVNNodeKind.DIR) {
+            return SVNNodeKind.DIR;
+        } else if (dbKind == SVNNodeKind.FILE) {
+            return SVNNodeKind.FILE;
+        } else {
+            return SVNNodeKind.NONE;
         }
+
+//        try {
+//            final WCDbInfo info = db.readInfo(localAbsPath, InfoField.status, InfoField.kind);
+//            /* Make sure hidden nodes return svn_node_none. */
+//            if (!showHidden) {
+//                switch (info.status) {
+//                    case NotPresent:
+//                    case ServerExcluded:
+//                    case Excluded:
+//                        return SVNNodeKind.NONE;
+//
+//                    default:
+//                        break;
+//                }
+//            }
+//            return info.kind.toNodeKind();
+//        } catch (SVNException e) {
+//            if (e.getErrorMessage().getErrorCode() == SVNErrorCode.WC_PATH_NOT_FOUND) {
+//                return SVNNodeKind.NONE;
+//            }
+//            throw e;
+//        }
     }
 
     public boolean isNodeAdded(File path) throws SVNException {

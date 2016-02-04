@@ -753,7 +753,7 @@ public class SvnPatchTarget extends SvnTargetContent {
             if (isAdded() || isReplaced()) {
                 File parentAbsPath = SVNFileUtil.getParentFile(getAbsPath());
 
-                SVNNodeKind parentDbKind = context.readKind(parentAbsPath, false);
+                SVNNodeKind parentDbKind = context.readKind(parentAbsPath, false, false);
 
                 if (parentDbKind == SVNNodeKind.DIR || parentDbKind == SVNNodeKind.FILE) {
                     if (parentDbKind != SVNNodeKind.DIR) {
@@ -767,7 +767,7 @@ public class SvnPatchTarget extends SvnTargetContent {
                     createMissingParents(workingCopyDirectory, context, dryRun);
                 }
             } else {
-                SVNNodeKind wcKind = context.readKind(getAbsPath(), false);
+                SVNNodeKind wcKind = context.readKind(getAbsPath(), false, false);
 
                 if (getKindOnDisk() == SVNNodeKind.NONE || wcKind != getKindOnDisk()) {
                     setSkipped(true);
@@ -827,7 +827,7 @@ public class SvnPatchTarget extends SvnTargetContent {
 
         for (String component : components) {
             localAbsPath = SVNFileUtil.createFilePath(localAbsPath, component);
-            SVNNodeKind wcKind = context.readKind(localAbsPath, true);
+            SVNNodeKind wcKind = context.readKind(localAbsPath, false, true);
 
             SVNNodeKind diskKind = SVNFileType.getNodeKind(SVNFileType.getType(localAbsPath));
             if (diskKind == SVNNodeKind.FILE || wcKind == SVNNodeKind.FILE) {
