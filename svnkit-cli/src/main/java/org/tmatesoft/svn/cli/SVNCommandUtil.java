@@ -408,6 +408,8 @@ public class SVNCommandUtil {
                     String optionDesc = null;
                     if (option.getAlias() != null && printOptionAlias) {
                         optionDesc = "-" + option.getAlias() + " [--" + option.getName() + "]";
+                    } else if (option.getLongAlias() != null && printOptionAlias) {
+                        optionDesc = "--" + option.getName() + " [--" + option.getLongAlias() + "]";
                     } else {
                         optionDesc = "--" + option.getName();
                     }
@@ -432,6 +434,8 @@ public class SVNCommandUtil {
                     String optionDesc = null;
                     if (option.getAlias() != null) {
                         optionDesc = "-" + option.getAlias() + " [--" + option.getName() + "]";
+                    } else if (option.getLongAlias() != null && printOptionAlias) {
+                        optionDesc = "--" + option.getName() + " [--" + option.getLongAlias() + "]";
                     } else {
                         optionDesc = "--" + option.getName();
                     }

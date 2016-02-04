@@ -35,7 +35,7 @@ public class SVNOption extends AbstractSVNOption {
     public static final SVNOption CONFIG_OPTION = new SVNOption("config-option", false);
     public static final SVNOption IGNORE_EXTERNALS = new SVNOption("ignore-externals");
     public static final SVNOption IGNORE_KEYWORDS = new SVNOption("ignore-keywords");
-    public static final SVNOption CHANGELIST = new SVNOption("changelist", false);
+    public static final SVNOption CHANGELIST = new SVNOption("changelist", null, "cl", false);
     public static final SVNOption HELP = new SVNOption("help", "h");
     public static final SVNOption QUESTION = new SVNOption(null, "?");
     public static final SVNOption VERSION = new SVNOption("version");
@@ -140,6 +140,10 @@ public class SVNOption extends AbstractSVNOption {
 
     private SVNOption(String name, String alias, boolean unary) {
         super(name, alias, unary);
+    }
+
+    private SVNOption(String name, String alias, String longAlias, boolean unary) {
+        super(name, alias, longAlias, unary);
     }
 
     protected String getResourceBundleName() {

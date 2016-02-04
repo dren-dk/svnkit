@@ -39,6 +39,9 @@ public class SVNCommandLine {
         if (option.getAlias() != null) {
             ourOptions.put("-" + option.getAlias(), option);
         }
+        if (option.getLongAlias() != null) {
+            ourOptions.put("--" + option.getLongAlias(), option);
+        }
     }
 
     private String myCommand;

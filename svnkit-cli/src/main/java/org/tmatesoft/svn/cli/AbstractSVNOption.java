@@ -24,12 +24,18 @@ public abstract class AbstractSVNOption {
     
     private String myName;
     private String myAlias;
+    private String myLongAlias;
     private boolean myIsUnary;
 
-    protected AbstractSVNOption(String name, String alias, boolean unary) {
+    protected AbstractSVNOption(String name, String alias, String longAlias, boolean unary) {
         myName = name;
         myAlias = alias;
+        myLongAlias = longAlias;
         myIsUnary = unary;
+    }
+
+    protected AbstractSVNOption(String name, String alias, boolean unary) {
+        this(name, alias, null, unary);
     }
     
     public String getName() {
@@ -39,7 +45,11 @@ public abstract class AbstractSVNOption {
     public String getAlias() {
         return myAlias;
     }
-    
+
+    public String getLongAlias() {
+        return myLongAlias;
+    }
+
     public boolean isUnary() {
         return myIsUnary;
     }
