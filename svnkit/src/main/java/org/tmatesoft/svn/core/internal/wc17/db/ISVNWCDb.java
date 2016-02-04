@@ -1302,13 +1302,17 @@ public interface ISVNWCDb {
     class WCDbRepositoryInfo {
 
         public enum RepositoryInfoField {
-            relPath, rootUrl, uuid
+            relPath, rootUrl, uuid, revision
         }
 
         public File relPath;
         public SVNURL rootUrl;
         public String uuid;
+        public long revision;
+        public long reposId;
     }
+
+    WCDbRepositoryInfo readRepositoryInfo(File localAbsPath, RepositoryInfoField... fields) throws SVNException;
 
     /**
      * Scan upwards for information about a known addition to the WORKING tree.
@@ -1362,13 +1366,14 @@ public interface ISVNWCDb {
     class WCDbAdditionInfo {
 
         public enum AdditionInfoField {
-            status, opRootAbsPath, reposRelPath, reposRootUrl, reposUuid, originalReposRelPath, originalReposId, originalRootUrl, originalUuid, originalRevision,
+            status, opRootAbsPath, reposRelPath, reposId, reposRootUrl, reposUuid, originalReposRelPath, originalReposId, originalRootUrl, originalUuid, originalRevision,
             movedFromRelPath, movedFromOpRootRelPath;
         }
 
         public SVNWCDbStatus status;
         public File opRootAbsPath;
         public File reposRelPath;
+        public long reposId;
         public SVNURL reposRootUrl;
         public String reposUuid;
         public File originalReposRelPath;

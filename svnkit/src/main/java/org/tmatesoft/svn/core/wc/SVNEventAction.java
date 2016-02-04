@@ -464,6 +464,11 @@ public class SVNEventAction {
     /**
      * @since 1.7, SVN 1.7
      */
+    public static final SVNEventAction FAILED_NO_PARENT = createEventAction(65, "failed_no_parent");
+
+    /**
+     * @since 1.7, SVN 1.7
+     */
     public static final SVNEventAction FAILED_LOCKED = createEventAction(66, "failed_locked");
     /**
      * @since 1.7, SVN 1.7

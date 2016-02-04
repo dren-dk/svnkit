@@ -761,8 +761,9 @@ public class SVNStatusEditor17 {
             result.relPath = additionInfo.reposRelPath;
             result.uuid = additionInfo.reposUuid;
             result.rootUrl = additionInfo.reposRootUrl;
-        } else if (info.haveBase) {
-            WCDbRepositoryInfo repoInfo = context.getDb().scanBaseRepository(localAbsPath, RepositoryInfoField.relPath, RepositoryInfoField.rootUrl, RepositoryInfoField.uuid);
+        } else {
+            WCDbRepositoryInfo repoInfo = context.getDb().readRepositoryInfo(localAbsPath, RepositoryInfoField.relPath, RepositoryInfoField.rootUrl, RepositoryInfoField.uuid);
+//            WCDbRepositoryInfo repoInfo = context.getDb().scanBaseRepository(localAbsPath, RepositoryInfoField.relPath, RepositoryInfoField.rootUrl, RepositoryInfoField.uuid);
             result.relPath = repoInfo.relPath;
             result.uuid = repoInfo.uuid;
             result.rootUrl = repoInfo.rootUrl;

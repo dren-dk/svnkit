@@ -179,7 +179,9 @@ public class SvnNgCommit extends SvnNgOperationRunner<SVNCommitInfo, SvnCommit> 
 
                             if (!foundDeleteHalf) {
                                 SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.ILLEGAL_TARGET, "Cannot commit ''{0}'' because it was moved from " +
-                                        "''{1}'' which is not part of the commit; both " + "sides of the move must be committed together", item.getPath(), deleteOpRootAbsPath);
+                                        "''{1}'' which is not part of the commit; both " + "sides of the move must be committed together",
+                                        SVNFileUtil.getFilePath(item.getPath()),
+                                        SVNFileUtil.getFilePath(deleteOpRootAbsPath)); //SVNFileUtil.getFilePath() <--- prevents from converting to relative paths
                                 SVNErrorManager.error(errorMessage, SVNLogType.WC);
                             }
                         }
