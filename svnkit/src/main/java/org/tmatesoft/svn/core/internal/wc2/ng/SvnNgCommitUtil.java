@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.tmatesoft.svn.core.*;
+import org.tmatesoft.svn.core.internal.db.SVNSqlJetDb;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.util.SVNURLUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
@@ -837,24 +838,29 @@ public class SvnNgCommitUtil {
     }
     
     private static void bailOnTreeConflictedAncestor(SVNWCContext context, File firstAbspath) throws SVNException {
-        File localAbspath;
-        File parentAbspath;
-        boolean wcRoot;
+        SVNWCDb.DirParsedInfo pdh = ((SVNWCDb) context.getDb()).parseDir(firstAbspath, SVNSqlJetDb.Mode.ReadOnly);
+        SVNWCDbRoot wcRoot = pdh.wcDbDir.getWCRoot();
+
+        File localAbsPath = SVNFileUtil.getFileDir(firstAbspath);
+
         boolean treeConflicted;
-        localAbspath = firstAbspath;
-        while (true) {
-            wcRoot = context.checkWCRoot(localAbspath, false).wcRoot;
-            if (wcRoot) {
-                break;
-            }
-            parentAbspath = SVNFileUtil.getFileDir(localAbspath);
-            treeConflicted = context.getConflicted(parentAbspath, false, false, true).treeConflicted;
+        while (SVNPathUtil.isAncestor(SVNFileUtil.getFilePath(wcRoot.getAbsPath()), SVNFileUtil.getFilePath(localAbsPath))) {
+            treeConflicted = context.getConflicted(localAbsPath, false, false, true).treeConflicted;
             if (treeConflicted) {
-                SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.WC_FOUND_CONFLICT, "Aborting commit: ''{0}'' remains in tree-conflict", localAbspath);
+                SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.WC_FOUND_CONFLICT, "Aborting commit: ''{0}'' remains in tree-conflict", localAbsPath);
+                ISVNEventHandler eventHandler = context.getEventHandler();
+                if (eventHandler != null) {
+                    SVNEvent event = SVNEventFactory.createSVNEvent(localAbsPath, SVNNodeKind.UNKNOWN, null, SVNRepository.INVALID_REVISION, SVNStatusType.UNKNOWN, SVNStatusType.UNKNOWN, SVNStatusType.LOCK_UNKNOWN, SVNEventAction.FAILED_CONFLICT, SVNEventAction.FAILED_CONFLICT, err, null);
+                    eventHandler.handleEvent(event, -1);
+                }
                 SVNErrorManager.error(err, SVNLogType.WC);
                 return;
             }
-            localAbspath = parentAbspath;
+            if (localAbsPath.getParentFile() == null || localAbsPath.getParentFile().equals(localAbsPath)) {
+                break;
+            } else {
+                localAbsPath = SVNFileUtil.getFileDir(localAbsPath);
+            }
         }
     }
 
