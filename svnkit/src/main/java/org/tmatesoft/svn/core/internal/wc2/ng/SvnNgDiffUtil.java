@@ -132,7 +132,7 @@ public class SvnNgDiffUtil {
             callback2 = new SvnCopyAsChangedDiffCallback(callback2);
         }
         boolean getAll;
-        if (showCopiesAsAdds || useGitDiffFormat || useAncestry) {
+        if (!useAncestry) {
             getAll = true;
         } else {
             getAll = false;
