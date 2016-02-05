@@ -182,7 +182,9 @@ public class SVNInfoCommand extends SVNXMLCommand implements ISVNInfoHandler {
         if (info.getWorkingCopyRoot() != null) {
             buffer.append("Working Copy Root Path: " + SVNPathUtil.validateFilePath(info.getWorkingCopyRoot().getAbsolutePath())+ "\n");
         }
-        buffer.append("URL: " + info.getURL() + "\n");
+        if (info.getURL() != null) {
+            buffer.append("URL: " + info.getURL() + "\n");
+        }
         if (info.getRepositoryRootURL() != null) {
             if (info.getURL() != null) {
                 final String relativeURL = SVNURLUtil.getRelativeURL(info.getRepositoryRootURL(), info.getURL(), true);
