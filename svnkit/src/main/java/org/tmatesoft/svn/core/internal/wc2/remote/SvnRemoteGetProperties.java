@@ -59,8 +59,13 @@ public class SvnRemoteGetProperties extends SvnRemoteOperationRunner<SVNProperti
         SvnTarget reposTarget = target;
         SVNRevision revision = getOperation().getRevision();
         SVNRevision pegRevision = target.getResolvedPegRevision();
-        if (pegRevision.isLocal() && target.isFile()) {
-            final File localAbsPath = getOperation().getFirstTarget().getFile();            
+
+        if (pegRevision.isLocal() || revision.isLocal()) {
+            if (!target.isFile()) {
+                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.CLIENT_VERSIONED_PATH_REQUIRED);
+                SVNErrorManager.error(errorMessage, SVNLogType.WC);
+            }
+            final File localAbsPath = getOperation().getFirstTarget().getFile();
             final Structure<NodeOriginInfo> origin = getWcContext().getNodeOrigin(localAbsPath, false, 
                     NodeOriginInfo.isCopy, NodeOriginInfo.copyRootAbsPath, 
                     NodeOriginInfo.reposRelpath, NodeOriginInfo.reposRootUrl,
