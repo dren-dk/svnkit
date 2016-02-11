@@ -711,7 +711,7 @@ public class DAVConnection {
         return myRepository;
     }
 
-    private void parseCapabilities(HTTPStatus status) {
+    protected void parseCapabilities(HTTPStatus status) {
         if (myCapabilities == null) {
             myCapabilities = new SVNHashMap();
         }
