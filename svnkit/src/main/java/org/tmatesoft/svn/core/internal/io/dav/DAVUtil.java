@@ -25,6 +25,7 @@ import org.tmatesoft.svn.core.internal.util.SVNHashMap;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.ISVNEditor;
+import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.util.SVNLogType;
 
@@ -268,6 +269,8 @@ public class DAVUtil {
     }
 
     public static long getLatestRevisionHttpV2(DAVConnection davConnection) throws SVNException {
+        davConnection.myLatestRevision = SVNRepository.INVALID_REVISION;
+
         HTTPStatus status = davConnection.doOptions(davConnection.getLocation().getPath());
         if (status.getCode() != 200) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_DAV_OPTIONS_REQ_FAILED,
@@ -275,6 +278,7 @@ public class DAVUtil {
                     new Integer(status.getCode()));
             SVNErrorManager.error(err, SVNLogType.NETWORK);
         }
+        davConnection.parseCapabilities(status);
         if (!SVNRevision.isValidRevisionNumber(davConnection.myLatestRevision)) {
             SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.RA_DAV_OPTIONS_REQ_FAILED, "The OPTIONS response did not include the youngest revision");
             SVNErrorManager.error(errorMessage, SVNLogType.NETWORK);
