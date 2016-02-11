@@ -6111,6 +6111,7 @@ public class SVNWCContext {
     public static class NodeMovedAway {
         public File movedToAbsPath;
         public File opRootAbsPath;
+        public NodeMovedAway next;
     }
 
     public NodeMovedAway nodeWasMovedAway(File localAbsPath) throws SVNException {

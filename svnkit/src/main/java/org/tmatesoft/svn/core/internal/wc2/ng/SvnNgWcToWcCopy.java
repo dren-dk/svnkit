@@ -862,7 +862,7 @@ public class SvnNgWcToWcCopy extends SvnNgOperationRunner<Void, SvnCopy> {
             return true;
         }
 
-        final SvnStatus svnStatus = SVNStatusEditor17.internalStatus(context, source);
+        final SvnStatus svnStatus = SVNStatusEditor17.internalStatus(context, source, true);
         return svnStatus != null && svnStatus.getNodeStatus() == SVNStatusType.STATUS_REPLACED;
     }
 

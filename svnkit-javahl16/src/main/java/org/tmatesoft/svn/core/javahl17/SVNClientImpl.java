@@ -189,7 +189,14 @@ public class SVNClientImpl implements ISVNClient {
             boolean getAll, boolean noIgnore, boolean ignoreExternals,
             Collection<String> changelists, final StatusCallback callback)
             throws ClientException {
+        status(path, depth, onServer, false, getAll, noIgnore, ignoreExternals, false, changelists, callback);
+    }
 
+    public void status(String path, Depth depth, boolean onServer,
+                       boolean onDisk,
+                       boolean getAll, boolean noIgnore, boolean ignoreExternals,
+                       boolean depthAsSticky,
+                       Collection<String> changelists, StatusCallback callback) throws ClientException {
         beforeOperation();
 
         try {
@@ -198,9 +205,11 @@ public class SVNClientImpl implements ISVNClient {
             SvnGetStatus status = svnOperationFactory.createGetStatus();
             status.setDepth(getSVNDepth(depth));
             status.setRemote(onServer);
+            status.setCheckWorkingCopy(onDisk);
             status.setReportAll(getAll);
             status.setReportIgnored(noIgnore);
             status.setReportExternals(!ignoreExternals);
+            status.setDepthAsSticky(depthAsSticky);
             status.setApplicalbeChangelists(changelists);
             status.setReceiver(getStatusReceiver(callback));
 

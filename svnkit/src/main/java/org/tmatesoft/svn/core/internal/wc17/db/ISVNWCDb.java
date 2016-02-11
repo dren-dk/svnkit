@@ -13,10 +13,7 @@ package org.tmatesoft.svn.core.internal.wc17.db;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.tmatesoft.sqljet.core.SqlJetException;
 import org.tmatesoft.svn.core.SVNDepth;
@@ -333,7 +330,10 @@ public interface ISVNWCDb {
         public boolean fileExternal;
         public boolean copied;
 
+        public boolean hasDescendants;
+
         public int format;
+        public SVNWCContext.NodeMovedAway movedTo;
 
         public void load(WCDbInfo info) {
             if (info == null) {
@@ -372,6 +372,19 @@ public interface ISVNWCDb {
 
             fileExternal = false;
             format = -1;
+        }
+
+        public void load(WCDbBaseInfo baseInfo) {
+            status = baseInfo.status;
+            kind = baseInfo.kind;
+            revnum = baseInfo.revision;
+            reposRelpath = baseInfo.reposRelPath;
+            changedRev = baseInfo.changedRev;
+            changedDate = baseInfo.changedDate;
+            changedAuthor = baseInfo.changedAuthor;
+            depth = baseInfo.depth;
+            lock = baseInfo.lock;
+            hadProps = baseInfo.hadProps;
         }
     }
 
@@ -710,6 +723,33 @@ public interface ISVNWCDb {
         public SVNWCDbLock lock;
         public boolean hadProps;
         public SVNProperties props;
+
+        public static BaseInfoField[] fromInfoFields(InfoField[] fields) {
+            final ArrayList<BaseInfoField> baseInfoFields = new ArrayList<BaseInfoField>();
+            final Map<InfoField, BaseInfoField> fieldsMap = createFieldsMap();
+            for (InfoField field : fields) {
+                final BaseInfoField baseInfoField = fieldsMap.get(field);
+                if (baseInfoField != null) {
+                    baseInfoFields.add(baseInfoField);
+                }
+            }
+            return baseInfoFields.toArray(new BaseInfoField[baseInfoFields.size()]);
+        }
+
+        private static Map<InfoField, BaseInfoField> createFieldsMap() {
+            final HashMap<InfoField, BaseInfoField> fieldsMap = new HashMap<InfoField, BaseInfoField>();
+            fieldsMap.put(InfoField.status, BaseInfoField.status);
+            fieldsMap.put(InfoField.kind, BaseInfoField.kind);
+            fieldsMap.put(InfoField.revision, BaseInfoField.revision);
+            fieldsMap.put(InfoField.reposRelPath, BaseInfoField.reposRelPath);
+            fieldsMap.put(InfoField.changedRev, BaseInfoField.changedRev);
+            fieldsMap.put(InfoField.changedDate, BaseInfoField.changedDate);
+            fieldsMap.put(InfoField.changedAuthor, BaseInfoField.changedAuthor);
+            fieldsMap.put(InfoField.depth, BaseInfoField.depth);
+            fieldsMap.put(InfoField.lock, BaseInfoField.lock);
+            fieldsMap.put(InfoField.hadProps, BaseInfoField.hadProps);
+            return fieldsMap;
+        }
     }
 
     /**
@@ -1117,6 +1157,7 @@ public interface ISVNWCDb {
     WCDbInfo readInfo(File localAbsPath, InfoField... fields) throws SVNException;
     Structure<NodeInfo> readInfo(File localAbsPath, NodeInfo... fields) throws SVNException;
     Structure<NodeInfo> readInfo(File localAbsPath, boolean isAdditionMode, NodeInfo... fields) throws SVNException;
+    SVNWCDbInfo readSingleInfo(File localAbsPath, boolean baseTreeOnly, InfoField... fields) throws SVNException;
 
     class WCDbInfo {
 

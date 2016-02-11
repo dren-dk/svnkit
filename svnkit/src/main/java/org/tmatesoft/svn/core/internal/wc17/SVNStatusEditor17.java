@@ -771,15 +771,38 @@ public class SVNStatusEditor17 {
         return result;        
     }
 
-    public static SvnStatus internalStatus(SVNWCContext context, File localAbsPath) throws SVNException {
+    public static SvnStatus internalStatus(SVNWCContext context, File localAbsPath, boolean checkWorkingCopy) throws SVNException {
     
         SVNWCDbKind node_kind;
         SVNWCDbStatus node_status = null;
         boolean conflicted;
-    
+
+        SVNNodeKind kind = SVNNodeKind.UNKNOWN;
+
         assert (SVNWCDb.isAbsolute(localAbsPath));
-    
-        SVNNodeKind kind = SVNFileType.getNodeKind(SVNFileType.getType(localAbsPath));
+        SVNWCDbInfo info;
+        try {
+            info = context.getDb().readSingleInfo(localAbsPath, !checkWorkingCopy, InfoField.values());
+            if (checkWorkingCopy) {
+                //TODO: case sensitive
+                kind = SVNFileType.getNodeKind(SVNFileType.getType(localAbsPath));
+            }
+            node_status = info.status;
+            node_kind = info.kind;
+            conflicted = info.conflicted;
+
+        } catch (SVNException e) {
+            if (e.getErrorMessage().getErrorCode() != SVNErrorCode.WC_PATH_NOT_FOUND) {
+                throw e;
+            }
+            info = null;
+            node_kind = SVNWCDbKind.Unknown;
+            conflicted = false;
+            if (checkWorkingCopy) {
+                kind = SVNFileType.getNodeKind(SVNFileType.getType(localAbsPath));
+            }
+        }
+        /*
         try {
             WCDbInfo info = context.getDb().readInfo(localAbsPath, InfoField.status, InfoField.kind, InfoField.conflicted);
             node_status = info.status;
@@ -792,6 +815,7 @@ public class SVNStatusEditor17 {
             node_kind = SVNWCDbKind.Unknown;
             conflicted = false;
         }
+        */
         if (node_status == SVNWCDbStatus.ServerExcluded || 
             node_status == SVNWCDbStatus.NotPresent || 
             node_status == SVNWCDbStatus.Excluded) {
@@ -821,21 +845,39 @@ public class SVNStatusEditor17 {
         
         WCDbRepositoryInfo reposInfo = new WCDbRepositoryInfo();
         if (SVNFileUtil.getFileDir(localAbsPath) != null && !isRoot) {
-    
+
             File parent_abspath = SVNFileUtil.getFileDir(localAbsPath);
-            try {
-                WCDbInfo parent_info = context.getDb().readInfo(parent_abspath, InfoField.reposRelPath, InfoField.reposRootUrl, InfoField.reposUuid);
-                reposInfo.relPath  = parent_info.reposRelPath;
-                reposInfo.rootUrl  = parent_info.reposRootUrl;
-                reposInfo.uuid = parent_info.reposUuid;
-            } catch (SVNException e) {
-                if (e.getErrorMessage().getErrorCode() == SVNErrorCode.WC_PATH_NOT_FOUND || e.getErrorMessage().getErrorCode() == SVNErrorCode.WC_NOT_WORKING_COPY)
+            if (checkWorkingCopy) {
+                try {
+                    WCDbInfo parent_info = context.getDb().readInfo(parent_abspath, InfoField.reposRelPath, InfoField.reposRootUrl, InfoField.reposUuid);
+                    reposInfo.relPath = parent_info.reposRelPath;
+                    reposInfo.rootUrl = parent_info.reposRootUrl;
+                    reposInfo.uuid = parent_info.reposUuid;
+                } catch (SVNException e) {
+                    if (e.getErrorMessage().getErrorCode() == SVNErrorCode.WC_PATH_NOT_FOUND || e.getErrorMessage().getErrorCode() == SVNErrorCode.WC_NOT_WORKING_COPY)
                 /* || SVN_WC__ERR_IS_NOT_CURRENT_WC(err)) */ {
-                    reposInfo.relPath  = null;
-                    reposInfo.rootUrl  = null;
-                    reposInfo.uuid = null;
-                } else {
-                    throw e;
+                        reposInfo.relPath = null;
+                        reposInfo.rootUrl = null;
+                        reposInfo.uuid = null;
+                    } else {
+                        throw e;
+                    }
+                }
+            } else {
+                try {
+                    WCDbBaseInfo parent_info = context.getDb().getBaseInfo(parent_abspath, BaseInfoField.reposRelPath, BaseInfoField.reposRootUrl, BaseInfoField.reposUuid);
+                    reposInfo.relPath = parent_info.reposRelPath;
+                    reposInfo.rootUrl = parent_info.reposRootUrl;
+                    reposInfo.uuid = parent_info.reposUuid;
+                } catch (SVNException e) {
+                    if (e.getErrorMessage().getErrorCode() == SVNErrorCode.WC_PATH_NOT_FOUND || e.getErrorMessage().getErrorCode() == SVNErrorCode.WC_NOT_WORKING_COPY)
+                /* || SVN_WC__ERR_IS_NOT_CURRENT_WC(err)) */ {
+                        reposInfo.relPath = null;
+                        reposInfo.rootUrl = null;
+                        reposInfo.uuid = null;
+                    } else {
+                        throw e;
+                    }
                 }
             }
         } 

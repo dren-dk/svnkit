@@ -112,7 +112,7 @@ public class SvnRemoteAnnotate extends SvnRemoteOperationRunner<SvnAnnotateItem,
 
     	   	if (getOperation().getEndRevision() == SVNRevision.WORKING) {
     	   	    File target = getOperation().getFirstTarget().getFile();
-                SvnStatus status = SVNStatusEditor17.internalStatus(getWcContext(), target);
+                SvnStatus status = SVNStatusEditor17.internalStatus(getWcContext(), target, true);
                 if (status.getTextStatus() != SVNStatusType.STATUS_NORMAL) {
                     SVNProperties properties = getWcContext().getActualProps(target);
                     String keywords = properties.getStringValue(SVNProperty.KEYWORDS);

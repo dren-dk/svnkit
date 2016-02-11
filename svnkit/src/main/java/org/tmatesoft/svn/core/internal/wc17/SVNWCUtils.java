@@ -113,6 +113,27 @@ public class SVNWCUtils {
         return n;
     }
 
+    public static File relpathPrefix(File relpath, long maxComponents) {
+        return SVNFileUtil.createFilePath(relpathPrefix(SVNFileUtil.getFilePath(relpath), maxComponents));
+    }
+
+    public static String relpathPrefix(String relpath, long maxComponents) {
+        if (maxComponents <= 0) {
+            return "";
+        }
+
+        int i = 0;
+        for (; i < relpath.length(); i++) {
+            if (relpath.charAt(i) == '/') {
+                maxComponents--;
+                if (maxComponents == 0) {
+                    break;
+                }
+            }
+        }
+        return relpath.substring(0, i);
+    }
+
     public static class UnserializedFileExternalInfo {
 
         public String path = null;

@@ -214,6 +214,8 @@ public enum SVNWCDbStatements {
     SELECT_MOVED_FROM_FOR_DELETE(SVNWCDbSelectMovedFromForDelete.class),
     CLEAR_MOVED_TO_FROM_DEST(SVNWCDbClearMovedToFromDest.class),
     SELECT_MOVED_DESCENDANTS_SRC(SVNWCDbSelectMovedDescendantsSrc.class),
+    FIND_CONFLICT_DESCENDANT(SVNWCDbFindConflictDescendant.class),
+    SELECT_MOVED_TO_NODE(SVNWCDbSelectMovedToNode.class),
     //1.7 versions of the requests
     SELECT_ACTUAL_CHILDREN_CONFLICT_17(SVNWCDbSelectActualChildrenConflict17.class),
     SELECT_ACTUAL_CHILDREN_INFO_17(SVNWCDbSelectActualChildrenInfo17.class),

@@ -51,7 +51,7 @@ public class SvnNgCat extends SvnNgOperationRunner<Void, SvnCat> {
             } else {
                 source = SVNFileUtil.openFileForReading(getFirstTarget());
                 properties = context.getDb().readProperties(getFirstTarget());
-                SvnStatus status = SVNStatusEditor17.internalStatus(context, getFirstTarget());
+                SvnStatus status = SVNStatusEditor17.internalStatus(context, getFirstTarget(), true);
                 localModifications = status.getTextStatus() != SVNStatusType.STATUS_NORMAL;
             }
             if (properties == null) {

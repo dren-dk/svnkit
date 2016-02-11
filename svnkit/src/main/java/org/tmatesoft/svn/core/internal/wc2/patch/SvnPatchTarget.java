@@ -648,7 +648,7 @@ public class SvnPatchTarget extends SvnTargetContent {
 
         SvnStatus status;
         try {
-            status = SVNStatusEditor17.internalStatus(context, getAbsPath());
+            status = SVNStatusEditor17.internalStatus(context, getAbsPath(), true);
 
             if (status.getNodeStatus() == SVNStatusType.STATUS_IGNORED ||
                     status.getNodeStatus() == SVNStatusType.STATUS_UNVERSIONED ||
