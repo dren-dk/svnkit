@@ -1665,6 +1665,13 @@ public class SVNClientImpl implements ISVNClient {
             Revision pegRevision, Depth depth, Collection<String> changelists,
             InfoCallback callback) throws ClientException {
 
+        info(pathOrUrl, revision, pegRevision, depth, false, true, false, changelists, callback);
+    }
+
+    public void info(String pathOrUrl, Revision revision,
+                     Revision pegRevision, Depth depth,
+                     boolean fetchExcluded, boolean fetchActualOnly, boolean includeExternals,
+                     Collection<String> changelists, InfoCallback callback) throws ClientException {
         beforeOperation();
 
         try {
@@ -1674,6 +1681,9 @@ public class SVNClientImpl implements ISVNClient {
             info.setSingleTarget(getTarget(pathOrUrl, pegRevision));
             info.setRevision(getSVNRevision(revision));
             info.setDepth(getSVNDepth(depth));
+            info.setFetchExcluded(fetchExcluded);
+            info.setFetchActualOnly(fetchActualOnly);
+            info.setIncludeExternals(includeExternals);
             info.setApplicalbeChangelists(changelists);
             info.setReceiver(getInfoReceiver(callback));
 
