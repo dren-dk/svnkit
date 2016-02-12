@@ -264,8 +264,8 @@ public class SvnNgAdd extends SvnNgOperationRunner<Void, SvnScheduleForAddition>
     private void doRevert(File path) {
         try {
             try {
-                getWcContext().getDb().opRevert(path, SVNDepth.EMPTY);
-                SvnNgRevert.restore(getWcContext(), path, SVNDepth.EMPTY, false, true, null);
+                getWcContext().getDb().opRevert(path, SVNDepth.EMPTY, false);
+                SvnNgRevert.restore(getWcContext(), path, SVNDepth.EMPTY, false, false, true, null);
             } finally {
                 SvnWcDbRevert.dropRevertList(getWcContext(), path);
             }

@@ -36,7 +36,7 @@ import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.*;
 
 public class SvnWcDbRevert extends SvnWcDbShared {
     
-    public static void revert(SVNWCDbRoot root, File localRelPath) throws SVNException {
+    public static void revert(SVNWCDbRoot root, File localRelPath, boolean clearChangelists) throws SVNException {
         File movedTo;
         boolean movedHere;
 
@@ -176,25 +176,35 @@ public class SvnWcDbRevert extends SvnWcDbShared {
                 clearMovedTo(root, localRelPath, nodesTableTrigger);
             }
         }
-        long affectedRows;
-        stmt = sdb.getStatement(SVNWCDbStatements.DELETE_ACTUAL_NODE_LEAVING_CHANGELIST);
-        try {
-            ((SVNSqlJetTableStatement) stmt).addTrigger(actualNodesTableTrigger);
-            stmt.bindf("is", root.getWcId(), localRelPath);
-
-            affectedRows = stmt.done();
-        } finally {
-            stmt.reset();
-        }
-        if (affectedRows == 0) {
-            stmt = sdb.getStatement(SVNWCDbStatements.CLEAR_ACTUAL_NODE_LEAVING_CHANGELIST);
+        if (clearChangelists) {
+            stmt = sdb.getStatement(SVNWCDbStatements.DELETE_ACTUAL_NODE);
             try {
-                ((SVNSqlJetTableStatement) stmt).addTrigger(actualNodesTableTrigger);
-
                 stmt.bindf("is", root.getWcId(), localRelPath);
                 stmt.done();
             } finally {
                 stmt.reset();
+            }
+        } else {
+            long affectedRows;
+            stmt = sdb.getStatement(SVNWCDbStatements.DELETE_ACTUAL_NODE_LEAVING_CHANGELIST);
+            try {
+                ((SVNSqlJetTableStatement) stmt).addTrigger(actualNodesTableTrigger);
+                stmt.bindf("is", root.getWcId(), localRelPath);
+
+                affectedRows = stmt.done();
+            } finally {
+                stmt.reset();
+            }
+            if (affectedRows == 0) {
+                stmt = sdb.getStatement(SVNWCDbStatements.CLEAR_ACTUAL_NODE_LEAVING_CHANGELIST);
+                try {
+                    ((SVNSqlJetTableStatement) stmt).addTrigger(actualNodesTableTrigger);
+
+                    stmt.bindf("is", root.getWcId(), localRelPath);
+                    stmt.done();
+                } finally {
+                    stmt.reset();
+                }
             }
         }
     }
@@ -218,7 +228,7 @@ public class SvnWcDbRevert extends SvnWcDbShared {
         }
     }
 
-    public static void revertRecursive(SVNWCDbRoot root, File localRelPath) throws SVNException {
+    public static void revertRecursive(SVNWCDbRoot root, File localRelPath, boolean clearChangelists) throws SVNException {
         boolean movedHere;
 
         SVNSqlJetDb sdb = root.getSDb();
@@ -297,22 +307,32 @@ public class SvnWcDbRevert extends SvnWcDbShared {
             SVNErrorManager.error(err, SVNLogType.WC);
         }
 
-        stmt = sdb.getStatement(SVNWCDbStatements.DELETE_ACTUAL_NODE_LEAVING_CHANGELIST_RECURSIVE);
-        try {
-            ((SVNSqlJetTableStatement) stmt).addTrigger(actualNodesTableTrigger);
-            stmt.bindf("is", root.getWcId(), localRelPath);
-            stmt.done();
-        } finally {
-            stmt.reset();
-        }
+        if (clearChangelists) {
+            stmt = sdb.getStatement(SVNWCDbStatements.DELETE_ACTUAL_NODE_RECURSIVE);
+            try {
+                stmt.bindf("is", root.getWcId(), localRelPath);
+                stmt.done();
+            } finally {
+                stmt.reset();
+            }
+        } else {
+            stmt = sdb.getStatement(SVNWCDbStatements.DELETE_ACTUAL_NODE_LEAVING_CHANGELIST_RECURSIVE);
+            try {
+                ((SVNSqlJetTableStatement) stmt).addTrigger(actualNodesTableTrigger);
+                stmt.bindf("is", root.getWcId(), localRelPath);
+                stmt.done();
+            } finally {
+                stmt.reset();
+            }
 
-        stmt = sdb.getStatement(SVNWCDbStatements.CLEAR_ACTUAL_NODE_LEAVING_CHANGELIST_RECURSIVE);
-        try {
-            ((SVNSqlJetTableStatement) stmt).addTrigger(actualNodesTableTrigger);
-            stmt.bindf("is", root.getWcId(), localRelPath);
-            stmt.done();
-        } finally {
-            stmt.reset();
+            stmt = sdb.getStatement(SVNWCDbStatements.CLEAR_ACTUAL_NODE_LEAVING_CHANGELIST_RECURSIVE);
+            try {
+                ((SVNSqlJetTableStatement) stmt).addTrigger(actualNodesTableTrigger);
+                stmt.bindf("is", root.getWcId(), localRelPath);
+                stmt.done();
+            } finally {
+                stmt.reset();
+            }
         }
 
         stmt = sdb.getStatement(SVNWCDbStatements.DELETE_WC_LOCK_ORPHAN_RECURSIVE);

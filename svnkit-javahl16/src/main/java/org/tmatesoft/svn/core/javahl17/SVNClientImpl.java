@@ -8,14 +8,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.subversion.javahl.ClientException;
 import org.apache.subversion.javahl.ClientNotifyInformation;
@@ -429,19 +422,22 @@ public class SVNClientImpl implements ISVNClient {
         }
     }
 
-    public void revert(String path, Depth depth, Collection<String> changelists)
-            throws ClientException {
-
+    public void revert(Set<String> paths, Depth depth, Collection<String> changelists,
+                       boolean clearChangelists, boolean metadataOnly) throws ClientException {
         beforeOperation();
 
         try {
-            getEventHandler().setPathPrefix(getPathPrefix(path));
+            getEventHandler().setPathPrefix(getPathPrefix(paths));
 
             SvnRevert revert = svnOperationFactory.createRevert();
             revert.setDepth(getSVNDepth(depth));
             revert.setApplicalbeChangelists(changelists);
+            revert.setClearChangelists(clearChangelists);
+            revert.setMetadataOnly(metadataOnly);
 
-            revert.addTarget(getTarget(path));
+            for (String path : paths) {
+                revert.addTarget(getTarget(path));
+            }
 
             revert.run();
         } catch (SVNException e) {
@@ -449,6 +445,15 @@ public class SVNClientImpl implements ISVNClient {
         } finally {
             afterOperation();
         }
+    }
+
+    public void revert(Set<String> paths, Depth depth, Collection<String> changelists) throws ClientException {
+        revert(paths, depth, changelists, false, false);
+    }
+
+    public void revert(String path, Depth depth, Collection<String> changelists)
+            throws ClientException {
+        revert(Collections.singleton(path), depth, changelists);
     }
 
     public void add(String path, Depth depth, boolean force, boolean noIgnores,

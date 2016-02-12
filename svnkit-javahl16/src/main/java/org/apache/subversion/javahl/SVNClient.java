@@ -110,6 +110,14 @@ public class SVNClient implements ISVNClient {
         delegate.revert(path, depth, changelists);
     }
 
+    public void revert(Set<String> paths, Depth depth, Collection<String> changelists, boolean clearChangelists, boolean metadataOnly) throws ClientException {
+        delegate.revert(paths, depth, changelists, clearChangelists, metadataOnly);
+    }
+
+    public void revert(Set<String> paths, Depth depth, Collection<String> changelists) throws ClientException {
+        delegate.revert(paths, depth, changelists);
+    }
+
     public void add(String path, Depth depth, boolean force, boolean noIgnores, boolean addParents) throws ClientException {
         delegate.add(path, depth, force, noIgnores, addParents);
     }

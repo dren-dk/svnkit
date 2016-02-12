@@ -928,7 +928,7 @@ public interface ISVNWCDb {
 
     void opMarkConflict(File localAbspath, SVNSkel conflictSkel, SVNSkel workItems) throws SVNException;
 
-    void opRevert(File localAbspath, SVNDepth depth) throws SVNException;
+    void opRevert(File localAbspath, SVNDepth depth, boolean clearChangelists) throws SVNException;
 
     /**
      * Return all the children of localAbsPath that are in tree conflicts.

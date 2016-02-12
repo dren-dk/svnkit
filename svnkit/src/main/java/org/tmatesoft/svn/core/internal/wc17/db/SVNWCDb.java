@@ -2846,7 +2846,7 @@ public class SVNWCDb implements ISVNWCDb {
         }
     }
 
-    public void opRevert(File localAbspath, SVNDepth depth) throws SVNException {
+    public void opRevert(File localAbspath, SVNDepth depth, boolean clearChangelists) throws SVNException {
         final DirParsedInfo parsed = parseDir(localAbspath, Mode.ReadWrite);
         SVNWCDbDir pdh = parsed.wcDbDir;
         verifyDirUsable(pdh);
@@ -2863,9 +2863,9 @@ public class SVNWCDb implements ISVNWCDb {
             }
 
             if (depth == SVNDepth.INFINITY) {
-                SvnWcDbRevert.revertRecursive(pdh.getWCRoot(), parsed.localRelPath);
+                SvnWcDbRevert.revertRecursive(pdh.getWCRoot(), parsed.localRelPath, clearChangelists);
             } else if (depth == SVNDepth.EMPTY) {
-                SvnWcDbRevert.revert(pdh.getWCRoot(), parsed.localRelPath);
+                SvnWcDbRevert.revert(pdh.getWCRoot(), parsed.localRelPath, clearChangelists);
             }
         } catch (SVNException e) {
             sdb.rollback();
