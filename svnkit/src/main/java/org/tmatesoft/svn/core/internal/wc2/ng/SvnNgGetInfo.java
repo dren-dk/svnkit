@@ -267,6 +267,11 @@ public class SvnNgGetInfo extends SvnNgOperationRunner<SvnInfo, SvnGetInfo> impl
             info.setLastChangedAuthor(pristineInfo.text(PristineInfo.changed_author));
             wcInfo.setDepth(pristineInfo.<SVNDepth>get(PristineInfo.depth));
             wcInfo.setChecksum(pristineInfo.<SvnChecksum>get(PristineInfo.checksum));
+
+            if (pristineInfo.get(PristineInfo.status) == SVNWCDbStatus.Deleted) {
+                wcInfo.setDepth(SVNDepth.EXCLUDE);
+                info.setKind(SVNNodeKind.UNKNOWN);
+            }
             
             pristineInfo.release();
 
