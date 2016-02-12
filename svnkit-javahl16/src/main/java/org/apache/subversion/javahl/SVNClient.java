@@ -62,6 +62,10 @@ public class SVNClient implements ISVNClient {
         delegate.status(path, depth, onServer, getAll, noIgnore, ignoreExternals, changelists, callback);
     }
 
+    public void status(String path, Depth depth, boolean onServer, boolean onDisk, boolean getAll, boolean noIgnore, boolean ignoreExternals, boolean depthAsSticky, Collection<String> changelists, StatusCallback callback) throws ClientException {
+        delegate.status(path, depth, onServer, onDisk, getAll, noIgnore, ignoreExternals, depthAsSticky, changelists, callback);
+    }
+
     public void list(String url, Revision revision, Revision pegRevision, Depth depth, int direntFields, boolean fetchLocks, ListCallback callback) throws ClientException {
         delegate.list(url, revision, pegRevision, depth, direntFields, fetchLocks, callback);
     }
