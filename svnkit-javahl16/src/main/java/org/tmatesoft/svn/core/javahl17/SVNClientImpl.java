@@ -39,25 +39,8 @@ import org.apache.subversion.javahl.callback.ProgressCallback;
 import org.apache.subversion.javahl.callback.ProplistCallback;
 import org.apache.subversion.javahl.callback.StatusCallback;
 import org.apache.subversion.javahl.callback.UserPasswordCallback;
-import org.apache.subversion.javahl.types.ChangePath;
-import org.apache.subversion.javahl.types.Checksum;
-import org.apache.subversion.javahl.types.ConflictVersion;
-import org.apache.subversion.javahl.types.CopySource;
-import org.apache.subversion.javahl.types.Depth;
-import org.apache.subversion.javahl.types.DiffOptions;
-import org.apache.subversion.javahl.types.DirEntry;
-import org.apache.subversion.javahl.types.Info;
-import org.apache.subversion.javahl.types.JavaHLTypesObjectFactory;
-import org.apache.subversion.javahl.types.Lock;
-import org.apache.subversion.javahl.types.Mergeinfo;
+import org.apache.subversion.javahl.types.*;
 import org.apache.subversion.javahl.types.Mergeinfo.LogKind;
-import org.apache.subversion.javahl.types.NodeKind;
-import org.apache.subversion.javahl.types.Revision;
-import org.apache.subversion.javahl.types.RevisionRange;
-import org.apache.subversion.javahl.types.Status;
-import org.apache.subversion.javahl.types.Tristate;
-import org.apache.subversion.javahl.types.Version;
-import org.apache.subversion.javahl.types.VersionExtended;
 import org.tmatesoft.svn.core.SVNCommitInfo;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNDirEntry;
@@ -547,23 +530,34 @@ public class SVNClientImpl implements ISVNClient {
     }
 
     public void copy(List<CopySource> sources, String destPath,
-            boolean copyAsChild, boolean makeParents, boolean ignoreExternals,
-            Map<String, String> revpropTable, CommitMessageCallback handler,
-            CommitCallback callback) throws ClientException {
-
+                     boolean copyAsChild, boolean makeParents, boolean ignoreExternals,
+                     boolean metadataOnly,
+                     boolean pinExternals, Map<String, List<ExternalItem>> externalsToPin,
+                     Map<String, String> revpropTable, CommitMessageCallback handler,
+                     CommitCallback callback) throws ClientException {
         beforeOperation();
 
         try {
             getEventHandler().setPathPrefix(getPathPrefix(sources, destPath));
 
             if (SVNPathUtil.isURL(destPath)) {
-                copyRemote(sources, destPath, copyAsChild, makeParents, revpropTable, handler, callback);
+                copyRemote(sources, destPath, copyAsChild, makeParents, metadataOnly, pinExternals, externalsToPin, revpropTable, handler, callback);
             } else {
-                copyLocal(sources, destPath, copyAsChild, makeParents, ignoreExternals);
+                copyLocal(sources, destPath, copyAsChild, makeParents, ignoreExternals, metadataOnly, pinExternals, externalsToPin);
             }
         } finally {
             afterOperation();
         }
+
+    }
+
+    public void copy(List<CopySource> sources, String destPath,
+            boolean copyAsChild, boolean makeParents, boolean ignoreExternals,
+            Map<String, String> revpropTable, CommitMessageCallback handler,
+            CommitCallback callback) throws ClientException {
+        copy(sources, destPath, copyAsChild, makeParents, ignoreExternals,
+                false, false, null,
+                revpropTable, handler, callback);
     }
 
     public void move(Set<String> srcPaths, String destPath, boolean force,
@@ -2413,7 +2407,8 @@ public class SVNClientImpl implements ISVNClient {
     }
 
     private void copyLocal(List<CopySource> localSources, String destPath, boolean copyAsChild,
-                           boolean makeParents, boolean ignoreExternals) throws ClientException {
+                           boolean makeParents, boolean ignoreExternals, boolean metadataOnly,
+                           boolean pinExternals, Map<String, List<ExternalItem>> externalsToPin) throws ClientException {
         if (localSources == null || localSources.size() == 0) {
             return;
         }
@@ -2429,6 +2424,9 @@ public class SVNClientImpl implements ISVNClient {
         }
 
         try {
+            copy.setMetadataOnly(metadataOnly);
+            copy.setPinExternals(pinExternals);
+            copy.setExternalsToPin(getExternalsToPin(externalsToPin));
             copy.run();
         } catch (SVNException e) {
             throw getClientException(e);
@@ -2438,6 +2436,7 @@ public class SVNClientImpl implements ISVNClient {
 
     private void copyRemote(List<CopySource> remoteSources, String destPath, boolean copyAsChild,
                             boolean makeParents,
+                            boolean pinExternals, Map<String, List<ExternalItem>> externalsToPin,
                             Map<String, String> revpropTable, CommitMessageCallback handler,
                             CommitCallback callback) throws ClientException {
         if (remoteSources == null || remoteSources.size() == 0) {
@@ -2457,6 +2456,8 @@ public class SVNClientImpl implements ISVNClient {
         }
 
         try {
+            remoteCopy.setPinExternals(pinExternals);
+            remoteCopy.setExternalsToPin(getExternalsToPin(externalsToPin));
             remoteCopy.run();
         } catch (SVNException e) {
             throw getClientException(e);
@@ -2551,6 +2552,32 @@ public class SVNClientImpl implements ISVNClient {
         } else {
             throw new IllegalArgumentException("Unknown schedule kind: " + schedule);
         }
+    }
+
+    private Map<SvnTarget, List<SVNExternal>> getExternalsToPin(Map<String, List<ExternalItem>> externalsToPin) throws SVNException {
+        if (externalsToPin == null) {
+            return null;
+        }
+        final Map<SvnTarget, List<SVNExternal>> externalsMap = new HashMap<SvnTarget, List<SVNExternal>>();
+        for (Map.Entry<String, List<ExternalItem>> entry : externalsToPin.entrySet()) {
+            final String pathOrUrl = entry.getKey();
+            final List<ExternalItem> externals = entry.getValue();
+
+            final SvnTarget target = getTarget(pathOrUrl);
+            final ArrayList<SVNExternal> svnExternals = new ArrayList<SVNExternal>();
+            for (ExternalItem external : externals) {
+                svnExternals.add(getExternal(external));
+            }
+            externalsMap.put(target, svnExternals);
+        }
+        return externalsMap;
+    }
+
+    private SVNExternal getExternal(ExternalItem external) {
+        if (external == null) {
+            return null;
+        }
+        return new SVNExternal(external.getTargetDir(), external.getUrl(), getSVNRevision(external.getPegRevision()), getSVNRevision(external.getRevision()), true, true, true);
     }
 
     private Mergeinfo getMergeinfo(Map<SVNURL, SVNMergeRangeList> mergeInfoMap) {
