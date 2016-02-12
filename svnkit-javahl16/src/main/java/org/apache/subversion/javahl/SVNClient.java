@@ -282,6 +282,10 @@ public class SVNClient implements ISVNClient {
         delegate.info2(pathOrUrl, revision, pegRevision, depth, changelists, callback);
     }
 
+    public void info(String pathOrUrl, Revision revision, Revision pegRevision, Depth depth, boolean fetchExcluded, boolean fetchActualOnly, boolean includeExternals, Collection<String> changelists, InfoCallback callback) throws ClientException {
+        delegate.info(pathOrUrl, revision, pegRevision, depth, fetchExcluded, fetchActualOnly, includeExternals, changelists, callback);
+    }
+
     public String getVersionInfo(String path, String trailUrl, boolean lastChanged) throws ClientException {
         return delegate.getVersionInfo(path, trailUrl, lastChanged);
     }
