@@ -541,7 +541,7 @@ public class SVNClientImpl implements ISVNClient {
             getEventHandler().setPathPrefix(getPathPrefix(sources, destPath));
 
             if (SVNPathUtil.isURL(destPath)) {
-                copyRemote(sources, destPath, copyAsChild, makeParents, metadataOnly, pinExternals, externalsToPin, revpropTable, handler, callback);
+                copyRemote(sources, destPath, copyAsChild, makeParents, pinExternals, externalsToPin, revpropTable, handler, callback);
             } else {
                 copyLocal(sources, destPath, copyAsChild, makeParents, ignoreExternals, metadataOnly, pinExternals, externalsToPin);
             }
