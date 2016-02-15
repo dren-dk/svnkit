@@ -6,32 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.subversion.javahl.callback.BlameCallback;
-import org.apache.subversion.javahl.callback.ChangelistCallback;
-import org.apache.subversion.javahl.callback.ClientNotifyCallback;
-import org.apache.subversion.javahl.callback.CommitCallback;
-import org.apache.subversion.javahl.callback.CommitMessageCallback;
-import org.apache.subversion.javahl.callback.ConflictResolverCallback;
-import org.apache.subversion.javahl.callback.DiffSummaryCallback;
-import org.apache.subversion.javahl.callback.ImportFilterCallback;
-import org.apache.subversion.javahl.callback.InfoCallback;
-import org.apache.subversion.javahl.callback.InheritedProplistCallback;
-import org.apache.subversion.javahl.callback.ListCallback;
-import org.apache.subversion.javahl.callback.LogMessageCallback;
-import org.apache.subversion.javahl.callback.PatchCallback;
-import org.apache.subversion.javahl.callback.ProgressCallback;
-import org.apache.subversion.javahl.callback.ProplistCallback;
-import org.apache.subversion.javahl.callback.StatusCallback;
-import org.apache.subversion.javahl.callback.UserPasswordCallback;
-import org.apache.subversion.javahl.types.CopySource;
-import org.apache.subversion.javahl.types.Depth;
-import org.apache.subversion.javahl.types.DiffOptions;
-import org.apache.subversion.javahl.types.Mergeinfo;
+import org.apache.subversion.javahl.callback.*;
+import org.apache.subversion.javahl.types.*;
 import org.apache.subversion.javahl.types.Mergeinfo.LogKind;
-import org.apache.subversion.javahl.types.Revision;
-import org.apache.subversion.javahl.types.RevisionRange;
-import org.apache.subversion.javahl.types.Version;
-import org.apache.subversion.javahl.types.VersionExtended;
 import org.tmatesoft.svn.core.javahl17.SVNClientImpl;
 
 public class SVNClient implements ISVNClient {
@@ -48,6 +25,10 @@ public class SVNClient implements ISVNClient {
 
     public Version getVersion() {
         return delegate.getVersion();
+    }
+
+    public RuntimeVersion getRuntimeVersion() {
+        return delegate.getRuntimeVersion();
     }
 
     public String getAdminDirectoryName() {
@@ -78,8 +59,16 @@ public class SVNClient implements ISVNClient {
         delegate.password(password);
     }
 
+    public void setPrompt(AuthnCallback prompt) {
+        delegate.setPrompt(prompt);
+    }
+
     public void setPrompt(UserPasswordCallback prompt) {
         delegate.setPrompt(prompt);
+    }
+
+    public void setTunnelAgent(TunnelAgent tunnelAgent) {
+        delegate.setTunnelAgent(tunnelAgent);
     }
 
     public void logMessages(String path, Revision pegRevision, List<RevisionRange> ranges, boolean stopOnCopy, boolean discoverPath, boolean includeMergedRevisions, Set<String> revProps, long limit, LogMessageCallback callback) throws ClientException {
@@ -130,6 +119,10 @@ public class SVNClient implements ISVNClient {
         delegate.commit(path, depth, noUnlock, keepChangelist, changelists, revpropTable, handler, callback);
     }
 
+    public void copy(List<CopySource> sources, String destPath, boolean copyAsChild, boolean makeParents, boolean ignoreExternals, boolean metadataOnly, boolean pinExternals, Map<String, List<ExternalItem>> externalsToPin, Map<String, String> revpropTable, CommitMessageCallback handler, CommitCallback callback) throws ClientException {
+        delegate.copy(sources, destPath, copyAsChild, makeParents, ignoreExternals, metadataOnly, pinExternals, externalsToPin, revpropTable, handler, callback);
+    }
+
     public void copy(List<CopySource> sources, String destPath, boolean copyAsChild, boolean makeParents, boolean ignoreExternals, Map<String, String> revpropTable, CommitMessageCallback handler, CommitCallback callback) throws ClientException {
         delegate.copy(sources, destPath, copyAsChild, makeParents, ignoreExternals, revpropTable, handler, callback);
     }
@@ -142,12 +135,20 @@ public class SVNClient implements ISVNClient {
         delegate.mkdir(path, makeParents, revpropTable, handler, callback);
     }
 
+    public void cleanup(String path, boolean breakLocks, boolean fixRecordedTimestamps, boolean clearDavCache, boolean removeUnusedPristines, boolean includeExternals) throws ClientException {
+        delegate.cleanup(path, breakLocks, fixRecordedTimestamps, clearDavCache, removeUnusedPristines, includeExternals);
+    }
+
     public void cleanup(String path) throws ClientException {
         delegate.cleanup(path);
     }
 
     public void resolve(String path, Depth depth, ConflictResult.Choice conflictResult) throws SubversionException {
         delegate.resolve(path, depth, conflictResult);
+    }
+
+    public long doExport(String srcPath, String destPath, Revision revision, Revision pegRevision, boolean force, boolean ignoreExternals, boolean ignoreKeywords, Depth depth, String nativeEOL) throws ClientException {
+        return delegate.doExport(srcPath, destPath, revision, pegRevision, force, ignoreExternals, ignoreKeywords, depth, nativeEOL);
     }
 
     public long doExport(String srcPath, String destPath, Revision revision, Revision pegRevision, boolean force, boolean ignoreExternals, Depth depth, String nativeEOL) throws ClientException {
@@ -166,8 +167,16 @@ public class SVNClient implements ISVNClient {
         return delegate.suggestMergeSources(path, pegRevision);
     }
 
+    public void merge(String path1, Revision revision1, String path2, Revision revision2, String localPath, boolean force, Depth depth, boolean ignoreMergeinfo, boolean diffIgnoreAncestry, boolean dryRun, boolean allowMixedRev, boolean recordOnly) throws ClientException {
+        delegate.merge(path1, revision1, path2, revision2, localPath, force, depth, ignoreMergeinfo, diffIgnoreAncestry, dryRun, allowMixedRev, recordOnly);
+    }
+
     public void merge(String path1, Revision revision1, String path2, Revision revision2, String localPath, boolean force, Depth depth, boolean ignoreAncestry, boolean dryRun, boolean recordOnly) throws ClientException {
         delegate.merge(path1, revision1, path2, revision2, localPath, force, depth, ignoreAncestry, dryRun, recordOnly);
+    }
+
+    public void merge(String path, Revision pegRevision, List<RevisionRange> revisions, String localPath, boolean force, Depth depth, boolean ignoreMergeinfo, boolean diffIgnoreAncestry, boolean dryRun, boolean allowMixedRev, boolean recordOnly) throws ClientException {
+        delegate.merge(path, pegRevision, revisions, localPath, force, depth, ignoreMergeinfo, diffIgnoreAncestry, dryRun, allowMixedRev, recordOnly);
     }
 
     public void merge(String path, Revision pegRevision, List<RevisionRange> revisions, String localPath, boolean force, Depth depth, boolean ignoreAncestry, boolean dryRun, boolean recordOnly) throws ClientException {
@@ -234,12 +243,20 @@ public class SVNClient implements ISVNClient {
         return delegate.fileContent(path, revision, pegRevision);
     }
 
+    public Map<String, byte[]> streamFileContent(String path, Revision revision, Revision pegRevision, boolean expandKeywords, boolean returnProps, OutputStream stream) throws ClientException {
+        return delegate.streamFileContent(path, revision, pegRevision, expandKeywords, returnProps, stream);
+    }
+
     public void streamFileContent(String path, Revision revision, Revision pegRevision, OutputStream stream) throws ClientException {
         delegate.streamFileContent(path, revision, pegRevision, stream);
     }
 
     public void relocate(String from, String to, String path, boolean ignoreExternals) throws ClientException {
         delegate.relocate(from, to, path, ignoreExternals);
+    }
+
+    public void blame(String path, Revision pegRevision, Revision revisionStart, Revision revisionEnd, boolean ignoreMimeType, boolean includeMergedRevisions, BlameCallback callback, DiffOptions options) throws ClientException {
+        delegate.blame(path, pegRevision, revisionStart, revisionEnd, ignoreMimeType, includeMergedRevisions, callback, options);
     }
 
     public void blame(String path, Revision pegRevision, Revision revisionStart, Revision revisionEnd, boolean ignoreMimeType, boolean includeMergedRevisions, BlameCallback callback) throws ClientException {
@@ -252,6 +269,14 @@ public class SVNClient implements ISVNClient {
 
     public String getConfigDirectory() throws ClientException {
         return delegate.getConfigDirectory();
+    }
+
+    public void setConfigEventHandler(ConfigEvent configHandler) throws ClientException {
+        delegate.setConfigEventHandler(configHandler);
+    }
+
+    public ConfigEvent getConfigEventHandler() throws ClientException {
+        return delegate.getConfigEventHandler();
     }
 
     public void cancelOperation() throws ClientException {
@@ -296,6 +321,18 @@ public class SVNClient implements ISVNClient {
 
     public void patch(String patchPath, String targetPath, boolean dryRun, int stripCount, boolean reverse, boolean ignoreWhitespace, boolean removeTempfiles, PatchCallback callback) throws ClientException {
         delegate.patch(patchPath, targetPath, dryRun, stripCount, reverse, ignoreWhitespace, removeTempfiles, callback);
+    }
+
+    public void vacuum(String path, boolean removeUnversionedItems, boolean removeIgnoredItems, boolean fixRecordedTimestamps, boolean removeUnusedPristines, boolean includeExternals) throws ClientException {
+        delegate.vacuum(path, removeUnversionedItems, removeIgnoredItems, fixRecordedTimestamps, removeUnusedPristines, includeExternals);
+    }
+
+    public ISVNRemote openRemoteSession(String pathOrUrl) throws ClientException, SubversionException {
+        return delegate.openRemoteSession(pathOrUrl);
+    }
+
+    public ISVNRemote openRemoteSession(String pathOrUrl, int retryAttempts) throws ClientException, SubversionException {
+        return delegate.openRemoteSession(pathOrUrl, retryAttempts);
     }
 
     public VersionExtended getVersionExtended(boolean verbose) {

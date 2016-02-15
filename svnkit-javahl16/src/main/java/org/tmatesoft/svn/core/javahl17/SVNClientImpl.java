@@ -10,35 +10,10 @@ import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.util.*;
 
-import org.apache.subversion.javahl.ClientException;
-import org.apache.subversion.javahl.ClientNotifyInformation;
-import org.apache.subversion.javahl.CommitInfo;
-import org.apache.subversion.javahl.CommitItem;
-import org.apache.subversion.javahl.ConflictDescriptor;
+import org.apache.subversion.javahl.*;
 import org.apache.subversion.javahl.ConflictDescriptor.Operation;
-import org.apache.subversion.javahl.ConflictResult;
 import org.apache.subversion.javahl.ConflictResult.Choice;
-import org.apache.subversion.javahl.DiffSummary;
-import org.apache.subversion.javahl.ISVNClient;
-import org.apache.subversion.javahl.JavaHLObjectFactory;
-import org.apache.subversion.javahl.SubversionException;
-import org.apache.subversion.javahl.callback.BlameCallback;
-import org.apache.subversion.javahl.callback.ChangelistCallback;
-import org.apache.subversion.javahl.callback.ClientNotifyCallback;
-import org.apache.subversion.javahl.callback.CommitCallback;
-import org.apache.subversion.javahl.callback.CommitMessageCallback;
-import org.apache.subversion.javahl.callback.ConflictResolverCallback;
-import org.apache.subversion.javahl.callback.DiffSummaryCallback;
-import org.apache.subversion.javahl.callback.ImportFilterCallback;
-import org.apache.subversion.javahl.callback.InfoCallback;
-import org.apache.subversion.javahl.callback.InheritedProplistCallback;
-import org.apache.subversion.javahl.callback.ListCallback;
-import org.apache.subversion.javahl.callback.LogMessageCallback;
-import org.apache.subversion.javahl.callback.PatchCallback;
-import org.apache.subversion.javahl.callback.ProgressCallback;
-import org.apache.subversion.javahl.callback.ProplistCallback;
-import org.apache.subversion.javahl.callback.StatusCallback;
-import org.apache.subversion.javahl.callback.UserPasswordCallback;
+import org.apache.subversion.javahl.callback.*;
 import org.apache.subversion.javahl.types.*;
 import org.apache.subversion.javahl.types.Mergeinfo.LogKind;
 import org.tmatesoft.svn.core.SVNCommitInfo;
@@ -133,6 +108,11 @@ public class SVNClientImpl implements ISVNClient {
 
     public Version getVersion() {
         return SVNClientImplVersion.getInstance();
+    }
+
+    public RuntimeVersion getRuntimeVersion() {
+        //TODO JavaHL 1.9
+        throw new UnsupportedOperationException("TODO");
     }
 
     public String getAdminDirectoryName() {
@@ -234,9 +214,19 @@ public class SVNClientImpl implements ISVNClient {
         updateSvnOperationsFactory();
     }
 
+    public void setPrompt(AuthnCallback prompt) {
+        //TODO JavaHL 1.9
+        throw new UnsupportedOperationException("TODO");
+    }
+
     public void setPrompt(UserPasswordCallback prompt) {
         this.prompt = prompt;
         updateSvnOperationsFactory();
+    }
+
+    public void setTunnelAgent(TunnelAgent tunnelAgent) {
+        //TODO JavaHL 1.9
+        throw new UnsupportedOperationException("TODO");
     }
 
     public void logMessages(String path, Revision pegRevision,
@@ -608,8 +598,7 @@ public class SVNClientImpl implements ISVNClient {
         }
     }
 
-    public void cleanup(String path) throws ClientException {
-
+    public void cleanup(String path, boolean breakLocks, boolean fixRecordedTimestamps, boolean clearDavCache, boolean removeUnusedPristines, boolean includeExternals) throws ClientException {
         beforeOperation();
 
         try {
@@ -619,12 +608,22 @@ public class SVNClientImpl implements ISVNClient {
 
             cleanup.addTarget(getTarget(path));
 
+            cleanup.setBreakLocks(breakLocks);
+            cleanup.setSleepForTimestamp(fixRecordedTimestamps);
+            cleanup.setDeleteWCProperties(clearDavCache);
+            cleanup.setVacuumPristines(removeUnusedPristines);
+            cleanup.setIncludeExternals(includeExternals);
+
             cleanup.run();
         } catch (SVNException e) {
             throw getClientException(e);
         } finally {
             afterOperation();
         }
+    }
+
+    public void cleanup(String path) throws ClientException {
+        cleanup(path, false, false, false, false, false);
     }
 
     public void resolve(String path, Depth depth, Choice conflictResult)
@@ -647,6 +646,11 @@ public class SVNClientImpl implements ISVNClient {
         } finally {
             afterOperation();
         }
+    }
+
+    public long doExport(String srcPath, String destPath, Revision revision, Revision pegRevision, boolean force, boolean ignoreExternals, boolean ignoreKeywords, Depth depth, String nativeEOL) throws ClientException {
+        //TODO JavaHL 1.9
+        throw new UnsupportedOperationException("TODO");
     }
 
     public long doExport(String srcPath, String destPath, Revision revision,
@@ -766,6 +770,11 @@ public class SVNClientImpl implements ISVNClient {
         }
     }
 
+    public void merge(String path1, Revision revision1, String path2, Revision revision2, String localPath, boolean force, Depth depth, boolean ignoreMergeinfo, boolean diffIgnoreAncestry, boolean dryRun, boolean allowMixedRev, boolean recordOnly) throws ClientException {
+        //TODO JavaHL 1.9
+        throw new UnsupportedOperationException("TODO");
+    }
+
     public void merge(String path1, Revision revision1, String path2,
             Revision revision2, String localPath, boolean force, Depth depth,
             boolean ignoreAncestry, boolean dryRun, boolean recordOnly)
@@ -791,6 +800,11 @@ public class SVNClientImpl implements ISVNClient {
         } finally {
             afterOperation();
         }
+    }
+
+    public void merge(String path, Revision pegRevision, List<RevisionRange> revisions, String localPath, boolean force, Depth depth, boolean ignoreMergeinfo, boolean diffIgnoreAncestry, boolean dryRun, boolean allowMixedRev, boolean recordOnly) throws ClientException {
+        //TODO JavaHL 1.9
+        throw new UnsupportedOperationException("TODO");
     }
 
     public void merge(String path, Revision pegRevision,
@@ -1427,6 +1441,11 @@ public class SVNClientImpl implements ISVNClient {
         return byteArrayOutputStream.toByteArray();
     }
 
+    public Map<String, byte[]> streamFileContent(String path, Revision revision, Revision pegRevision, boolean expandKeywords, boolean returnProps, OutputStream stream) throws ClientException {
+        //TODO JavaHL 1.9
+        throw new UnsupportedOperationException("TODO");
+    }
+
     public void streamFileContent(String path, Revision revision,
             Revision pegRevision, OutputStream stream) throws ClientException {
 
@@ -1468,6 +1487,11 @@ public class SVNClientImpl implements ISVNClient {
         } finally {
             afterOperation();
         }
+    }
+
+    public void blame(String path, Revision pegRevision, Revision revisionStart, Revision revisionEnd, boolean ignoreMimeType, boolean includeMergedRevisions, BlameCallback callback, DiffOptions options) throws ClientException {
+        //TODO JavaHL 1.9
+        throw new UnsupportedOperationException("TODO");
     }
 
     public void blame(String path, Revision pegRevision,
@@ -1524,6 +1548,16 @@ public class SVNClientImpl implements ISVNClient {
 
     public String getConfigDirectory() throws ClientException {
         return configDir;
+    }
+
+    public void setConfigEventHandler(ConfigEvent configHandler) throws ClientException {
+        //TODO JavaHL 1.9
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    public ConfigEvent getConfigEventHandler() throws ClientException {
+        //TODO JavaHL 1.9
+        throw new UnsupportedOperationException("TODO");
     }
 
     public void cancelOperation() throws ClientException {
@@ -1742,6 +1776,21 @@ public class SVNClientImpl implements ISVNClient {
         // TODO
         throw SVNClientImpl.getClientException(new SVNException(SVNErrorMessage.create(SVNErrorCode.UNSUPPORTED_FEATURE,
                 "Patch operation is not implemented yet.")));
+    }
+
+    public void vacuum(String path, boolean removeUnversionedItems, boolean removeIgnoredItems, boolean fixRecordedTimestamps, boolean removeUnusedPristines, boolean includeExternals) throws ClientException {
+        //TODO JavaHL 1.9
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    public ISVNRemote openRemoteSession(String pathOrUrl) throws ClientException, SubversionException {
+        //TODO JavaHL 1.9
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    public ISVNRemote openRemoteSession(String pathOrUrl, int retryAttempts) throws ClientException, SubversionException {
+        //TODO JavaHL 1.9
+        throw new UnsupportedOperationException("TODO");
     }
 
     private SVNDepth getSVNDepth(Depth depth) {
