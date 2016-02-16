@@ -648,15 +648,10 @@ public class SVNClientImpl implements ISVNClient {
         }
     }
 
-    public long doExport(String srcPath, String destPath, Revision revision, Revision pegRevision, boolean force, boolean ignoreExternals, boolean ignoreKeywords, Depth depth, String nativeEOL) throws ClientException {
-        //TODO JavaHL 1.9
-        throw new UnsupportedOperationException("TODO");
-    }
-
     public long doExport(String srcPath, String destPath, Revision revision,
-            Revision pegRevision, boolean force, boolean ignoreExternals,
-            Depth depth, String nativeEOL) throws ClientException {
-
+                         Revision pegRevision, boolean force, boolean ignoreExternals,
+                         boolean ignoreKeywords,
+                         Depth depth, String nativeEOL) throws ClientException {
         beforeOperation();
 
         try {
@@ -670,6 +665,7 @@ public class SVNClientImpl implements ISVNClient {
             export.setIgnoreExternals(ignoreExternals);
             export.setDepth(getSVNDepth(depth));
             export.setEolStyle(nativeEOL);
+            export.setExpandKeywords(!ignoreKeywords);
 
             return export.run();
         } catch (SVNException e) {
@@ -677,6 +673,12 @@ public class SVNClientImpl implements ISVNClient {
         } finally {
             afterOperation();
         }
+    }
+
+    public long doExport(String srcPath, String destPath, Revision revision,
+            Revision pegRevision, boolean force, boolean ignoreExternals,
+            Depth depth, String nativeEOL) throws ClientException {
+        return doExport(srcPath, destPath, revision, pegRevision, force, ignoreExternals, false, depth, nativeEOL);
     }
 
     public long doSwitch(String path, String url, Revision revision,
