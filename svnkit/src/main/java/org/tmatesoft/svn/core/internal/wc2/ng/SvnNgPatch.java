@@ -88,7 +88,7 @@ public class SvnNgPatch extends SvnNgOperationRunner<Void, SvnPatch> {
                 checkCancelled();
                 patch = org.tmatesoft.svn.core.internal.wc2.patch.SvnPatch.parseNextPatch(svnPatchFile, reverse, ignoreWhitespace);
                 if (patch != null) {
-                    SvnPatchTarget target = SvnPatchTarget.applyPatch(patch, workingCopyDirectory, stripCount, context, ignoreWhitespace, removeTempFiles);
+                    SvnPatchTarget target = SvnPatchTarget.applyPatch(patch, workingCopyDirectory, stripCount, context, ignoreWhitespace, removeTempFiles, getOperation().getPatchHandler());
                     if (!target.isFiltered()) {
                         SVNPatchTargetInfo targetInfo = new SVNPatchTargetInfo(target.getAbsPath(), target.isDeleted());
                         if (!target.isSkipped()) {

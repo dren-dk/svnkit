@@ -14,6 +14,7 @@ import org.tmatesoft.svn.core.wc.ISVNEventHandler;
 import org.tmatesoft.svn.core.wc.SVNEvent;
 import org.tmatesoft.svn.core.wc.SVNEventAction;
 import org.tmatesoft.svn.core.wc.SVNStatusType;
+import org.tmatesoft.svn.core.wc2.ISvnPatchHandler;
 import org.tmatesoft.svn.core.wc2.SvnScheduleForAddition;
 import org.tmatesoft.svn.core.wc2.SvnStatus;
 import org.tmatesoft.svn.util.SVNLogType;
@@ -133,10 +134,16 @@ public class SvnPatchTarget extends SvnTargetContent {
         this.rejectStream = rejectStream;
     }
 
-    public static SvnPatchTarget applyPatch(SvnPatch patch, File workingCopyDirectory, int stripCount, SVNWCContext context, boolean ignoreWhitespace, boolean removeTempFiles) throws SVNException, IOException {
+    public static SvnPatchTarget applyPatch(SvnPatch patch, File workingCopyDirectory, int stripCount, SVNWCContext context, boolean ignoreWhitespace, boolean removeTempFiles, ISvnPatchHandler patchHandler) throws SVNException, IOException {
         SvnPatchTarget target = initPatchTarget(patch, workingCopyDirectory, stripCount, removeTempFiles, context);
         if (target.isSkipped()) {
             return target;
+        }
+        if (patchHandler != null) {
+            final boolean filtered = patchHandler.singlePatch(target.getCanonPathFromPatchfile(), target.getPatchedAbsPath(), target.getRejectAbsPath());
+            if (filtered) {
+                return target;
+            }
         }
         List<SvnDiffHunk> hunks = patch.getHunks();
         for (SvnDiffHunk hunk : hunks) {

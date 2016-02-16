@@ -1777,9 +1777,27 @@ public class SVNClientImpl implements ISVNClient {
             int stripCount, boolean reverse, boolean ignoreWhitespace,
             boolean removeTempfiles, PatchCallback callback)
             throws ClientException {
-        // TODO
-        throw SVNClientImpl.getClientException(new SVNException(SVNErrorMessage.create(SVNErrorCode.UNSUPPORTED_FEATURE,
-                "Patch operation is not implemented yet.")));
+
+        beforeOperation();
+
+        try {
+            getEventHandler().setPathPrefix(getPathPrefix(targetPath));
+
+            SvnPatch patch = svnOperationFactory.createPatch();
+            patch.setSingleTarget(getTarget(targetPath));
+            patch.setDryRun(dryRun);
+            patch.setStripCount(stripCount);
+            patch.setReverse(reverse);
+            patch.setIgnoreWhitespace(ignoreWhitespace);
+            patch.setRemoveTempFiles(removeTempfiles);
+            patch.setPatchHandler(getPatchHandler(callback));
+
+            patch.run();
+        } catch (SVNException e) {
+            throw getClientException(e);
+        } finally {
+            afterOperation();
+        }
     }
 
     public void vacuum(String path, boolean removeUnversionedItems, boolean removeIgnoredItems, boolean fixRecordedTimestamps, boolean removeUnusedPristines, boolean includeExternals) throws ClientException {
@@ -2032,6 +2050,18 @@ public class SVNClientImpl implements ISVNClient {
                 return revisionProperties;
             }
         };
+    }
+
+    private ISvnPatchHandler getPatchHandler(final PatchCallback patchCallback) {
+        if (patchCallback == null) {
+            return null;
+        }
+        return new ISvnPatchHandler() {
+            @Override
+            public boolean singlePatch(File pathFromPatchfile, File patchPath, File rejectPath) {
+                return patchCallback.singlePatch(getFilePath(pathFromPatchfile), getFilePath(patchPath), getFilePath(rejectPath));
+            }
+        }
     }
 
     private Collection<SvnRevisionRange> getSvnRevisionRanges(List<RevisionRange> ranges) {
