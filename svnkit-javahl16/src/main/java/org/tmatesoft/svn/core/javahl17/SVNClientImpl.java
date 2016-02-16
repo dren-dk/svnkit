@@ -2061,7 +2061,7 @@ public class SVNClientImpl implements ISVNClient {
             public boolean singlePatch(File pathFromPatchfile, File patchPath, File rejectPath) {
                 return patchCallback.singlePatch(getFilePath(pathFromPatchfile), getFilePath(patchPath), getFilePath(rejectPath));
             }
-        }
+        };
     }
 
     private Collection<SvnRevisionRange> getSvnRevisionRanges(List<RevisionRange> ranges) {
