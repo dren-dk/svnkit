@@ -12,6 +12,7 @@ import org.apache.subversion.javahl.ISVNRepos;
 import org.apache.subversion.javahl.SubversionException;
 import org.apache.subversion.javahl.callback.ReposFreezeAction;
 import org.apache.subversion.javahl.callback.ReposNotifyCallback;
+import org.apache.subversion.javahl.callback.ReposVerifyCallback;
 import org.apache.subversion.javahl.types.Depth;
 import org.apache.subversion.javahl.types.Lock;
 import org.apache.subversion.javahl.types.Revision;
@@ -259,7 +260,7 @@ public class SVNReposImpl {
         try {
             File repositoryRoot = path.getAbsoluteFile();
             getAdminClient().doRecover(repositoryRoot);
-            getAdminClient().setEventHandler(new SVNAdminEventAdapter(){
+            getAdminClient().setEventHandler(new SVNAdminEventAdapter() {
                 @Override
                 public void checkCancelled() throws SVNCancelException {
                     SVNReposImpl.this.checkCancelled();
@@ -433,5 +434,14 @@ public class SVNReposImpl {
     }
 
     public void load(File path, InputStream dataInput, Revision start, Revision end, boolean ignoreUUID, boolean forceUUID, boolean usePostCommitHook, boolean usePostCommitHook2, String relativePath, ReposNotifyCallback callback) {
+    }
+
+    public void verify(File path, Revision start, Revision end, boolean checkNormalization, boolean metadataOnly, ReposNotifyCallback notifyCallback, ReposVerifyCallback verifyCallback) {
+    }
+
+    public void load(File path, InputStream dataInput, Revision start, Revision end, boolean ignoreUUID, boolean forceUUID, boolean usePreCommitHook, boolean usePostCommitHook, boolean validateProps, boolean ignoreDates, String relativePath, ReposNotifyCallback callback) {
+    }
+
+    public void hotcopy(File path, File targetPath, boolean cleanLogs, boolean incremental, ReposNotifyCallback callback) {
     }
 }

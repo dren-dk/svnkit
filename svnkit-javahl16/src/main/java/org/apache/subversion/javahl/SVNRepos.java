@@ -7,6 +7,7 @@ import java.util.Set;
 
 import org.apache.subversion.javahl.callback.ReposFreezeAction;
 import org.apache.subversion.javahl.callback.ReposNotifyCallback;
+import org.apache.subversion.javahl.callback.ReposVerifyCallback;
 import org.apache.subversion.javahl.types.Depth;
 import org.apache.subversion.javahl.types.Lock;
 import org.apache.subversion.javahl.types.Revision;
@@ -41,6 +42,10 @@ public class SVNRepos implements ISVNRepos {
         delegate.dump(path, dataOut, start, end, incremental, useDeltas, callback);
     }
 
+    public void hotcopy(File path, File targetPath, boolean cleanLogs, boolean incremental, ReposNotifyCallback callback) throws ClientException {
+        delegate.hotcopy(path, targetPath, cleanLogs, incremental, callback);
+    }
+
     public void hotcopy(File path, File targetPath, boolean cleanLogs) throws ClientException {
         delegate.hotcopy(path, targetPath, cleanLogs);
     }
@@ -51,6 +56,10 @@ public class SVNRepos implements ISVNRepos {
 
     public void listUnusedDBLogs(File path, MessageReceiver receiver) throws ClientException {
         delegate.listUnusedDBLogs(path, receiver);
+    }
+
+    public void load(File path, InputStream dataInput, Revision start, Revision end, boolean ignoreUUID, boolean forceUUID, boolean usePreCommitHook, boolean usePostCommitHook, boolean validateProps, boolean ignoreDates, String relativePath, ReposNotifyCallback callback) throws ClientException {
+        delegate.load(path, dataInput, start, end, ignoreUUID, forceUUID, usePreCommitHook, usePostCommitHook, validateProps, ignoreDates, relativePath, callback);
     }
 
     public void load(File path, InputStream dataInput, boolean ignoreUUID, boolean forceUUID, boolean usePreCommitHook, boolean usePostCommitHook, String relativePath, ReposNotifyCallback callback) throws ClientException {
@@ -71,6 +80,10 @@ public class SVNRepos implements ISVNRepos {
 
     public void setRevProp(File path, Revision rev, String propName, String propValue, boolean usePreRevPropChangeHook, boolean usePostRevPropChangeHook) throws SubversionException {
         delegate.setRevProp(path, rev, propName, propValue, usePreRevPropChangeHook, usePostRevPropChangeHook);
+    }
+
+    public void verify(File path, Revision start, Revision end, boolean checkNormalization, boolean metadataOnly, ReposNotifyCallback notifyCallback, ReposVerifyCallback verifyCallback) throws ClientException {
+        delegate.verify(path, start, end, checkNormalization, metadataOnly, notifyCallback, verifyCallback);
     }
 
     public void verify(File path, Revision start, Revision end, ReposNotifyCallback callback) throws ClientException {
