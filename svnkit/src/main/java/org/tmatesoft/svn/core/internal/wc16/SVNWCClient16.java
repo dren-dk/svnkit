@@ -338,6 +338,10 @@ public class SVNWCClient16 extends SVNBasicDelegate {
      * @see #doGetFileContents(SVNURL,SVNRevision,SVNRevision,boolean,OutputStream)
      */
     public void doGetFileContents(File path, SVNRevision pegRevision, SVNRevision revision, boolean expandKeywords, OutputStream dst) throws SVNException {
+        doGetFileContents(path, pegRevision, revision, expandKeywords, null, dst);
+    }
+
+    public void doGetFileContents(File path, SVNRevision pegRevision, SVNRevision revision, boolean expandKeywords, SVNProperties properties, OutputStream dst) throws SVNException {
         if (dst == null) {
             return;
         }
@@ -348,7 +352,7 @@ public class SVNWCClient16 extends SVNBasicDelegate {
         }
         if ((!pegRevision.isValid() || pegRevision == SVNRevision.BASE || pegRevision == SVNRevision.WORKING)
                 && (!revision.isValid() || revision == SVNRevision.BASE || revision == SVNRevision.WORKING)) {
-            doGetLocalFileContents(path, dst, revision, expandKeywords);
+            doGetLocalFileContents(path, dst, revision, expandKeywords, properties);
         } else {
             SVNRepository repos = createRepository(null, path, null, pegRevision, revision, null);
             checkCancelled();
@@ -360,9 +364,11 @@ public class SVNWCClient16 extends SVNBasicDelegate {
             }
             checkCancelled();
             if (!expandKeywords) {
-                repos.getFile("", revNumber, null, new SVNCancellableOutputStream(dst, this));
+                repos.getFile("", revNumber, properties, new SVNCancellableOutputStream(dst, this));
             } else {
-                SVNProperties properties = new SVNProperties();
+                if (properties == null) {
+                    properties = new SVNProperties();
+                }
                 repos.getFile("", revNumber, properties, null);
                 checkCancelled();
                 String keywords = properties.getStringValue(SVNProperty.KEYWORDS);
@@ -427,6 +433,10 @@ public class SVNWCClient16 extends SVNBasicDelegate {
      * @see #doGetFileContents(File,SVNRevision,SVNRevision,boolean,OutputStream)
      */
     public void doGetFileContents(SVNURL url, SVNRevision pegRevision, SVNRevision revision, boolean expandKeywords, OutputStream dst) throws SVNException {
+        doGetFileContents(url, pegRevision, revision, expandKeywords, null, dst);
+    }
+
+    public void doGetFileContents(SVNURL url, SVNRevision pegRevision, SVNRevision revision, boolean expandKeywords, SVNProperties properties, OutputStream dst) throws SVNException {
         revision = revision == null || !revision.isValid() ? SVNRevision.HEAD : revision;
         SVNRepository repos = createRepository(url, null, null, pegRevision, revision, null);
         checkCancelled();
@@ -440,9 +450,11 @@ public class SVNWCClient16 extends SVNBasicDelegate {
         }
         checkCancelled();
         if (!expandKeywords) {
-            repos.getFile("", revNumber, null, new SVNCancellableOutputStream(dst, this));
+            repos.getFile("", revNumber, properties, new SVNCancellableOutputStream(dst, this));
         } else {
-            SVNProperties properties = new SVNProperties();
+            if (properties == null) {
+                properties = new SVNProperties();
+            }
             repos.getFile("", revNumber, properties, null);
             checkCancelled();
             String mimeType = properties.getStringValue(SVNProperty.MIME_TYPE);
@@ -3948,7 +3960,7 @@ public class SVNWCClient16 extends SVNBasicDelegate {
         return tokens;
     }
 
-    private void doGetLocalFileContents(File path, OutputStream dst, SVNRevision revision, boolean expandKeywords) throws SVNException {
+    private void doGetLocalFileContents(File path, OutputStream dst, SVNRevision revision, boolean expandKeywords, SVNProperties outputProperties) throws SVNException {
         SVNWCAccess wcAccess = createWCAccess();
         InputStream input = null;
         boolean hasMods = false;
@@ -3968,6 +3980,9 @@ public class SVNWCClient16 extends SVNBasicDelegate {
                 input = SVNFileUtil.openFileForReading(area.getFile(path.getName()), SVNLogType.WC);
                 hasMods = area.hasPropModifications(name) || area.hasTextModifications(name, true);
                 properties = area.getProperties(name);
+            }
+            if (outputProperties != null) {
+                outputProperties.putAll(properties.asMap());
             }
             String charsetProp = properties.getStringPropertyValue(SVNProperty.CHARSET);
             String mimeType = properties.getStringPropertyValue(SVNProperty.MIME_TYPE);
