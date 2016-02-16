@@ -62,6 +62,7 @@ public class SVNClientImpl implements ISVNClient {
     private String username;
     private String password;
     private UserPasswordCallback prompt;
+    private TunnelAgent tunnelAgent;
     private String configDir;
 
     private DefaultSVNOptions options;
@@ -223,8 +224,8 @@ public class SVNClientImpl implements ISVNClient {
     }
 
     public void setTunnelAgent(TunnelAgent tunnelAgent) {
-        //TODO JavaHL 1.9
-        throw new UnsupportedOperationException("TODO");
+        this.tunnelAgent = tunnelAgent;
+        updateSvnOperationsFactory();
     }
 
     public void logMessages(String path, Revision pegRevision,
@@ -3183,6 +3184,7 @@ public class SVNClientImpl implements ISVNClient {
     }
 
     private void updateSvnOperationsFactory() {
+        //TODO: use tunnelAgent
         File configDir = this.configDir == null ? null : new File(this.configDir);
         options = SVNWCUtil.createDefaultOptions(configDir, true);
         options.setConflictHandler(conflictHandler);
