@@ -1442,14 +1442,10 @@ public class SVNClientImpl implements ISVNClient {
         return byteArrayOutputStream.toByteArray();
     }
 
-    public Map<String, byte[]> streamFileContent(String path, Revision revision, Revision pegRevision, boolean expandKeywords, boolean returnProps, OutputStream stream) throws ClientException {
-        //TODO JavaHL 1.9
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    public void streamFileContent(String path, Revision revision,
-            Revision pegRevision, OutputStream stream) throws ClientException {
-
+    public Map<String, byte[]> streamFileContent(String path, Revision revision,
+                                                 Revision pegRevision,
+                                                 boolean expandKeywords, boolean returnProps,
+                                                 OutputStream stream) throws ClientException {
         beforeOperation();
 
         try {
@@ -1460,13 +1456,20 @@ public class SVNClientImpl implements ISVNClient {
             cat.setRevision(getSVNRevision(revision));
             cat.setExpandKeywords(true);
             cat.setOutput(stream);
+            cat.setExpandKeywords(expandKeywords);
 
-            cat.run();
+            SVNProperties properties = cat.run();
+            return returnProps ? getProperties(properties) : null;
         } catch (SVNException e) {
             throw getClientException(e);
         } finally {
             afterOperation();
         }
+    }
+
+    public void streamFileContent(String path, Revision revision,
+            Revision pegRevision, OutputStream stream) throws ClientException {
+        streamFileContent(path, revision, pegRevision, true, false, stream);
     }
 
     public void relocate(String from, String to, String path,
