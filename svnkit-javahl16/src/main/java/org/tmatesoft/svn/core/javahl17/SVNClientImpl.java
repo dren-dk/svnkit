@@ -16,6 +16,7 @@ import org.apache.subversion.javahl.ConflictResult.Choice;
 import org.apache.subversion.javahl.callback.*;
 import org.apache.subversion.javahl.types.*;
 import org.apache.subversion.javahl.types.Mergeinfo.LogKind;
+import org.apache.subversion.javahl.types.Version;
 import org.tmatesoft.svn.core.SVNCommitInfo;
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNDirEntry;
@@ -44,9 +45,7 @@ import org.tmatesoft.svn.core.javahl.JavaHLDebugLog;
 import org.tmatesoft.svn.core.wc.*;
 import org.tmatesoft.svn.core.wc2.*;
 import org.tmatesoft.svn.core.wc2.hooks.ISvnCommitHandler;
-import org.tmatesoft.svn.util.ISVNDebugLog;
-import org.tmatesoft.svn.util.SVNDebugLog;
-import org.tmatesoft.svn.util.SVNLogType;
+import org.tmatesoft.svn.util.*;
 
 public class SVNClientImpl implements ISVNClient {
 
@@ -111,8 +110,7 @@ public class SVNClientImpl implements ISVNClient {
     }
 
     public RuntimeVersion getRuntimeVersion() {
-        //TODO JavaHL 1.9
-        throw new UnsupportedOperationException("TODO");
+        return SVNClientImplRuntimeVersion.getInstance();
     }
 
     public String getAdminDirectoryName() {
