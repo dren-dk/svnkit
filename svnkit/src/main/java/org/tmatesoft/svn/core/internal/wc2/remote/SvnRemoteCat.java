@@ -95,7 +95,7 @@ public class SvnRemoteCat extends SvnRemoteOperationRunner<SVNProperties, SvnCat
                     SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.IO_ERROR, e.getMessage()), SVNLogType.WC);
                 }
             } else {
-                repos.getFile("", revNumber, null, new SVNCancellableOutputStream(getOperation().getOutput(), getOperation().getEventHandler()));
+                repos.getFile("", revNumber, properties, new SVNCancellableOutputStream(getOperation().getOutput(), getOperation().getEventHandler()));
             }
         }
         try {
