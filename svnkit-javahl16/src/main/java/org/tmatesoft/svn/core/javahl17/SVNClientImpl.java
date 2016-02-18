@@ -771,16 +771,12 @@ public class SVNClientImpl implements ISVNClient {
         }
     }
 
-    public void merge(String path1, Revision revision1, String path2, Revision revision2, String localPath, boolean force, Depth depth, boolean ignoreMergeinfo, boolean diffIgnoreAncestry, boolean dryRun, boolean allowMixedRev, boolean recordOnly) throws ClientException {
-        //TODO JavaHL 1.9
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    public void merge(String path1, Revision revision1, String path2,
-            Revision revision2, String localPath, boolean force, Depth depth,
-            boolean ignoreAncestry, boolean dryRun, boolean recordOnly)
-            throws ClientException {
-
+    public void merge(String path1, Revision revision1,
+                      String path2, Revision revision2,
+                      String localPath, boolean force, Depth depth,
+                      boolean ignoreMergeinfo,
+                      boolean diffIgnoreAncestry, boolean dryRun,
+                      boolean allowMixedRev, boolean recordOnly) throws ClientException {
         beforeOperation();
 
         try {
@@ -791,9 +787,11 @@ public class SVNClientImpl implements ISVNClient {
             merge.addTarget(getTarget(localPath));
             merge.setForce(force);
             merge.setDepth(getSVNDepth(depth));
-            merge.setIgnoreAncestry(ignoreAncestry);
+            merge.setIgnoreAncestry(diffIgnoreAncestry);
             merge.setDryRun(dryRun);
             merge.setRecordOnly(recordOnly);
+            merge.setIgnoreMergeInfo(ignoreMergeinfo);
+            merge.setAllowMixedRevisions(allowMixedRev);
 
             merge.run();
         } catch (SVNException e) {
@@ -803,15 +801,22 @@ public class SVNClientImpl implements ISVNClient {
         }
     }
 
-    public void merge(String path, Revision pegRevision, List<RevisionRange> revisions, String localPath, boolean force, Depth depth, boolean ignoreMergeinfo, boolean diffIgnoreAncestry, boolean dryRun, boolean allowMixedRev, boolean recordOnly) throws ClientException {
-        //TODO JavaHL 1.9
-        throw new UnsupportedOperationException("TODO");
+    public void merge(String path1, Revision revision1,
+                      String path2, Revision revision2,
+                      String localPath, boolean force, Depth depth,
+                      boolean ignoreAncestry, boolean dryRun,
+                      boolean recordOnly)
+            throws ClientException {
+
+        merge(path1, revision1, path2, revision2, localPath, force, depth, false, ignoreAncestry, dryRun, false, recordOnly);
     }
 
     public void merge(String path, Revision pegRevision,
-            List<RevisionRange> revisions, String localPath, boolean force,
-            Depth depth, boolean ignoreAncestry, boolean dryRun,
-            boolean recordOnly) throws ClientException {
+                      List<RevisionRange> revisions,
+                      String localPath, boolean force, Depth depth,
+                      boolean ignoreMergeinfo,
+                      boolean diffIgnoreAncestry, boolean dryRun,
+                      boolean allowMixedRev, boolean recordOnly) throws ClientException {
 
         beforeOperation();
 
@@ -828,9 +833,11 @@ public class SVNClientImpl implements ISVNClient {
             merge.addTarget(getTarget(localPath));
             merge.setForce(force);
             merge.setDepth(getSVNDepth(depth));
-            merge.setIgnoreAncestry(ignoreAncestry);
+            merge.setIgnoreAncestry(diffIgnoreAncestry);
             merge.setDryRun(dryRun);
             merge.setRecordOnly(recordOnly);
+            merge.setIgnoreMergeInfo(ignoreMergeinfo);
+            merge.setAllowMixedRevisions(allowMixedRev);
 
             merge.run();
         } catch (SVNException e) {
@@ -838,6 +845,14 @@ public class SVNClientImpl implements ISVNClient {
         } finally {
             afterOperation();
         }
+    }
+
+    public void merge(String path, Revision pegRevision,
+            List<RevisionRange> revisions, String localPath, boolean force,
+            Depth depth, boolean ignoreAncestry, boolean dryRun,
+            boolean recordOnly) throws ClientException {
+
+        merge(path, pegRevision, revisions, localPath, force, depth, false, ignoreAncestry, dryRun, false, recordOnly);
     }
 
     public void merge(String path1, Revision revision1,
