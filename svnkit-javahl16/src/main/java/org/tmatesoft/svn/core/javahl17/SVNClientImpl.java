@@ -70,6 +70,7 @@ public class SVNClientImpl implements ISVNClient {
     private ISVNAuthenticationStorage authenticationStorage;
     private ISVNConflictHandler conflictHandler;
     private JavaHLEventHandler eventHandler;
+    private ConfigEvent configHandler;
 
     private JavaHLCompositeLog debugLog;
     private JavaHLProgressLog progressListener;
@@ -1573,13 +1574,11 @@ public class SVNClientImpl implements ISVNClient {
     }
 
     public void setConfigEventHandler(ConfigEvent configHandler) throws ClientException {
-        //TODO JavaHL 1.9
-        throw new UnsupportedOperationException("TODO");
+        this.configHandler = configHandler;
     }
 
     public ConfigEvent getConfigEventHandler() throws ClientException {
-        //TODO JavaHL 1.9
-        throw new UnsupportedOperationException("TODO");
+        return configHandler;
     }
 
     public void cancelOperation() throws ClientException {
@@ -3239,6 +3238,7 @@ public class SVNClientImpl implements ISVNClient {
         File configDir = this.configDir == null ? null : new File(this.configDir);
         options = SVNWCUtil.createDefaultOptions(configDir, true);
         options.setConflictHandler(conflictHandler);
+        options.setConfigEventHandler(getConfigEventHandler(configHandler));
         authenticationManager = SVNWCUtil.createDefaultAuthenticationManager(configDir, username, password, options.isAuthStorageEnabled());
         if (prompt != null) {
             authenticationManager.setAuthenticationProvider(new JavaHLAuthenticationProvider(prompt));
@@ -3253,6 +3253,22 @@ public class SVNClientImpl implements ISVNClient {
             svnOperationFactory.setOptions(options);
             svnOperationFactory.setEventHandler(getEventHandler());
         }
+    }
+
+    private ISVNConfigEventHandler getConfigEventHandler(final ConfigEvent configHandler) {
+        return new ISVNConfigEventHandler() {
+            public void onLoad(final SVNCompositeConfigFile configFile, final SVNCompositeConfigFile serversFile) {
+                configHandler.onLoad(new ISVNConfig() {
+                    public Category config() {
+                        return configFile == null ? null : new JavaHLConfigCategory(configFile);
+                    }
+
+                    public Category servers() {
+                        return serversFile == null ? null : new JavaHLConfigCategory(serversFile);
+                    }
+                });
+            }
+        };
     }
 
     static String versionString() {

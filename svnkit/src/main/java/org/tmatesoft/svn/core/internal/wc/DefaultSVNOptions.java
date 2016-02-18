@@ -38,11 +38,7 @@ import org.tmatesoft.svn.core.internal.io.svn.ISVNConnector;
 import org.tmatesoft.svn.core.internal.io.svn.SVNTunnelConnector;
 import org.tmatesoft.svn.core.internal.util.SVNHashMap;
 import org.tmatesoft.svn.core.io.ISVNTunnelProvider;
-import org.tmatesoft.svn.core.wc.ISVNConflictHandler;
-import org.tmatesoft.svn.core.wc.ISVNMerger;
-import org.tmatesoft.svn.core.wc.ISVNMergerFactory;
-import org.tmatesoft.svn.core.wc.ISVNOptions;
-import org.tmatesoft.svn.core.wc.SVNWCUtil;
+import org.tmatesoft.svn.core.wc.*;
 
 /**
  * @version 1.3
@@ -99,6 +95,7 @@ public class DefaultSVNOptions implements ISVNOptions, ISVNMergerFactory {
     private String myKeywordTimezone = DEFAULT_TIMEZONE;
     private SimpleDateFormat myKeywordDateFormat = new SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss' 'ZZZZ' ('E', 'dd' 'MMM' 'yyyy')'");
     private Map myConfigOptions;
+    private ISVNConfigEventHandler myConfigEventHandler;
 
     public DefaultSVNOptions() {
         this(null, true);
@@ -562,6 +559,10 @@ public class DefaultSVNOptions implements ISVNOptions, ISVNMergerFactory {
         myConflictResolver = resolver;
     }
 
+    public void setConfigEventHandler(ISVNConfigEventHandler configEventHandler) {
+        this.myConfigEventHandler = configEventHandler;
+    }
+
     public ISVNConflictHandler getConflictResolver() {
         return myConflictResolver;
     }
@@ -803,6 +804,9 @@ public class DefaultSVNOptions implements ISVNOptions, ISVNMergerFactory {
             SVNConfigFile systemConfig = new SVNConfigFile(new File(SVNFileUtil.getSystemConfigurationDirectory(), "config"));
             myConfigFile = new SVNCompositeConfigFile(systemConfig, userConfig);
             myConfigFile.setGroupsToOptions(myConfigOptions);
+            if (myConfigEventHandler != null) {
+                myConfigEventHandler.onLoad(myConfigFile, null);
+            }
         }
         return myConfigFile;
     }
