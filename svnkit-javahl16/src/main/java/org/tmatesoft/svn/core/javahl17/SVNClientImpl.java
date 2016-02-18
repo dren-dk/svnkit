@@ -1493,16 +1493,10 @@ public class SVNClientImpl implements ISVNClient {
         }
     }
 
-    public void blame(String path, Revision pegRevision, Revision revisionStart, Revision revisionEnd, boolean ignoreMimeType, boolean includeMergedRevisions, BlameCallback callback, DiffOptions options) throws ClientException {
-        //TODO JavaHL 1.9
-        throw new UnsupportedOperationException("TODO");
-    }
-
     public void blame(String path, Revision pegRevision,
-            Revision revisionStart, Revision revisionEnd,
-            boolean ignoreMimeType, boolean includeMergedRevisions,
-            final BlameCallback callback) throws ClientException {
-
+                      Revision revisionStart, Revision revisionEnd,
+                      boolean ignoreMimeType, boolean includeMergedRevisions,
+                      BlameCallback callback, DiffOptions options) throws ClientException {
         beforeOperation();
 
         try {
@@ -1515,6 +1509,7 @@ public class SVNClientImpl implements ISVNClient {
             annotate.setIgnoreMimeType(ignoreMimeType);
             annotate.setUseMergeHistory(includeMergedRevisions);
             annotate.setReceiver(getAnnotateItemReceiver(callback));
+            annotate.setDiffOptions(getDiffOptions(options));
 
             annotate.run();
         } catch (SVNException e) {
@@ -1522,6 +1517,14 @@ public class SVNClientImpl implements ISVNClient {
         } finally {
             afterOperation();
         }
+    }
+
+    public void blame(String path, Revision pegRevision,
+            Revision revisionStart, Revision revisionEnd,
+            boolean ignoreMimeType, boolean includeMergedRevisions,
+            final BlameCallback callback) throws ClientException {
+
+        blame(path, pegRevision, revisionStart, revisionEnd, ignoreMimeType, includeMergedRevisions, callback, null);
     }
 
     public static ClientException getClientException(Throwable e) throws ClientException {
