@@ -1818,8 +1818,29 @@ public class SVNClientImpl implements ISVNClient {
     }
 
     public void vacuum(String path, boolean removeUnversionedItems, boolean removeIgnoredItems, boolean fixRecordedTimestamps, boolean removeUnusedPristines, boolean includeExternals) throws ClientException {
-        //TODO JavaHL 1.9
-        throw new UnsupportedOperationException("TODO");
+        beforeOperation();
+
+        try {
+            getEventHandler().setPathPrefix(getPathPrefix(path));
+
+            SvnCleanup cleanup = svnOperationFactory.createCleanup();
+
+            cleanup.addTarget(getTarget(path));
+
+            cleanup.setBreakLocks(false);
+            cleanup.setSleepForTimestamp(fixRecordedTimestamps);
+            cleanup.setDeleteWCProperties(false);
+            cleanup.setVacuumPristines(removeUnusedPristines);
+            cleanup.setRemoveUnversionedItems(removeUnversionedItems);
+            cleanup.setRemoveIgnoredItems(removeIgnoredItems);
+            cleanup.setIncludeExternals(includeExternals);
+
+            cleanup.run();
+        } catch (SVNException e) {
+            throw getClientException(e);
+        } finally {
+            afterOperation();
+        }
     }
 
     public ISVNRemote openRemoteSession(String pathOrUrl) throws ClientException, SubversionException {
