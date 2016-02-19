@@ -17,21 +17,7 @@ import org.apache.subversion.javahl.callback.*;
 import org.apache.subversion.javahl.types.*;
 import org.apache.subversion.javahl.types.Mergeinfo.LogKind;
 import org.apache.subversion.javahl.types.Version;
-import org.tmatesoft.svn.core.SVNCommitInfo;
-import org.tmatesoft.svn.core.SVNDepth;
-import org.tmatesoft.svn.core.SVNDirEntry;
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNLock;
-import org.tmatesoft.svn.core.SVNLogEntry;
-import org.tmatesoft.svn.core.SVNLogEntryPath;
-import org.tmatesoft.svn.core.SVNMergeRange;
-import org.tmatesoft.svn.core.SVNMergeRangeList;
-import org.tmatesoft.svn.core.SVNNodeKind;
-import org.tmatesoft.svn.core.SVNProperties;
-import org.tmatesoft.svn.core.SVNPropertyValue;
-import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.internal.io.svn.SVNSSHConnector;
 import org.tmatesoft.svn.core.internal.util.SVNDate;
@@ -1990,7 +1976,7 @@ public class SVNClientImpl implements ISVNClient {
         }
     }
 
-    private static NodeKind getNodeKind(SVNNodeKind kind) {
+    protected static NodeKind getNodeKind(SVNNodeKind kind) {
         if (kind == SVNNodeKind.DIR) {
             return NodeKind.dir;
         } else if (kind == SVNNodeKind.FILE) {
@@ -2172,7 +2158,7 @@ public class SVNClientImpl implements ISVNClient {
         }
     }
 
-    private static Map<String, byte[]> getProperties(SVNProperties svnProperties) {
+    protected static Map<String, byte[]> getProperties(SVNProperties svnProperties) {
         if (svnProperties == null) {
             return new HashMap<String, byte[]>();
         }
@@ -3039,6 +3025,48 @@ public class SVNClientImpl implements ISVNClient {
         } else {
             throw new IllegalArgumentException("Unknown conflict kind: " + conflictDescription);
         }
+    }
+
+    protected static SVNMergeInfoInheritance getMergeInfoInheritance(Mergeinfo.Inheritance inheritance) {
+        if (inheritance == null) {
+            return null;
+        }
+        switch (inheritance) {
+            case explicit:
+                return SVNMergeInfoInheritance.EXPLICIT;
+            case inherited:
+                return SVNMergeInfoInheritance.INHERITED;
+            case nearest_ancestor:
+                return SVNMergeInfoInheritance.NEAREST_ANCESTOR;
+            default:
+                throw new IllegalArgumentException("Merge inheritance kind: " + inheritance);
+        }
+    }
+
+    protected static Mergeinfo.Inheritance getMergeInfoInheritance(SVNMergeInfoInheritance inheritance) {
+        if (inheritance == null) {
+            return null;
+        }
+        if (inheritance == SVNMergeInfoInheritance.EXPLICIT) {
+            return Mergeinfo.Inheritance.explicit;
+        } else if (inheritance == SVNMergeInfoInheritance.INHERITED) {
+            return Mergeinfo.Inheritance.inherited;
+        } else if (inheritance == SVNMergeInfoInheritance.NEAREST_ANCESTOR) {
+            return Mergeinfo.Inheritance.nearest_ancestor;
+        } else {
+            throw new IllegalArgumentException("Merge inheritance kind: " + inheritance);
+        }
+    }
+
+    protected static Map<String, Mergeinfo> getMergeInfo(Map<String, SVNMergeInfo> mergeInfo) {
+        final Map<String, Mergeinfo> mergeinfoMap = new HashMap<String, Mergeinfo>();
+        for (Map.Entry<String, Mergeinfo> entry : mergeinfoMap.entrySet()) {
+            final String path = entry.getKey();
+            final String mergeInfoString = entry.getKey();
+
+            mergeinfoMap.put(path, new Mergeinfo(mergeInfoString));
+        }
+        return mergeinfoMap;
     }
 
     private File getFile(String path) {
