@@ -1874,6 +1874,25 @@ public class SVNClientImpl implements ISVNClient {
         }
     }
 
+    protected static SVNDepth getDepth(Depth depth) {
+        switch (depth) {
+            case empty:
+                return SVNDepth.EMPTY;
+            case exclude:
+                return SVNDepth.EXCLUDE;
+            case files:
+                return SVNDepth.FILES;
+            case immediates:
+                return SVNDepth.IMMEDIATES;
+            case infinity:
+                return SVNDepth.INFINITY;
+            case unknown:
+                return SVNDepth.UNKNOWN;
+            default:
+                throw new IllegalArgumentException("Unknown depth " + depth);
+        }
+    }
+
     private Status getStatus(SvnStatus status) throws SVNException {
         String repositoryRelativePath = status.getRepositoryRelativePath() == null ? "" : status.getRepositoryRelativePath();
         SVNURL repositoryRootUrl = status.getRepositoryRootUrl();
