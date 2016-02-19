@@ -26,6 +26,8 @@ import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc.*;
 import org.tmatesoft.svn.core.internal.wc.patch.SVNPatchHunkInfo;
 import org.tmatesoft.svn.core.internal.wc2.ng.SvnDiffGenerator;
+import org.tmatesoft.svn.core.io.*;
+import org.tmatesoft.svn.core.io.diff.SVNDiffWindow;
 import org.tmatesoft.svn.core.javahl.JavaHLCompositeLog;
 import org.tmatesoft.svn.core.javahl.JavaHLDebugLog;
 import org.tmatesoft.svn.core.wc.*;
@@ -1988,6 +1990,17 @@ public class SVNClientImpl implements ISVNClient {
         }
     }
 
+    protected static DirEntry getDirEntry(SVNDirEntry dirEntry, String reposRelativePath) {
+        if (dirEntry == null) {
+            return null;
+        }
+        return new DirEntry(dirEntry.getRelativePath(), SVNPathUtil.append(reposRelativePath, dirEntry.getRelativePath()),
+                SVNClientImpl.getNodeKind(dirEntry.getKind()),
+                dirEntry.getSize(), dirEntry.hasProperties(),
+                dirEntry.getRevision(), dirEntry.getDate().getTime(),
+                dirEntry.getAuthor());
+    }
+
     static SVNRevision getSVNRevision(Revision revision) {
         if (revision == null) {
             return SVNRevision.UNDEFINED;
@@ -2118,6 +2131,84 @@ public class SVNClientImpl implements ISVNClient {
         return revisionPropertiesNames;
     }
 
+    protected static ISVNLocationSegmentHandler getLocationSegmentHandler(final RemoteLocationSegmentsCallback callback) {
+        if (callback == null) {
+            return null;
+        }
+        return new ISVNLocationSegmentHandler() {
+            public void handleLocationSegment(SVNLocationSegment locationSegment) throws SVNException {
+                callback.doSegment(getLocationSegment(locationSegment));
+            }
+        };
+    }
+
+    protected static ISVNRemote.LocationSegment getLocationSegment(SVNLocationSegment locationSegment) {
+        if (locationSegment == null) {
+            return null;
+        }
+        //TODO make constructor public!
+//        return new ISVNRemote.LocationSegment(locationSegment.getPath(), locationSegment.getStartRevision(), locationSegment.getEndRevision());
+        return null;
+    }
+
+    protected static List<ISVNRemote.LocationSegment> getLocationSegments(List<SVNLocationSegment> locationSegments) {
+        if (locationSegments == null) {
+            return null;
+        }
+        final List<ISVNRemote.LocationSegment> segments = new ArrayList<ISVNRemote.LocationSegment>();
+        for (SVNLocationSegment locationSegment : locationSegments) {
+            segments.add(getLocationSegment(locationSegment));
+        }
+        return segments;
+    }
+
+    protected static ISVNFileRevisionHandler getFileRevisionHandler(final RemoteFileRevisionsCallback callback) {
+        if (callback == null) {
+            return null;
+        }
+        //TODO make constructor public!
+        return null;
+    }
+
+    protected static Map<String, Lock> getLocks(SVNLock[] locks) {
+        if (locks == null) {
+            return null;
+        }
+        final Map<String, Lock> lockMap = new HashMap<String, Lock>();
+        for (SVNLock lock : locks) {
+            lockMap.put(lock.getPath(), getLock(lock));
+        }
+        return lockMap;
+    }
+
+    protected static SVNCapability getCapability(ISVNRemote.Capability capability) {
+        if (capability == null) {
+            return null;
+        }
+        switch (capability) {
+            case atomic_revprops:
+                return SVNCapability.ATOMIC_REVPROPS;
+            case commit_revprops:
+                return SVNCapability.COMMIT_REVPROPS;
+            case depth:
+                return SVNCapability.DEPTH;
+            case ephemeral_txnprops:
+                return SVNCapability.EPHEMERAL_PROPS;
+            case get_file_revs_reversed:
+                return SVNCapability.GET_FILE_REVS_REVERSED;
+            case log_revprops:
+                return SVNCapability.LOG_REVPROPS;
+            case inherited_props:
+                return SVNCapability.INHERITED_PROPS;
+            case mergeinfo:
+                return SVNCapability.MERGE_INFO;
+            case partial_replay:
+                return SVNCapability.PARTIAL_REPLAY;
+            default:
+                throw new IllegalArgumentException("Unknown capability " + capability);
+        }
+    }
+
     private ISvnObjectReceiver<SVNLogEntry> getLogEntryReceiver(final LogMessageCallback callback) {
         if (callback == null) {
             return null;
@@ -2129,7 +2220,19 @@ public class SVNClientImpl implements ISVNClient {
         };
     }
 
-    private Set<ChangePath> getChangePaths(Map<String, SVNLogEntryPath> changedPaths) {
+    protected static ISVNLogEntryHandler getLogEntryHandler(final LogMessageCallback callback) {
+        if (callback == null) {
+            return null;
+        }
+        return new ISVNLogEntryHandler() {
+            public void handleLogEntry(SVNLogEntry logEntry) throws SVNException {
+                callback.singleMessage(getChangePaths(logEntry.getChangedPaths()), logEntry.getRevision(),
+                        getProperties(logEntry.getRevisionProperties()), logEntry.hasChildren());
+            }
+        };
+    }
+
+    private static Set<ChangePath> getChangePaths(Map<String, SVNLogEntryPath> changedPaths) {
         if (changedPaths == null) {
             return null;
         }
@@ -2144,7 +2247,7 @@ public class SVNClientImpl implements ISVNClient {
         return changePaths;
     }
 
-    private ChangePath.Action getChangePathAction(char type) {
+    private static ChangePath.Action getChangePathAction(char type) {
         if (type == 'A') {
             return ChangePath.Action.add;
         } else if (type == 'M') {
@@ -3067,6 +3170,33 @@ public class SVNClientImpl implements ISVNClient {
             mergeinfoMap.put(path, new Mergeinfo(mergeInfoString));
         }
         return mergeinfoMap;
+    }
+
+    protected static String[] getStrings(Iterable<String> strings) {
+        if (strings == null) {
+            return null;
+        }
+        final ArrayList<String> stringsList = new ArrayList<String>();
+        for (String path : strings) {
+            stringsList.add(path);
+        }
+        return stringsList.toArray(new String[stringsList.size()]);
+    }
+
+    protected static long[] getLongs(Iterable<Long> longs) {
+        if (longs == null) {
+            return null;
+        }
+        final ArrayList<Long> longsList = new ArrayList<Long>();
+        for (Long v : longs) {
+            longsList.add(v);
+        }
+        final long[] output = new long[longsList.size()];
+        for (int i = 0; i < longsList.size(); i++) {
+            final Long v = longsList.get(i);
+            output[i] = v;
+        }
+        return output;
     }
 
     private File getFile(String path) {
