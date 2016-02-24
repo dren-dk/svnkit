@@ -5,10 +5,14 @@ import org.apache.subversion.javahl.ISVNEditor;
 import org.apache.subversion.javahl.ISVNRemote;
 import org.apache.subversion.javahl.ISVNReporter;
 import org.apache.subversion.javahl.callback.*;
+import org.apache.subversion.javahl.remote.JavaHLRemoteAccessUtil;
 import org.apache.subversion.javahl.types.*;
 import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.internal.wc17.ISVNEditor2;
+import org.tmatesoft.svn.core.internal.wc17.ISVNEditorProxyCallbacks;
+import org.tmatesoft.svn.core.internal.wc17.SVNEditorProxy;
 import org.tmatesoft.svn.core.io.SVNLocationSegment;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.util.SVNLogType;
@@ -186,15 +190,15 @@ public class JavaHLRemoteSession implements ISVNRemote, ISVNCanceller {
     }
 
     public ISVNReporter status(final String statusTarget, final long revision, final Depth depth, RemoteStatus receiver) throws ClientException {
-        //TODO
+        final ISVNEditor editor = JavaHLRemoteAccessUtil.remoteStatusCallbackAsEditor(receiver); //JavaHL editor2
+        final ISVNEditor2 editor2 = new JavaHLEditorWrapper(editor); //SVNKit editor2
+        final SVNEditorProxy svnEditor = new SVNEditorProxy(editor2, ISVNEditorProxyCallbacks.DUMMY); //SVNKit editor1
+
         return new JavaHLReporter() {
             @Override
             public long finishReport() throws ClientException {
-                if (2+2==4) {
-                    throw new UnsupportedOperationException("Editor V2 is not supported yet");
-                }
                 try {
-                    svnRepository.status(revision, statusTarget, SVNClientImpl.getDepth(depth), getReporter(), null);
+                    svnRepository.status(revision, statusTarget, SVNClientImpl.getDepth(depth), getReporter(), svnEditor);
                     return -1;
                 } catch (SVNException e) {
                     throw ClientException.fromException(e);

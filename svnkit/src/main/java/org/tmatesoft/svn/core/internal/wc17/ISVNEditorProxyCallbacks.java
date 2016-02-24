@@ -6,6 +6,20 @@ import java.io.File;
 
 public interface ISVNEditorProxyCallbacks {
 
+    public static final ISVNEditorProxyCallbacks DUMMY = new ISVNEditorProxyCallbacks() {
+        public void unlock(String path) {
+        }
+        public SVNProperties fetchProperties(String path, long baseRevision) {
+            return null;
+        }
+        public File fetchBase(String path, long baseRevision) {
+            return null;
+        }
+        public ISVNEditorExtraCallbacks getExtraCallbacks() {
+            return ISVNEditorExtraCallbacks.DUMMY;
+        }
+    };
+
     void unlock(String path);
 
     SVNProperties fetchProperties(String path, long baseRevision);

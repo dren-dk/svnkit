@@ -2280,6 +2280,19 @@ public class SVNClientImpl implements ISVNClient {
         }
     }
 
+    protected static SVNProperties getProperties(Map<String, byte[]> svnProperties) {
+        if (svnProperties == null) {
+            return null;
+        }
+        final SVNProperties properties = new SVNProperties();
+        for (Map.Entry<String, byte[]> entry : svnProperties.entrySet()) {
+            final String propertyName = entry.getKey();
+            final byte[] propertyValue = entry.getValue();
+            properties.put(propertyName, propertyValue);
+        }
+        return properties;
+    }
+
     protected static Map<String, byte[]> getProperties(SVNProperties svnProperties) {
         if (svnProperties == null) {
             return new HashMap<String, byte[]>();
@@ -2748,7 +2761,7 @@ public class SVNClientImpl implements ISVNClient {
         return conflictDescriptors;
     }
 
-    private Checksum getChecksum(SvnChecksum checksum) {
+    public static Checksum getChecksum(SvnChecksum checksum) {
         if (checksum == null) {
             return null;
         }

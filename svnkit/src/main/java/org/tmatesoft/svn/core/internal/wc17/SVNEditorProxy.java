@@ -46,6 +46,19 @@ public class SVNEditorProxy implements ISVNEditor {
         this.editor2 = editor2;
         this.proxyCallbacks = proxyCallbacks;
         this.svnDeltaProcessor = new SVNDeltaProcessor();
+        this.tempDirectory = new File(System.getProperty("java.io.tmpdir"));
+    }
+
+    public void setRepositoryRoot(SVNURL repositoryRoot) {
+        this.repositoryRoot = repositoryRoot;
+    }
+
+    public void setBaseRelPath(String baseRelPath) {
+        this.baseRelPath = baseRelPath;
+    }
+
+    public void setTempDirectory(File tempDirectory) {
+        this.tempDirectory = tempDirectory;
     }
 
     public void targetRevision(long revision) throws SVNException {
