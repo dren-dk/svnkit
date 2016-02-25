@@ -15,12 +15,22 @@ import org.tmatesoft.svn.core.internal.wc17.ISVNEditorProxyCallbacks;
 import org.tmatesoft.svn.core.internal.wc17.SVNEditorProxy;
 import org.tmatesoft.svn.core.io.SVNLocationSegment;
 import org.tmatesoft.svn.core.io.SVNRepository;
+import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
 import org.tmatesoft.svn.util.SVNLogType;
 
 import java.io.OutputStream;
 import java.util.*;
 
 public class JavaHLRemoteSession implements ISVNRemote, ISVNCanceller {
+
+    public static JavaHLRemoteSession open(SVNURL url) throws ClientException {
+        try {
+            final SVNRepository svnRepository = SVNRepositoryFactory.create(url);
+            return new JavaHLRemoteSession(svnRepository);
+        } catch (SVNException e) {
+            throw ClientException.fromException(e);
+        }
+    }
 
     private final SVNRepository svnRepository;
     private boolean cancelled;
@@ -193,6 +203,11 @@ public class JavaHLRemoteSession implements ISVNRemote, ISVNCanceller {
         final ISVNEditor editor = JavaHLRemoteAccessUtil.remoteStatusCallbackAsEditor(receiver); //JavaHL editor2
         final ISVNEditor2 editor2 = new JavaHLEditorWrapper(editor); //SVNKit editor2
         final SVNEditorProxy svnEditor = new SVNEditorProxy(editor2, ISVNEditorProxyCallbacks.DUMMY); //SVNKit editor1
+        try {
+            svnEditor.setRepositoryRoot(svnRepository.getRepositoryRoot(false));
+        } catch (SVNException e) {
+            throw ClientException.fromException(e);
+        }
 
         return new JavaHLReporter() {
             @Override

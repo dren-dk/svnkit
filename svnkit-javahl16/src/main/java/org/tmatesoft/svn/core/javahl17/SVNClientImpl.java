@@ -13,6 +13,7 @@ import java.util.*;
 import org.apache.subversion.javahl.*;
 import org.apache.subversion.javahl.ConflictDescriptor.Operation;
 import org.apache.subversion.javahl.ConflictResult.Choice;
+import org.apache.subversion.javahl.ISVNReporter;
 import org.apache.subversion.javahl.callback.*;
 import org.apache.subversion.javahl.types.*;
 import org.apache.subversion.javahl.types.Mergeinfo.LogKind;
@@ -27,7 +28,6 @@ import org.tmatesoft.svn.core.internal.wc.*;
 import org.tmatesoft.svn.core.internal.wc.patch.SVNPatchHunkInfo;
 import org.tmatesoft.svn.core.internal.wc2.ng.SvnDiffGenerator;
 import org.tmatesoft.svn.core.io.*;
-import org.tmatesoft.svn.core.io.diff.SVNDiffWindow;
 import org.tmatesoft.svn.core.javahl.JavaHLCompositeLog;
 import org.tmatesoft.svn.core.javahl.JavaHLDebugLog;
 import org.tmatesoft.svn.core.wc.*;
@@ -1832,13 +1832,15 @@ public class SVNClientImpl implements ISVNClient {
     }
 
     public ISVNRemote openRemoteSession(String pathOrUrl) throws ClientException, SubversionException {
-        //TODO JavaHL 1.9
-        throw new UnsupportedOperationException("TODO");
+        try {
+            return JavaHLRemoteSession.open(SVNURL.parseURIEncoded(pathOrUrl));
+        } catch (SVNException e) {
+            throw ClientException.fromException(e);
+        }
     }
 
     public ISVNRemote openRemoteSession(String pathOrUrl, int retryAttempts) throws ClientException, SubversionException {
-        //TODO JavaHL 1.9
-        throw new UnsupportedOperationException("TODO");
+        return openRemoteSession(pathOrUrl);
     }
 
     private SVNDepth getSVNDepth(Depth depth) {
@@ -2768,7 +2770,7 @@ public class SVNClientImpl implements ISVNClient {
         return new Checksum(checksum.getDigest().getBytes(), getChecksumKind(checksum.getKind()));
     }
 
-    private Checksum.Kind getChecksumKind(SvnChecksum.Kind kind) {
+    private static Checksum.Kind getChecksumKind(SvnChecksum.Kind kind) {
         if (kind == null) {
             return null;
         }

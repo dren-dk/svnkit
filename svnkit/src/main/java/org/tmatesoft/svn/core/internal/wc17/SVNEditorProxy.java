@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -47,6 +48,8 @@ public class SVNEditorProxy implements ISVNEditor {
         this.proxyCallbacks = proxyCallbacks;
         this.svnDeltaProcessor = new SVNDeltaProcessor();
         this.tempDirectory = new File(System.getProperty("java.io.tmpdir"));
+        this.changes = new HashMap<String, ChangeNode>();
+        this.pathOrder = new ArrayList<String>();
     }
 
     public void setRepositoryRoot(SVNURL repositoryRoot) {
@@ -66,7 +69,13 @@ public class SVNEditorProxy implements ISVNEditor {
     }
 
     public void openRoot(long revision) throws SVNException {
+        final DirectoryBaton directoryBaton = new DirectoryBaton();
+        directoryBaton.path = "";
+
         proxyCallbacks.getExtraCallbacks().startEdit(revision);
+
+        directoryBaton.parent = currentDirectoryBaton;
+        currentDirectoryBaton = directoryBaton;
     }
 
     public void deleteEntry(String path, long revision) throws SVNException {
@@ -274,6 +283,9 @@ public class SVNEditorProxy implements ISVNEditor {
             } else {
                 change.properties = proxyCallbacks.fetchProperties(relPath, baseRevision);
             }
+        }
+        if (change.properties == null) {
+            change.properties = new SVNProperties();
         }
         if (value == null) {
             change.properties.put(name, (SVNPropertyValue)null);
