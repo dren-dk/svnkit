@@ -77,7 +77,18 @@ public abstract class SvnRepositoryAccess {
     
     public abstract Structure<UrlInfo> getURLFromPath(SvnTarget path, SVNRevision revision, SVNRepository repository) throws SVNException;
 
-    
+    public SVNURL resolveUrl(SvnTarget target, SVNRepository repository, SVNRevision pegRevision, SVNRevision revision) throws SVNException {
+        SVNRevision[] resolvedRevisions = resolveRevisions(pegRevision, revision, target.isURL(), true);
+        SVNRevision pegRev = resolvedRevisions[0];
+        SVNRevision startRev = resolvedRevisions[1];
+
+        Structure<LocationsInfo> locationsInfo = getLocations(repository, target, pegRev, startRev, SVNRevision.UNDEFINED);
+        SVNURL url = locationsInfo.<SVNURL>get(LocationsInfo.startUrl);
+        locationsInfo.release();
+
+        return url;
+    }
+
     protected SVNRevision[] resolveRevisions(SVNRevision pegRevision, SVNRevision revision, boolean isURL, boolean noticeLocalModifications) {
         if (!pegRevision.isValid()) {
             if (isURL) {
