@@ -2194,16 +2194,20 @@ public abstract class SVNRepository {
      * @throws SVNException 
      * @since                             1.2.0
      */
-    public void checkoutFiles(long revision, String[] paths, ISVNFileCheckoutTarget fileCheckoutHandler) throws SVNException {
+    public void checkoutFiles(long revision, final String[] paths, ISVNFileCheckoutTarget fileCheckoutHandler) throws SVNException {
         final long lastRev = revision >= 0 ? revision : getLatestRevision();
-        final List pathsList = new ArrayList(Arrays.asList(paths));
-        Collections.sort(pathsList, SVNPathUtil.PATH_COMPARATOR);
         ISVNReporterBaton reporterBaton = new ISVNReporterBaton() {
             public void report(ISVNReporter reporter) throws SVNException {
-                reporter.setPath("", null, lastRev, SVNDepth.INFINITY, false);
-                for (Iterator ps = pathsList.iterator(); ps.hasNext();) {
-                    String path = (String) ps.next();
-                    reporter.deletePath(path);
+                if (paths != null && paths.length > 0) {
+                    final List pathsList = new ArrayList(Arrays.asList(paths));
+                    Collections.sort(pathsList, SVNPathUtil.PATH_COMPARATOR);
+                    reporter.setPath("", null, lastRev, SVNDepth.INFINITY, false);
+                    for (Iterator ps = pathsList.iterator(); ps.hasNext(); ) {
+                        String path = (String) ps.next();
+                        reporter.deletePath(path);
+                    }
+                } else {
+                    reporter.setPath("", null, lastRev, SVNDepth.INFINITY, true);
                 }
                 reporter.finishReport();
             }
