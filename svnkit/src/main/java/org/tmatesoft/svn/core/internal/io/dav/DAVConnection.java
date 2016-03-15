@@ -212,7 +212,6 @@ public class DAVConnection {
 
     public SVNLock doLock(String repositoryPath, String path, DAVRepository repos, String comment, boolean force, long revision) throws SVNException {
         beforeCall();
-        DAVBaselineInfo info = DAVUtil.getBaselineInfo(this, repos, path, -1, false, true, null);
 
         StringBuffer body = DAVLockHandler.generateSetLockRequest(null, comment);
         HTTPHeader header = new HTTPHeader();
