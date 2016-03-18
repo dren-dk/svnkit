@@ -380,7 +380,7 @@ public class FSLogicalAddressingIndex {
             pageInfo.setPageNumber(0);
             pageInfo.setEntry(pageTable[((int) pageTableIndex[((int) relativeRevision)])]);
         } else {
-            long maxItemIndex = pageTableIndex[((int) (relativeRevision + 1))] - pageTableIndex[((int) relativeRevision)];
+            long maxItemIndex = header.getPageSize()*(pageTableIndex[((int) (relativeRevision + 1))] - pageTableIndex[((int) relativeRevision)]);
 
             if (itemIndex >= maxItemIndex) {
                 SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_INDEX_OVERFLOW, "Item index {0} exceeds l2p limit " +
