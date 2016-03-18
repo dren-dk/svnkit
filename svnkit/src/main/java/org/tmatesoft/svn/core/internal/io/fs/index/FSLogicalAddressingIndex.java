@@ -383,8 +383,8 @@ public class FSLogicalAddressingIndex {
             long maxItemIndex = pageTableIndex[((int) (relativeRevision + 1))] - pageTableIndex[((int) relativeRevision)];
 
             if (itemIndex >= maxItemIndex) {
-                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_INDEX_OVERFLOW, "Item index {{0}} exceeds l2p limit " +
-                        "of {{1}} for revision {{2}}", itemIndex, maxItemIndex, revision);
+                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_INDEX_OVERFLOW, "Item index {0} exceeds l2p limit " +
+                        "of {1} for revision {2}", itemIndex, maxItemIndex, revision);
                 SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
             }
 
@@ -429,7 +429,7 @@ public class FSLogicalAddressingIndex {
 
         final long nextRevision = firstRevision + revisionCount;
         if (firstRevision > revision || nextRevision <= revision) {
-            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_INDEX_CORRUPTION, "Corrupt L2P index for r{{0}} only covers r{{1}}:{{2}}", revision, firstRevision, nextRevision);
+            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_INDEX_CORRUPTION, "Corrupt L2P index for r{0} only covers r{1}:{2}", revision, firstRevision, nextRevision);
             SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
         }
 

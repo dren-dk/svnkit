@@ -5348,7 +5348,7 @@ public class SVNWCContext {
 
         SVNNodeKind kind = SVNFileType.getNodeKind(SVNFileType.getType(localAbsPath));
         if (kind == SVNNodeKind.NONE) {
-            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_PATH_FOUND, "The node '{{0}}' was not found.", localAbsPath);
+            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_PATH_FOUND, "The node ''{0}'' was not found.", localAbsPath);
             SVNErrorManager.error(errorMessage, SVNLogType.WC);
         }
 

@@ -2823,7 +2823,7 @@ public class SVNWCDb implements ISVNWCDb {
 
             if (haveRow) {
                 SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_PATH_UNEXPECTED_STATUS,
-                        "Modification of '{{0}}' already exists", localAbspath);
+                        "Modification of ''{0}'' already exists", localAbspath);
                 SVNErrorManager.error(errorMessage, SVNLogType.WC);
             }
 
@@ -3485,7 +3485,7 @@ public class SVNWCDb implements ISVNWCDb {
                 }
 
                 SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_PATH_NOT_FOUND,
-                        "The node '{{0}}' was not found.", localRelPath); //TODO: transform path
+                        "The node ''{0}'' was not found.", localRelPath); //TODO: transform path
                 SVNErrorManager.error(errorMessage, SVNLogType.WC);
             }
 
@@ -5185,7 +5185,7 @@ public class SVNWCDb implements ISVNWCDb {
             if (haveRow) {
                 File serverExcludedRelpath = SVNFileUtil.createFilePath(stmt.getColumnString(NODES__Fields.local_relpath));
                 SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.AUTHZ_UNREADABLE,
-                        "Cannot copy '{{0}}' excluded by server",
+                        "Cannot copy ''{0}'' excluded by server",
                         SVNFileUtil.createFilePath(wcRoot.getAbsPath(), serverExcludedRelpath));
                 SVNErrorManager.error(errorMessage, SVNLogType.WC);
             }
@@ -6786,7 +6786,7 @@ public class SVNWCDb implements ISVNWCDb {
 
         if (!localAbsPath.equals(wriAbsPath)) {
             if (!SVNPathUtil.isAncestor(SVNFileUtil.getFilePath(wcRootAbsPath), SVNFileUtil.getFilePath(localAbsPath))) {
-                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_PATH_NOT_FOUND, "The node '{{0}}' is not in working copy '{{1}}'",
+                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.WC_PATH_NOT_FOUND, "The node ''{0}'' is not in working copy ''{1}''",
                         localAbsPath, wcRootAbsPath);
                 SVNErrorManager.error(errorMessage, SVNLogType.WC);
             }

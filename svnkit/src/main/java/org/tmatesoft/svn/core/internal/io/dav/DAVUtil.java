@@ -392,13 +392,13 @@ public class DAVUtil {
         }
         switch (code) {
             case 201:
-                return SVNErrorMessage.create(SVNErrorCode.RA_DAV_REQUEST_FAILED, "Path '{{0}}' unexpectedly created", path);
+                return SVNErrorMessage.create(SVNErrorCode.RA_DAV_REQUEST_FAILED, "Path ''{0}'' unexpectedly created", path);
             case 204:
-                return SVNErrorMessage.create(SVNErrorCode.FS_ALREADY_EXISTS, "Path '{{0}}' already exists", path);
+                return SVNErrorMessage.create(SVNErrorCode.FS_ALREADY_EXISTS, "Path ''{0}'' already exists", path);
             case 405:
-                return SVNErrorMessage.create(SVNErrorCode.RA_DAV_METHOD_NOT_ALLOWED, "The HTTP method '{{0}}' is not allowed on '{{0}}'", method, path);
+                return SVNErrorMessage.create(SVNErrorCode.RA_DAV_METHOD_NOT_ALLOWED, "The HTTP method ''{0}'' is not allowed on ''{1}''", method, path);
             default:
-                return SVNErrorMessage.create(SVNErrorCode.RA_DAV_REQUEST_FAILED, "Unexpected HTTP status {{0}} '{{1}}' on '{{2}}' request to '{{3}}'", code, httpStatus.getReason(), method, path);
+                return SVNErrorMessage.create(SVNErrorCode.RA_DAV_REQUEST_FAILED, "Unexpected HTTP status {0} ''{1}'' on ''{2}'' request to ''{3}''", code, httpStatus.getReason(), method, path);
         }
     }
 
@@ -410,30 +410,30 @@ public class DAVUtil {
             case 303:
             case 307:
             case 308:
-                return SVNErrorMessage.create(SVNErrorCode.RA_DAV_RELOCATED, (code == 301) ? "Repository moved permanently to '{{0}}'" : "Repository moved temporarily to '%s'", location);
+                return SVNErrorMessage.create(SVNErrorCode.RA_DAV_RELOCATED, (code == 301) ? "Repository moved permanently to ''{0}''" : "Repository moved temporarily to '%s'", location);
             case 403:
-                return SVNErrorMessage.create(SVNErrorCode.RA_DAV_FORBIDDEN, "Access to '{{0}}' forbidden", path);
+                return SVNErrorMessage.create(SVNErrorCode.RA_DAV_FORBIDDEN, "Access to ''{0}'' forbidden", path);
             case 404:
-                return SVNErrorMessage.create(SVNErrorCode.FS_NOT_FOUND, "'{{0}}' path not found", path);
+                return SVNErrorMessage.create(SVNErrorCode.FS_NOT_FOUND, "''{0}'' path not found", path);
             case 405:
-                return SVNErrorMessage.create(SVNErrorCode.RA_DAV_METHOD_NOT_ALLOWED, "HTTP method is not allowed on '{{0}}'", path);
+                return SVNErrorMessage.create(SVNErrorCode.RA_DAV_METHOD_NOT_ALLOWED, "HTTP method is not allowed on ''{0}''", path);
             case 409:
-                return SVNErrorMessage.create(SVNErrorCode.FS_CONFLICT, "'{{0}}' conflicts", path);
+                return SVNErrorMessage.create(SVNErrorCode.FS_CONFLICT, "''{0}'' conflicts", path);
             case 412:
-                return SVNErrorMessage.create(SVNErrorCode.RA_DAV_PRECONDITION_FAILED, "Precondition on '{{0}}' failed", path);
+                return SVNErrorMessage.create(SVNErrorCode.RA_DAV_PRECONDITION_FAILED, "Precondition on ''{0}'' failed", path);
             case 423:
-                return SVNErrorMessage.create(SVNErrorCode.FS_NO_LOCK_TOKEN, "'{{0}}': no lock token available", path);
+                return SVNErrorMessage.create(SVNErrorCode.FS_NO_LOCK_TOKEN, "''{0}'': no lock token available", path);
             case 411:
                 return SVNErrorMessage.create(SVNErrorCode.RA_DAV_REQUEST_FAILED, "DAV request failed: 411 Content length required. The server or an intermediate proxy does not accept " +
                         "chunked encoding. Try setting 'http-chunked-requests' to 'auto' or 'no' in your client configuration.");
             case 500:
-                return SVNErrorMessage.create(SVNErrorCode.RA_DAV_REQUEST_FAILED, "Unexpected server error {{0}} '{{1}}' on '{{2}}'", code, httpStatus.getReason(), path);
+                return SVNErrorMessage.create(SVNErrorCode.RA_DAV_REQUEST_FAILED, "Unexpected server error {0} ''{1}'' on ''{2}''", code, httpStatus.getReason(), path);
             case 501:
                 return SVNErrorMessage.create(SVNErrorCode.UNSUPPORTED_FEATURE, "The requested feature is not supported by '%s'", path);
         }
 
         if (code >= 300 || code <= 199) {
-            return SVNErrorMessage.create(SVNErrorCode.RA_DAV_REQUEST_FAILED, "Unexpected HTTP status {{0}} '{{1}}' on '{{2}}'", code, httpStatus.getReason(), path);
+            return SVNErrorMessage.create(SVNErrorCode.RA_DAV_REQUEST_FAILED, "Unexpected HTTP status {0} ''{1}'' on ''{2}''", code, httpStatus.getReason(), path);
         }
         return null;
     }
