@@ -206,9 +206,8 @@ public class DAVRepository extends SVNRepository {
 		StringBuffer request = DAVDateRevisionHandler.generateDateRevisionRequest(null, date);
     	try {
     		openConnection();
-            String path = getLocation().getURIEncodedPath();
             DAVConnection connection = getConnection();
-            path = DAVUtil.getVCCPath(connection, this, path);
+            String path = getReportTarget(connection);
 			HTTPStatus status = connection.doReport(path, request, handler);
             if (status.getError() != null) {
                 if (status.getError().getErrorCode() == SVNErrorCode.UNSUPPORTED_FEATURE) {
@@ -941,7 +940,7 @@ public class DAVRepository extends SVNRepository {
             if (isValidRevision(startRevision) && isValidRevision(endRevision)) {
                 revision = Math.max(startRevision, endRevision);
             }
-            DAVBaselineInfo info = DAVUtil.getBaselineInfo(connection, this, bcPath, revision, false, false, null);
+            DAVBaselineInfo info = DAVUtil.getStableURL(connection, this, bcPath, revision, false, false, null);
             bcPath = SVNPathUtil.append(info.baselineBase, info.baselinePath);
             HTTPStatus status = connection.doReport(bcPath, request, davHandler);
             if (status.getCode() == 501) {
@@ -1019,7 +1018,7 @@ public class DAVRepository extends SVNRepository {
             }
             long revision = Math.max(startRevision, endRevision);
             path = SVNEncodingUtil.uriEncode(path);
-            DAVBaselineInfo info = DAVUtil.getBaselineInfo(connection, this, path, revision, false, false, null);
+            DAVBaselineInfo info = DAVUtil.getStableURL(connection, this, path, revision, false, false, null);
             path = SVNPathUtil.append(info.baselineBase, info.baselinePath);
             try {
                 HTTPStatus status = connection.doReport(path, request, davHandler);
@@ -1087,7 +1086,7 @@ public class DAVRepository extends SVNRepository {
             DAVLocationsHandler davHandler = new DAVLocationsHandler(handler);
             String root = getLocation().getPath();
             root = SVNEncodingUtil.uriEncode(root);
-            DAVBaselineInfo info = DAVUtil.getBaselineInfo(connection, this, root, pegRevision, false, false, null);
+            DAVBaselineInfo info = DAVUtil.getStableURL(connection, this, root, pegRevision, false, false, null);
             path = SVNPathUtil.append(info.baselineBase, info.baselinePath);
             HTTPStatus status = connection.doReport(path, request, davHandler);
             if (status.getCode() == 501) {
@@ -1125,7 +1124,7 @@ public class DAVRepository extends SVNRepository {
             DAVLocationSegmentsHandler davHandler = new DAVLocationSegmentsHandler(handler);
             String root = absolutePath ? myRepositoryRoot.getPath() : getLocation().getPath();
             root = SVNEncodingUtil.uriEncode(root);
-            DAVBaselineInfo info = DAVUtil.getBaselineInfo(connection, this, root, pegRevision, false,
+            DAVBaselineInfo info = DAVUtil.getStableURL(connection, this, root, pegRevision, false,
                     false, null);
             path = SVNPathUtil.append(info.baselineBase, info.baselinePath);
             HTTPStatus status = connection.doReport(path, request, davHandler);
@@ -1243,7 +1242,7 @@ public class DAVRepository extends SVNRepository {
             String thisSessionPath = doGetFullPath("");
             thisSessionPath = SVNEncodingUtil.uriEncode(thisSessionPath);
 
-            DAVBaselineInfo info = DAVUtil.getBaselineInfo(connection, this, thisSessionPath, pegRevision, false, false, null);
+            DAVBaselineInfo info = DAVUtil.getStableURL(connection, this, thisSessionPath, pegRevision, false, false, null);
             String finalBCPath = SVNPathUtil.append(info.baselineBase, info.baselinePath);
             StringBuffer requestBody = DAVDeletedRevisionHandler.generateGetDeletedRevisionRequest(null, path, pegRevision, endRevision);
             DAVDeletedRevisionHandler handler = new DAVDeletedRevisionHandler();
@@ -1329,16 +1328,17 @@ public class DAVRepository extends SVNRepository {
                     resourceWalk, fetchContents, sendCopyFromArgs, sendAll, reporter);
             handler = new DAVEditorHandler(myConnectionFactory, this, editor, lockTokens, fetchContents,
                     target != null && !"".equals(target), workingCopyContentMediator);
-            String bcPath = SVNEncodingUtil.uriEncode(getLocation().getPath());
+
+            String reportTarget;
             try {
-                bcPath = DAVUtil.getVCCPath(connection, this, bcPath);
+                reportTarget = getReportTarget(connection);
             } catch (SVNException e) {
                 if (closeEditorOnException) {
                     editor.closeEdit();
                 }
                 throw e;
             }
-            HTTPStatus status = connection.doReport(bcPath, request, handler, spool);
+            HTTPStatus status = connection.doReport(reportTarget, request, handler, spool);
             if (status.getError() != null) {
                 SVNErrorManager.error(status.getError(), SVNLogType.NETWORK);
             }
@@ -1347,6 +1347,15 @@ public class DAVRepository extends SVNRepository {
                 handler.closeConnection();
             }
             closeConnection();
+        }
+    }
+
+    private String getReportTarget(DAVConnection connection) throws SVNException {
+        if (isHttpV2Enabled()) {
+            return connection.getMeResource();
+        } else {
+            String bcPath = getLocation().getURIEncodedPath();
+            return DAVUtil.getVCCPath(connection, this, bcPath);
         }
     }
 
@@ -1405,7 +1414,7 @@ public class DAVRepository extends SVNRepository {
             String thisSessionPath = doGetFullPath("");
             thisSessionPath = SVNEncodingUtil.uriEncode(thisSessionPath);
 
-            final DAVBaselineInfo info = DAVUtil.getBaselineInfo(connection, this, thisSessionPath, revision, false, false, null);
+            final DAVBaselineInfo info = DAVUtil.getStableURL(connection, this, thisSessionPath, revision, false, false, null);
             final String finalBCPath = SVNPathUtil.append(info.baselineBase, info.baselinePath);
             final StringBuffer requestBody = DAVInheritedPropertiesHandler.generateReport(null, path, revision);
             final DAVInheritedPropertiesHandler davHandler = new DAVInheritedPropertiesHandler();
