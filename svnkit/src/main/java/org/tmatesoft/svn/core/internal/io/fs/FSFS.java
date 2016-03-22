@@ -971,7 +971,7 @@ public class FSFS {
 
         deltaProcessor.applyTextDelta(baseStream, byteArrayOutputStream, true);
 
-        while ((readCount = revisionFile.read(buffer, 0, deltaSize)) != -1) {
+        while ((readCount = revisionFile.read(buffer, 0, Math.min(buffer.length, deltaSize))) != -1) {
             if (readCount == 0) {
                 continue;
             }
