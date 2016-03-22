@@ -238,7 +238,9 @@ public class DAVUtil {
     }
 
     public static DAVProperties getBaselineProperties(DAVConnection connection, DAVRepository repos, String path, long revision, DAVElement[] elements) throws SVNException {
-        if (repos.isHttpV2Enabled()) {
+        final boolean httpV2Enabled = (repos != null) ? repos.isHttpV2Enabled() :
+                ((DAVRepository) connection.getRepository()).isHttpV2Enabled();
+        if (httpV2Enabled) {
             if (revision < 0) {
                 revision = getLatestRevisionHttpV2(connection);
             }
