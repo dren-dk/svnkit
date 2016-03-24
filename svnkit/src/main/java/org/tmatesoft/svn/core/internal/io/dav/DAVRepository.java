@@ -284,7 +284,7 @@ public class DAVRepository extends SVNRepository {
             path = SVNEncodingUtil.uriEncode(path);
             DAVConnection connection = getConnection();
             if (revision != -2) {
-                DAVBaselineInfo info = DAVUtil.getBaselineInfo(connection, this, path, revision, false, true, null);
+                DAVBaselineInfo info = DAVUtil.getStableURL(connection, this, path, revision, false, true, null);
                 path = SVNPathUtil.append(info.baselineBase, info.baselinePath);
                 fileRevision = info.revision;
             }
@@ -336,7 +336,7 @@ public class DAVRepository extends SVNRepository {
             final String fullPath = path;
             DAVConnection connection = getConnection();
             if (revision != -2) {
-                DAVBaselineInfo info = DAVUtil.getBaselineInfo(connection, this, path, revision, false, true, null);
+                DAVBaselineInfo info = DAVUtil.getStableURL(connection, this, path, revision, false, true, null);
                 path = SVNPathUtil.append(info.baselineBase, info.baselinePath);
                 dirRevision = info.revision;
             }
@@ -494,7 +494,7 @@ public class DAVRepository extends SVNRepository {
             final String fullPath = path;
             DAVConnection connection = getConnection();
             if (revision >= 0) {
-                DAVBaselineInfo info = DAVUtil.getBaselineInfo(connection, this, path, revision, false, true, null);
+                DAVBaselineInfo info = DAVUtil.getStableURL(connection, this, path, revision, false, true, null);
                 path = SVNPathUtil.append(info.baselineBase, info.baselinePath);
             }
             final int parentPathSegments = SVNPathUtil.getSegmentsCount(path);
@@ -776,7 +776,7 @@ public class DAVRepository extends SVNRepository {
 
             if (revision >= 0) {
                 try {
-                    DAVBaselineInfo info = DAVUtil.getBaselineInfo(connection, this, path, revision, false, true, null);
+                    DAVBaselineInfo info = DAVUtil.getStableURL(connection, this, path, revision, false, true, null);
                     path = SVNPathUtil.append(info.baselineBase, info.baselinePath);
                 } catch (SVNException e) {
                     if (e.getErrorMessage() != null && e.getErrorMessage().getErrorCode() == SVNErrorCode.FS_NOT_FOUND) {
@@ -1269,7 +1269,7 @@ public class DAVRepository extends SVNRepository {
         String path = doGetFullPath("");
         path = SVNEncodingUtil.uriEncode(path);
         DAVConnection connection = getConnection();
-        DAVBaselineInfo info = DAVUtil.getBaselineInfo(connection, this, path, revision, false, true, null);
+        DAVBaselineInfo info = DAVUtil.getStableURL(connection, this, path, revision, false, true, null);
         path = SVNPathUtil.append(info.baselineBase, info.baselinePath);
 
         if (paths == null || paths.length == 0) {

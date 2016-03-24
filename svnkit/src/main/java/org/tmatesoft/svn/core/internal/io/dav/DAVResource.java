@@ -102,7 +102,7 @@ class DAVResource {
         String path = myURL;
         if (myRevision >= 0) {
             // get baseline collection url for revision from public url.
-            DAVBaselineInfo info = DAVUtil.getBaselineInfo(myConnection, null, path, myRevision, false, false, null);
+            DAVBaselineInfo info = DAVUtil.getStableURL(myConnection, null, path, myRevision, false, false, null);
             path = SVNPathUtil.append(info.baselineBase, info.baselinePath);
         }
         // get "checked-in" property from baseline collection or from HEAD, this will be vURL.
