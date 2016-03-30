@@ -451,7 +451,7 @@ class DAVCommitEditor implements ISVNEditor {
                             case 423:
                                 SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.RA_NOT_LOCKED,
                                         "No lock on path ''{0}'' (Status {0} on PUT Request)",
-                                        new Object[]{currentFile.getWorkingURL(), httpStatus.getCode()});
+                                        new Object[]{myConnection.hasHttpV2Support() ? currentFile.getCustomURL() : currentFile.getWorkingURL(), httpStatus.getCode()});
                                 SVNErrorManager.error(errorMessage, e, SVNLogType.CLIENT);
                             default:
                                 throw e;
