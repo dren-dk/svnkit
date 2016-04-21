@@ -421,6 +421,8 @@ public final class HTTPSSLKeyManager implements X509KeyManager {
             throw (SVNException) exception;
         } else if (exception != null) {
             throw new SVNException(SVNErrorMessage.UNKNOWN_ERROR_MESSAGE, exception);
+        } if (errorMessage != null && isNonInteractive()) {
+            throw new SVNException(errorMessage);
         }
     }
     
