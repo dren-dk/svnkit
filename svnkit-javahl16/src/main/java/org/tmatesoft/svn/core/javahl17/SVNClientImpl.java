@@ -3469,6 +3469,9 @@ public class SVNClientImpl implements ISVNClient {
     }
 
     private ISVNConfigEventHandler getConfigEventHandler(final ConfigEvent configHandler) {
+        if (configHandler == null) {
+            return null;
+        }
         return new ISVNConfigEventHandler() {
             public void onLoad(final SVNCompositeConfigFile configFile, final SVNCompositeConfigFile serversFile) {
                 configHandler.onLoad(new ISVNConfig() {
