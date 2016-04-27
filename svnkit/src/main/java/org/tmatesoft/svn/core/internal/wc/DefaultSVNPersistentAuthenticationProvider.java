@@ -11,11 +11,20 @@
  */
 package org.tmatesoft.svn.core.internal.wc;
 
-import org.tmatesoft.svn.core.*;
-import org.tmatesoft.svn.core.auth.*;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNProperties;
+import org.tmatesoft.svn.core.SVNPropertyValue;
+import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
+import org.tmatesoft.svn.core.auth.ISVNAuthenticationProvider;
+import org.tmatesoft.svn.core.auth.SVNAuthentication;
+import org.tmatesoft.svn.core.auth.SVNPasswordAuthentication;
+import org.tmatesoft.svn.core.auth.SVNSSHAuthentication;
+import org.tmatesoft.svn.core.auth.SVNSSLAuthentication;
+import org.tmatesoft.svn.core.auth.SVNUserNameAuthentication;
 import org.tmatesoft.svn.core.internal.util.SVNHashMap;
 import org.tmatesoft.svn.core.internal.util.jna.SVNJNAUtil;
-import org.tmatesoft.svn.util.SVNLogType;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -309,8 +318,7 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
             dir.mkdirs();
         }
         if (!dir.isDirectory()) {
-            SVNErrorMessage error = SVNErrorMessage.create(SVNErrorCode.IO_ERROR, "Cannot create directory ''{0}''", dir.getAbsolutePath());
-            SVNErrorManager.error(error, SVNLogType.DEFAULT);
+            return;
         }
         if (!ISVNAuthenticationManager.SSL.equals(kind) && ("".equals(auth.getUserName()) || auth.getUserName() == null)) {
             return;
