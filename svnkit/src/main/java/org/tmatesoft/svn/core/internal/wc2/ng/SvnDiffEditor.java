@@ -454,7 +454,7 @@ public class SvnDiffEditor implements ISVNEditor, ISVNUpdateEditor {
         reposProps.removeNullValues();
 
         File reposFile = currentEntry.tempFile;
-        if (reposFile == null) {
+        if (reposFile == null && !currentEntry.skip) {
             assert currentEntry.baseChecksum != null;
             reposFile = SvnWcDbPristines.getPristinePath(getWcRoot(), currentEntry.baseChecksum);
         }
@@ -530,10 +530,16 @@ public class SvnDiffEditor implements ISVNEditor, ISVNUpdateEditor {
     }
 
     public OutputStream textDeltaChunk(String path, SVNDiffWindow diffWindow) throws SVNException {
+        if (currentEntry.skip) {
+            return null;
+        }
         return deltaProcessor.textDeltaChunk(diffWindow);
     }
 
     public void textDeltaEnd(String path) throws SVNException {
+        if (currentEntry.skip) {
+            return;
+        }
         final String checksum = deltaProcessor.textDeltaEnd();
         currentEntry.resultChecksum = new SvnChecksum(SvnChecksum.Kind.md5, checksum);
     }
