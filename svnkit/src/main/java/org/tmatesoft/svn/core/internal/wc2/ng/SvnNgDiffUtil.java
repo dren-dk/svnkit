@@ -34,7 +34,7 @@ import java.util.*;
 
 public class SvnNgDiffUtil {
 
-    public static void doDiffSummarizeReposWC(SvnTarget target1, SVNRevision revision1, SVNRevision pegRevision, SvnTarget target2, SVNRevision revision2, boolean reverse, SvnNgRepositoryAccess repositoryAccess, SVNWCContext context, boolean useGitDiffFormat, SVNDepth depth, boolean useAncestry, Collection<String> changelists, boolean showCopiesAsAdds, ISvnDiffGenerator generator, ISVNDiffStatusHandler handler, ISVNCanceller canceller) throws SVNException {
+    public static void doDiffSummarizeReposWC(SvnTarget target1, SVNRevision revision1, SVNRevision pegRevision, SvnTarget target2, SVNRevision revision2, boolean reverse, SvnNgRepositoryAccess repositoryAccess, SVNWCContext context, boolean useGitDiffFormat, SVNDepth depth, boolean useAncestry, boolean recurseIntoDeletedDirectories, Collection<String> changelists, boolean showCopiesAsAdds, ISvnDiffGenerator generator, ISVNDiffStatusHandler handler, ISVNCanceller canceller) throws SVNException {
         assert !target2.isURL();
 
         SVNURL url1 = repositoryAccess.getTargetURL(target1);
@@ -94,7 +94,7 @@ public class SvnNgDiffUtil {
 
         SVNReporter17 reporter = new SVNReporter17(target2.getFile(), context, false, !serverSupportsDepth, depth, false, false, true, false, SVNDebugLog.getDefaultLog());
         boolean revisionIsBase = isRevisionBase(revision2);
-        SvnDiffEditor svnDiffEditor = new SvnDiffEditor(anchor, target, callback, depth, context, reverse, revisionIsBase, showCopiesAsAdds, !useAncestry, changelists, useGitDiffFormat, canceller);
+        SvnDiffEditor svnDiffEditor = new SvnDiffEditor(anchor, target, callback, depth, context, reverse, revisionIsBase, showCopiesAsAdds, !useAncestry, recurseIntoDeletedDirectories, changelists, useGitDiffFormat, canceller);
 
         ISVNUpdateEditor updateEditor = svnDiffEditor;
         if (!serverSupportsDepth && depth == SVNDepth.UNKNOWN) {
@@ -108,7 +108,7 @@ public class SvnNgDiffUtil {
         }
     }
 
-    public static void doDiffWCWC(File localAbsPath, SvnNgRepositoryAccess repositoryAccess, SVNWCContext context, SVNDepth depth, boolean useAncestry, Collection<String> changelists, boolean showCopiesAsAdds, boolean useGitDiffFormat, ISvnDiffGenerator generator, ISvnDiffCallback callback, ISVNCanceller canceller) throws SVNException {
+    public static void doDiffWCWC(File localAbsPath, SvnNgRepositoryAccess repositoryAccess, SVNWCContext context, SVNDepth depth, boolean useAncestry, boolean recurseIntoDeletedDirectories, Collection<String> changelists, boolean showCopiesAsAdds, boolean useGitDiffFormat, ISvnDiffGenerator generator, ISvnDiffCallback callback, ISVNCanceller canceller) throws SVNException {
         assert SVNFileUtil.isAbsolute(localAbsPath);
         SvnDiffCallbackResult result = new SvnDiffCallbackResult();
 
@@ -127,7 +127,7 @@ public class SvnNgDiffUtil {
         if (showCopiesAsAdds) {
             useAncestry = true;
         }
-        ISvnDiffCallback2 callback2 = new SvnDiffCallbackWrapper(callback, true, anchorAbsPath);
+        ISvnDiffCallback2 callback2 = new SvnDiffCallbackWrapper(callback, recurseIntoDeletedDirectories, anchorAbsPath);
         if (!showCopiesAsAdds && !useGitDiffFormat) {
             callback2 = new SvnCopyAsChangedDiffCallback(callback2);
         }

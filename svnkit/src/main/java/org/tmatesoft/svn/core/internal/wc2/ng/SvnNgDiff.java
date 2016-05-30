@@ -187,7 +187,7 @@ public class SvnNgDiff extends SvnNgOperationRunner<Void, SvnDiff> {
         generator.setOriginalTargets(SvnTarget.fromURL(url1), SvnTarget.fromURL(url2));
         generator.setAnchors(SvnTarget.fromURL(kind1 == SVNNodeKind.FILE ? anchor1 : url1), SvnTarget.fromURL(kind2 == SVNNodeKind.FILE ? anchor2 : url2));
         SvnDiffCallback oldCallback = createDiffCallback(generator, false, rev1, rev2);
-        ISvnDiffCallback2 callback = new SvnDiffCallbackWrapper(oldCallback, true, basePath != null ? (nonDir ? basePath.getParentFile() : basePath) : new File("").getAbsoluteFile());
+        ISvnDiffCallback2 callback = new SvnDiffCallbackWrapper(oldCallback, getOperation().isRecurseIntoDeletedDirectories(), basePath != null ? (nonDir ? basePath.getParentFile() : basePath) : new File("").getAbsoluteFile());
         if (kind2 == SVNNodeKind.NONE) {
             SVNURL tmpUrl;
 
@@ -609,7 +609,7 @@ public class SvnNgDiff extends SvnNgOperationRunner<Void, SvnDiff> {
 
         SVNReporter17 reporter = new SVNReporter17(target2.getFile(), getWcContext(), false, !serverSupportsDepth, getOperation().getDepth(), false, false, true, false, SVNDebugLog.getDefaultLog());
         boolean revisionIsBase = isRevisionBase(revision2);
-        SvnDiffEditor svnDiffEditor = new SvnDiffEditor(anchor, target, callback, getOperation().getDepth(), getWcContext(), reverse, revisionIsBase, getOperation().isShowCopiesAsAdds(), getOperation().isIgnoreAncestry(), getOperation().getApplicableChangelists(), getOperation().isUseGitDiffFormat(), this);
+        SvnDiffEditor svnDiffEditor = new SvnDiffEditor(anchor, target, callback, getOperation().getDepth(), getWcContext(), reverse, revisionIsBase, getOperation().isShowCopiesAsAdds(), getOperation().isIgnoreAncestry(), getOperation().isRecurseIntoDeletedDirectories(), getOperation().getApplicableChangelists(), getOperation().isUseGitDiffFormat(), this);
 
         ISVNUpdateEditor updateEditor = svnDiffEditor;
         if (!serverSupportsDepth && getOperation().getDepth() == SVNDepth.UNKNOWN) {
@@ -660,7 +660,7 @@ public class SvnNgDiff extends SvnNgOperationRunner<Void, SvnDiff> {
 
         final SvnDiffCallback callback = createDiffCallback(generator, false, revisionNumber1, -1);
 
-        SvnNgDiffUtil.doDiffWCWC(path1, getRepositoryAccess(), getWcContext(), getOperation().getDepth(), !getOperation().isIgnoreAncestry(), getOperation().getApplicableChangelists(), getOperation().isShowCopiesAsAdds(), getOperation().isUseGitDiffFormat(), generator, callback, getOperation().getEventHandler());
+        SvnNgDiffUtil.doDiffWCWC(path1, getRepositoryAccess(), getWcContext(), getOperation().getDepth(), !getOperation().isIgnoreAncestry(), getOperation().isRecurseIntoDeletedDirectories(), getOperation().getApplicableChangelists(), getOperation().isShowCopiesAsAdds(), getOperation().isUseGitDiffFormat(), generator, callback, getOperation().getEventHandler());
     }
 
     private void doDiffWC(File localAbspath, ISvnDiffCallback callback) throws SVNException {
