@@ -138,6 +138,7 @@ public class SVNDiffClient extends SVNBasicClient {
     protected void initDefaults() {
         setDiffGenerator(null);
         setMergeOptions(null);
+        setRecurseIntoDeletedDirectories(true);
     }
 
     /**
