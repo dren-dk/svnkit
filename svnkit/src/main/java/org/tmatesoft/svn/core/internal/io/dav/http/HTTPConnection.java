@@ -20,14 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.ConnectException;
-import java.net.CookieHandler;
-import java.net.HttpURLConnection;
-import java.net.Socket;
-import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -504,6 +497,18 @@ public class HTTPConnection implements IHTTPConnection {
                             continue;
                         }
                         throw (IOException) new IOException(pe.getMessage()).initCause(pe);
+                    } catch (SocketException e) {
+                        //the same as previous (EOFException)
+                        if (!"Broken pipe".equals(e.getMessage())) {
+                            throw e;
+                        }
+                        myRepository.getDebugLog().logFine(SVNLogType.NETWORK, e);
+                        // retry, EOF always means closed connection.
+                        if (retryCount > 0) {
+                            close();
+                            continue;
+                        }
+                        throw (SocketException) new SocketException(e.getMessage()).initCause(e);
                     } finally {
                         retryCount--;
                     }
