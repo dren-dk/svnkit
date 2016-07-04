@@ -1,5 +1,7 @@
 * text=auto !eol
+/.dockerignore -text
 /CHANGES.txt eol=lf
+/Dockerfile -text
 /LICENSE.txt eol=lf
 /build.pom.gradle -text
 gradle/wrapper/gradle-wrapper.jar -text
