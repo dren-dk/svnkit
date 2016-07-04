@@ -30,7 +30,7 @@ public class SVNAuthenticationCancelledException extends SVNCancelException {
     private final SVNAuthentication myLastAuthentication;
 
     public SVNAuthenticationCancelledException(SVNErrorMessage lastError, SVNAuthentication lastAuthentication) {
-        super(SVNErrorMessage.create(SVNErrorCode.CANCELLED, "Authenticatio cancelled"));
+        super(SVNErrorMessage.create(SVNErrorCode.CANCELLED, "Authentication cancelled"));
 
         myLastError = lastError;
         myLastAuthentication = lastAuthentication;
