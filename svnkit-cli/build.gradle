@@ -1,36 +1,35 @@
-configurations {
-    scripts
-}
-
 project.ext.packageName = 'org.tmatesoft.svn.cli'
-
 project.ext.scripts = ['jsvn' : "${packageName}.SVN",  
            'jsvnadmin' : "${packageName}.SVNAdmin", 
            'jsvndumpfilter' : "${packageName}.SVNDumpFilter", 
            'jsvnlook' : "${packageName}.SVNLook", 
            'jsvnsync' : "${packageName}.SVNSync", 
            'jsvnversion' : "${packageName}.SVNVersion"]
+
+import org.apache.tools.ant.filters.*;
  
 jar << {
     
-    File scriptsDir = new File(buildDir, 'scripts')
+    File scriptsDir = file('build/scripts')
     scriptsDir.mkdirs()
     
     def classpath = []
     configurations.compile.files.each {
-        classpath += fullJarName(it)
+        classpath += build_jar_name(it)
     }
     classpath += jar.archiveName
+    project.ext.script_classpath = classpath
     
     scripts.keySet().each { scriptName ->
         def mainclassName = scripts[scriptName]
         copy {
             from file("src/main/scripts/jsvn")
             into scriptsDir
-            filter {
-                it = expandClasspath(it, classpath)
-                it = it.replace('@mainclass@', mainclassName)
-            }
+
+            expand(project: project, classpath_property: 'script_classpath', mainclass : mainclassName)
+            filter(FixCrLfFilter.class, eol:FixCrLfFilter.CrLf.newInstance("lf"))
+            fileMode 0755
+
             eachFile {
                 it.name = scriptName
             }
@@ -38,10 +37,10 @@ jar << {
         copy {
             from file("src/main/scripts/jsvn.bat")
             into scriptsDir
-            filter {
-                it = expandClasspath(it, classpath)
-                it = it.replace('@mainclass@', mainclassName)
-            }
+
+            expand(project: project, classpath_property: 'script_classpath', mainclass : mainclassName)
+            filter(FixCrLfFilter.class, eol:FixCrLfFilter.CrLf.newInstance("crlf"))
+
             eachFile {
                 it.name = scriptName + '.bat'
             }
@@ -52,14 +51,11 @@ jar << {
         from file("src/main/scripts/jsvnsetup.openvms")
         into scriptsDir
         filter {
-            it = expandClasspath(it, classpath)
+            expand(project: project, classpath_property: 'script_classpath')
         }
     }
     copy {
         from file("src/main/conf/logging.properties")
         into scriptsDir
     }
-
-    configurations.scripts.artifacts.add(new
-        org.gradle.api.internal.artifacts.publish.DefaultPublishArtifact("svn-cli-scripts", "dir", "dir", null, new  Date(), scriptsDir))
 }

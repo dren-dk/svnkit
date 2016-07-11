@@ -16,7 +16,7 @@ dependencies {
 sourceSets {
     main {
         java {
-            srcDir file('nailgun/src/java/prod')
+            srcDir 'nailgun/src/java/prod'
         }
     }
 }
@@ -32,8 +32,6 @@ project.ext {
     testConfiguration = project.hasProperty('testConfiguration') ? project.getProperty('testConfiguration') : 'default'
 }
 
-test.dependsOn configurations."pythonTests${project.svnVersion}"
-test.dependsOn configurations."svnBinaries${project.svnVersion}"
 
 classes << {
     copy {
@@ -43,11 +41,13 @@ classes << {
     }
 }
 
-test {
-    ignoreFailures = true
+task testPython {
+    dependsOn classes
+    dependsOn configurations."pythonTests${project.svnVersion}"
+    dependsOn configurations."svnBinaries${project.svnVersion}"
 }
 
-test.doFirst {
+testPython.doFirst {
     project.mkdir(sandboxDir)
     project.mkdir(logsDir)
 

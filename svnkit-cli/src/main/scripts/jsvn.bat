@@ -20,7 +20,7 @@ goto WinNTGetScriptDir
 
 @REM The 4NT Shell from jp software
 :4NTArgs
-set CMD_LINE_ARGS=%$
+set CMD_LINE_ARGS=%\$
 goto WinNTGetScriptDir
 
 :Win9xArg
@@ -35,8 +35,8 @@ goto Win9xApp
 
 :Win9xGetScriptDir
 set SAVEDIR=%CD%
-%0\
-cd %0\..\.. 
+%0\\
+cd %0\\..\\.. 
 set BASEDIR=%CD%
 cd %SAVEDIR%
 set SAVE_DIR=
@@ -44,26 +44,27 @@ goto repoSetup
 
 :WinNTGetScriptDir
 set BASEDIR=%~dp0
-IF %BASEDIR:~-1%==\ SET BASEDIR=%BASEDIR:~0,-1%
-set BASEDIR=%BASEDIR%\..
+IF %BASEDIR:~-1%==\\ SET BASEDIR=%BASEDIR:~0,-1%
+set BASEDIR=%BASEDIR%\\..
 
 :repoSetup
 
 
 if "%JAVACMD%"=="" set JAVACMD=java
-if not "%JAVA_HOME%"=="" set JAVACMD="%JAVA_HOME%\bin\%JAVACMD%"
+if not "%JAVA_HOME%"=="" set JAVACMD="%JAVA_HOME%\\bin\\%JAVACMD%"
 
-if "%SVNKIT_LIB%"=="" set SVNKIT_LIB=%BASEDIR%\lib
+if "%SVNKIT_LIB%"=="" set SVNKIT_LIB=%BASEDIR%\\lib
 
-set CLASSPATH=
-set CLASSPATH=%CLASSPATH%;"%SVNKIT_LIB%\${classpathEntry}"
-set EXTRA_JVM_ARGUMENTS=-Djava.util.logging.config.file="%BASEDIR%\conf\logging.properties" -Dsun.io.useCanonCaches=false
+<% project[classpath_property].eachWithIndex { elem, index -> %>set CLASSPATH=<% if (index != 0) { %>%CLASSPATH%;<% } %>"%SVNKIT_LIB%\\${elem}"
+<% } %>
+
+set EXTRA_JVM_ARGUMENTS=-Djava.util.logging.config.file="%BASEDIR%\\conf\\logging.properties" -Dsun.io.useCanonCaches=false
 goto endInit
 
 @REM Reaching here means variables are defined and arguments have been captured
 :endInit
 
-%JAVACMD% %JAVA_OPTS% %EXTRA_JVM_ARGUMENTS% -classpath %CLASSPATH% @mainclass@ %CMD_LINE_ARGS%
+%JAVACMD% %JAVA_OPTS% %EXTRA_JVM_ARGUMENTS% -classpath %CLASSPATH% ${mainclass} %CMD_LINE_ARGS%
 if ERRORLEVEL 1 goto error
 goto end
 

@@ -1,5 +1,6 @@
 /*.iws
 /.gradle
+/.idea
 /.project
 /bin
 /build

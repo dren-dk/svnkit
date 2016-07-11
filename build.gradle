@@ -1,61 +1,120 @@
 group = 'org.tmatesoft.svnkit'
 version = '1.9.0'
 
-project.ext {
-   release = false
-   target = '1.6'
-   compatibleSvnVersion = '1.8.1'
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.14'
 }
-
-apply from: 'build.pom.gradle'
-
-buildscript {
-    apply from: 'build.defaults.gradle'
-    configurations.all {
-        resolutionStrategy {
-            cacheChangingModulesFor 0, 'seconds'
-            cacheDynamicVersionsFor 0, 'seconds'
-        }
-    }
-    repositories {
-        maven {
-           url project.ext.buildPluginRepositoryURL
-        }
-    }
-    dependencies { classpath 'org.tmatesoft.build:build:0.9.9' }
-}
-
-task wrapper(type: Wrapper) {}
 
 def javaProjects() {
     return subprojects - project(':svnkit-distribution')
 }
 
-allprojects {
-    apply plugin : 'base'
-    apply plugin : 'build'
+ext {
+   release = false
+   target = '1.6'
+   compatibleSvnVersion = '1.9.0'
+
+   if (!release) {
+       rootProject.version = rootProject.version + '-SNAPSHOT'
+   }
+   buildNumber = project.hasProperty('revision') ? ('r' + project.revision) : null
+   if (buildNumber == null) {
+        if (release) {
+            throw new GradleException('release or interim targets requires build number to be specified via revision project property (-Prevision=REV)')
+        }
+        def buildTime = new java.text.SimpleDateFormat("yyyyMMddHHmmss", java.util.Locale.US).format(new Date())
+        buildNumber = 't' + buildTime
+   }
+   println "Version: ${rootProject.version}"
+   println "Build Number: ${rootProject.buildNumber}"
 }
 
-configure(javaProjects() + rootProject) {
-    apply plugin: 'eclipse'
-    apply plugin: 'idea'
+allprojects {
+    repositories {
+        mavenCentral()
+        maven {
+            url 'https://maven.tmatesoft.com/content/repositories/releases'
+        }
+        maven {
+            url 'https://maven.tmatesoft.com/content/repositories/snapshots'
+        }
+    }
+}
 
-    gradle.taskGraph.whenReady { taskGraph ->
-        taskGraph.allTasks.each { task ->
-            if (task.name == 'eclipseWtpComponent') {
-                task.enabled = false
+subprojects {
+    apply plugin : 'base'
+    apply plugin : 'maven'
+    apply plugin : 'signing'
+
+    version = rootProject.version
+
+    ext {
+       release = rootProject.release
+       target = rootProject.target
+       compatibleSvnVersion = rootProject.compatibleSvnVersion
+
+       buildVersion = [
+           baseVersion : '1.9.0',
+           buildNumber : buildNumber,
+           major: '1',
+           minor: '9',
+           micro: '0'
+       ]
+       buildNumber = rootProject.buildNumber
+    }
+
+    signing {
+        required { project.hasProperty('signing.keyId') }
+        sign configurations.archives
+    }
+
+    uploadArchives {
+        dependsOn signArchives
+        repositories.mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            if (project.hasProperty('mavenReleasesRepository')) {
+                repository( url : "${mavenReleasesRepository}") {
+                    if (project.hasProperty('mavenUser')) {
+                        authentication(userName: "${mavenUser}", password: "${mavenPassword}")
+                    }
+                }
             }
-            if (task.name == 'eclipseWtpFacet') {
-                task.enabled = false
+
+            if (project.hasProperty('mavenSnapshotsRepository')) {
+                snapshotRepository( url : "${mavenSnapshotsRepository}") {
+                    if (project.hasProperty('mavenUser')) {
+                        authentication(userName: "${mavenUser}", password: "${mavenPassword}")
+                    }
+                }
+            }
+            pom.project {
+               url 'http://www.svnkit.com'
+               name 'SVNKit Library'
+               description 'Pure Java Subversion Library'
+               licenses {
+                   license {
+                       url 'http://www.svnkit.com/license.html'
+                       name 'TMate Open Source License (with dual licensing option)'
+                   }
+               }
+               developers {
+                   developer {
+                       id 'tmate'
+                       name 'TMate Software'
+                   }
+               }
+               scm {
+                   url 'https://svn.tmatesoft.com/repos/svnkit' 
+                   connection 'scm:svn:https://svn.tmatesoft.com/repos/svnkit'
+               }
             }
         }
     }
 }
 
-
 configure(javaProjects()) {
     apply plugin : 'java'
-    apply plugin : 'signing'
 
     sourceCompatibility = target
     targetCompatibility = target
@@ -63,6 +122,7 @@ configure(javaProjects()) {
     configurations {
         sources
         javadocs
+        jar_archive
     }
 
     task sourcesJar(type: Jar) {
@@ -92,15 +152,18 @@ project(':svnkit') {
         compile 'org.tmatesoft.sqljet:sqljet:1.1.10'
         compile 'net.java.dev.jna:jna:4.1.0'
         compile 'net.java.dev.jna:jna-platform:4.1.0'
-        compile 'com.trilead:trilead-ssh2:1.0.0-build220'
+        compile 'com.trilead:trilead-ssh2:1.0.0-build221'
         compile('com.jcraft:jsch.agentproxy.connector-factory:0.0.7') {
-		exclude group: 'net.java.dev.jna'
-	}
+            exclude group: 'net.java.dev.jna'
+        }
         compile 'com.jcraft:jsch.agentproxy.svnkit-trilead-ssh2:0.0.7'
 
         testCompile 'junit:junit:4.8'
     }
-    artifacts { maven jar, sourcesJar, javadocJar }
+    artifacts { 
+        archives jar, sourcesJar, javadocJar
+        jar_archive jar
+    }
 }
 
 project(':svnkit-javahl16') {
@@ -110,14 +173,19 @@ project(':svnkit-javahl16') {
 
         testCompile 'org.apache.subversion:svn-javahl-tests:1.9.3-SNAPSHOT'
     }
-    artifacts { maven jar, sourcesJar, javadocJar }
+    artifacts { 
+        archives jar, sourcesJar, javadocJar 
+        jar_archive jar
+    }
 }
 
 project(':svnkit-cli') {
     dependencies {
         compile project(path: ':svnkit')
     }
-    artifacts { maven jar, sourcesJar, javadocJar }
+    artifacts { 
+        archives jar, sourcesJar, javadocJar 
+    }
 }
 
 project(':svnkit-dav') {
@@ -127,7 +195,7 @@ project(':svnkit-dav') {
         compile project(path: ':svnkit')
         compile 'javax.servlet:servlet-api:2.5'
     }
-    artifacts { maven war }
+    artifacts { archives war }
 }
 
 project(':svnkit-test') {
@@ -139,14 +207,13 @@ project(':svnkit-test') {
 
 project(':svnkit-osgi') {
     sourcesJar.enabled=false
-    artifacts { maven jar }
+    artifacts { archives jar }
 }
 
 project(':svnkit-distribution') {
     configurations {
         binaries
         sources
-        scripts
         osgi
     }
 
@@ -159,22 +226,38 @@ project(':svnkit-distribution') {
         sources project(path: ':svnkit-cli', configuration: 'sources')
         sources project(path: ':svnkit-javahl16', configuration: 'sources')
 
-        scripts project(path: ':svnkit-cli', configuration: 'scripts')
-
         osgi project(path: ':svnkit-osgi', configuration: 'archives')
-        osgi 'com.trilead:trilead-ssh2-osgi:1.0.0-build220'
+        osgi 'com.trilead:trilead-ssh2-osgi:1.0.0-build221'
         osgi 'org.tmatesoft.sqljet:sqljet-osgi:1.1.10'
         osgi 'net.java.dev.jna:jna-osgi:4.1.0'
     }
 }
-task publish(dependsOn: [':svnkit-distribution:buildAll']) {
-    enabled = project.hasProperty('to')
-} << {
-    File toDir = new File(project.properties['to'])
-    delete(toDir)
-    toDir.mkdirs()
-    ant.unzip(src: new File(project(':svnkit-distribution').distsDir, "svnkit-${version}-all.zip"), dest: toDir.absolutePath) {
-       cutdirsmapper(dirs: '1')
+
+import java.util.jar.*
+
+def read_manifest(file) {
+    def result = [:]
+    result['File-Name'] = file.getName()
+    def jar = new JarFile(file)
+    try {
+        def manifest = jar.getManifest()
+        if (manifest != null) {
+            manifest.getMainAttributes().each { k,v -> result.put(k.toString(), v) }
+        }
+    } finally {
+        jar.close()
     }
-    ant.chmod(dir: new File(toDir, 'bin').absolutePath, perm: 'ugo+rx', includes: '**/**', excludes: '**/*.bat')
+    return result
+}
+
+def build_jar_name(file) {
+    def fileProps = read_manifest(file)
+    def fileBuildVersion = fileProps.get('Build-Version')
+    def fileBuildNumber = fileProps.get('Build-Number')
+    if (fileBuildVersion != null && (fileBuildVersion.endsWith('-SNAPSHOT') || fileBuildVersion.endsWith('-EAP'))) {
+        if (fileBuildNumber != null) {
+            return file.name.substring(0, file.name.length() - '.jar'.length()) + '_' + fileBuildNumber + '.jar'
+        }
+    }
+    return file.name
 }

@@ -1,10 +1,4 @@
 apply plugin: 'osgi'
-project.ext {
-    bundleName = rootProject.group
-    bundleSymbolicName = 'SVNKit pure Java Subversion Library'
-    bundleVersion = buildVersion.getFullOSGIVersion()
-    bundleVendor = 'TMate Software'
-}
 
 configurations {
     embedOsgi
@@ -15,8 +9,8 @@ dependencies {
     compile project(path: ':svnkit-javahl16')
     compile 'org.eclipse.core:runtime:3.2.0-v20060603'
 
-    embedOsgi project(path: ':svnkit', transitive: false, configuration: 'archives')
-    embedOsgi project(path: ':svnkit-javahl16', transitive: false, configuration: 'archives')
+    embedOsgi project(path: ':svnkit', transitive: false, configuration: 'jar_archive')
+    embedOsgi project(path: ':svnkit-javahl16', transitive: false, configuration: 'jar_archive')
     embedOsgi 'de.regnis.q.sequence:sequence-library:1.0.3'
     embedOsgi 'com.jcraft:jsch.agentproxy.connector-factory:0.0.7'
     embedOsgi('com.jcraft:jsch.agentproxy.svnkit-trilead-ssh2:0.0.7'){
@@ -38,29 +32,39 @@ classes << {
 }
 
 jar {
+    ext {
+        bundleName = rootProject.group
+        bundleSymbolicName = 'SVNKit pure Java Subversion Library'
+        bundleVersion = rootProject.version.replace('-SNAPSHOT', '.SNAPSHOT').replace('-', '.') + (rootProject.release ? '.' : '_') + buildNumber
+        bundleVendor = 'TMate Software'
+
+        println "OSGi version: ${bundleVersion}"
+    }
+
     baseName = bundleName
     manifest {
-        attributes 'Bundle-SymbolicName': bundleName,
+        attributes (
+        'Bundle-SymbolicName': bundleName,
         'Bundle-Version': bundleVersion,
         'Bundle-Vendor': bundleVendor,
         'Bundle-Name': bundleSymbolicName,
         'Bundle-RequiredExecutionEnvironment' : 'JavaSE-' + targetCompatibility,
         'Bundle-Activator' : 'org.tmatesoft.svn.core.SVNKitActivator',
         'Bundle-ActivationPolicy' : 'lazy',
+        'Build-Version' : rootProject.version,
+        'Build-Number' : rootProject.buildNumber,
         'Eclipse-BundleShape' : 'jar',
         'Require-Bundle': 'net.java.dev.jna;bundle-version="[3.2.7,4.1.0]";resolution:=optional,' +
             'com.trilead.ssh2;bundle-version="[1.0.0,2.0.0)",' +        
 			'org.tmatesoft.sqljet;bundle-version="[1.0.5,2.0.0)",' +
-			'org.eclipse.core.runtime;bundle-version="[3.0.0,4.0.0)"'
+			'org.eclipse.core.runtime;bundle-version="[3.0.0,4.0.0)"')
 
-        instruction 'Export-Package',
-        '*;version=' + bundleVersion
-
-        instruction 'Import-Package', '!*'
+        instruction ('Export-Package','*;version=' + bundleVersion)
+        instruction ('Import-Package', '!*')
     }
 }
 
-uploadMaven {
+uploadArchives {
     repositories.mavenDeployer {
         pom.whenConfigured { p ->
             p.dependencies.clear()
