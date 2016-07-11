@@ -63,11 +63,3 @@ jar {
         instruction ('Import-Package', '!*')
     }
 }
-
-uploadArchives {
-    repositories.mavenDeployer {
-        pom.whenConfigured { p ->
-            p.dependencies.clear()
-        }
-    }
-}

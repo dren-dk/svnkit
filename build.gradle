@@ -70,6 +70,7 @@ subprojects {
 
     uploadArchives {
         dependsOn signArchives
+        enabled = false
         repositories.mavenDeployer {
             beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
@@ -87,27 +88,6 @@ subprojects {
                         authentication(userName: "${mavenUser}", password: "${mavenPassword}")
                     }
                 }
-            }
-            pom.project {
-               url 'http://www.svnkit.com'
-               name 'SVNKit Library'
-               description 'Pure Java Subversion Library'
-               licenses {
-                   license {
-                       url 'http://www.svnkit.com/license.html'
-                       name 'TMate Open Source License (with dual licensing option)'
-                   }
-               }
-               developers {
-                   developer {
-                       id 'tmate'
-                       name 'TMate Software'
-                   }
-               }
-               scm {
-                   url 'https://svn.tmatesoft.com/repos/svnkit' 
-                   connection 'scm:svn:https://svn.tmatesoft.com/repos/svnkit'
-               }
             }
         }
     }
@@ -164,6 +144,14 @@ project(':svnkit') {
         archives jar, sourcesJar, javadocJar
         jar_archive jar
     }
+
+    uploadArchives {
+        enabled = true
+        repositories.mavenDeployer {
+            pom.artifactId = 'svnkit'
+            pom.groupId = 'org.tmatesoft.svnkit'
+        }
+    }
 }
 
 project(':svnkit-javahl16') {
@@ -177,6 +165,13 @@ project(':svnkit-javahl16') {
         archives jar, sourcesJar, javadocJar 
         jar_archive jar
     }
+    uploadArchives {
+        enabled = true
+        repositories.mavenDeployer {
+            pom.artifactId = 'svnkit-javahl16'
+            pom.groupId = 'org.tmatesoft.svnkit'
+        }
+    }
 }
 
 project(':svnkit-cli') {
@@ -185,6 +180,13 @@ project(':svnkit-cli') {
     }
     artifacts { 
         archives jar, sourcesJar, javadocJar 
+    }
+    uploadArchives {
+        enabled = true
+        repositories.mavenDeployer {
+            pom.artifactId = 'svnkit-cli'
+            pom.groupId = 'org.tmatesoft.svnkit'
+        }
     }
 }
 
@@ -196,6 +198,14 @@ project(':svnkit-dav') {
         compile 'javax.servlet:servlet-api:2.5'
     }
     artifacts { archives war }
+
+    uploadArchives {
+        enabled = true
+        repositories.mavenDeployer {
+            pom.artifactId = 'svnkit-dav'
+            pom.groupId = 'org.tmatesoft.svnkit'
+        }
+    }
 }
 
 project(':svnkit-test') {
@@ -208,6 +218,16 @@ project(':svnkit-test') {
 project(':svnkit-osgi') {
     sourcesJar.enabled=false
     artifacts { archives jar }
+    uploadArchives {
+        enabled = true
+        repositories.mavenDeployer {
+            pom.artifactId = 'svnkit-osgi'
+            pom.groupId = 'org.tmatesoft.svnkit'
+            pom.whenConfigured { p ->
+                p.dependencies.clear()
+            }
+        }
+    }
 }
 
 project(':svnkit-distribution') {
