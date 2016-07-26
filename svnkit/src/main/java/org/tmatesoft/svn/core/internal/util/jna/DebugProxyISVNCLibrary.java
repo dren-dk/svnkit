@@ -36,6 +36,12 @@ public class DebugProxyISVNCLibrary implements ISVNCLibrary {
         return readlink;
     }
 
+    public int __lxstat(int ver, String path, Pointer stat) {
+        int i = myLibrary.__lxstat(ver, path, stat);
+        myDebugLog.log(SVNLogType.NATIVE_CALL, "CALLED ISVNCLibrary#__lxstat(" + ver + ", " + path + ", " + toStringNullable(stat) + ") = " + i, Level.INFO);
+        return i;
+    }
+
     public int __lxstat64(int ver, String path, Pointer stat) {
         int i = myLibrary.__lxstat64(ver, path, stat);
         myDebugLog.log(SVNLogType.NATIVE_CALL, "CALLED ISVNCLibrary#__lxstat64(" + ver + ", " + path + ", " + toStringNullable(stat) + ") = " + i, Level.INFO);
