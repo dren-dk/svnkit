@@ -521,9 +521,15 @@ public abstract class SvnNgAbstractUpdate<V, T extends AbstractSvnUpdate<V>> ext
         checkout(url, localAbsPath, pegRevision, revision, SVNDepth.INFINITY, false, false, false, targetWorkingCopyFormat);
         
         SVNWCNodeReposInfo nodeRepositoryInfo = getWcContext().getNodeReposInfo(localAbsPath);
-        getWcContext().getDb().registerExternal(definingPath, localAbsPath, SVNNodeKind.DIR, 
+
+        // To fix error 'Field 'def_repos_relpath' must be not NULL' when connecting an external which points to an external repository root
+        String pathAsChild = SVNPathUtil.getPathAsChild(nodeRepositoryInfo.reposRootUrl.getPath(), url.getPath());
+        if (pathAsChild == null) {
+            pathAsChild = "";
+        }
+        getWcContext().getDb().registerExternal(definingPath, localAbsPath, SVNNodeKind.DIR,
                 nodeRepositoryInfo.reposRootUrl, nodeRepositoryInfo.reposUuid, 
-                SVNFileUtil.createFilePath(SVNPathUtil.getPathAsChild(nodeRepositoryInfo.reposRootUrl.getPath(), url.getPath())), 
+                SVNFileUtil.createFilePath(pathAsChild),
                 SVNWCContext.INVALID_REVNUM, 
                 SVNWCContext.INVALID_REVNUM);
     }
