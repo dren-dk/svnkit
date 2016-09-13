@@ -7,7 +7,12 @@ import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
-import org.tmatesoft.svn.core.internal.db.*;
+import org.tmatesoft.svn.core.internal.db.ISVNSqlJetTrigger;
+import org.tmatesoft.svn.core.internal.db.SVNSqlJetDb;
+import org.tmatesoft.svn.core.internal.db.SVNSqlJetDeleteStatement;
+import org.tmatesoft.svn.core.internal.db.SVNSqlJetSelectStatement;
+import org.tmatesoft.svn.core.internal.db.SVNSqlJetStatement;
+import org.tmatesoft.svn.core.internal.db.SVNSqlJetTableStatement;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.util.SVNSkel;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
@@ -23,16 +28,26 @@ import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSchema.NODES__Fi
 import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbSchema.REVERT_LIST__Fields;
 import org.tmatesoft.svn.core.internal.wc17.db.statement.SVNWCDbStatements;
 import org.tmatesoft.svn.core.internal.wc17.db.statement17.SvnRevertActualNodesTrigger17;
-import org.tmatesoft.svn.core.wc.*;
+import org.tmatesoft.svn.core.wc.ISVNEventHandler;
+import org.tmatesoft.svn.core.wc.SVNConflictAction;
+import org.tmatesoft.svn.core.wc.SVNConflictReason;
+import org.tmatesoft.svn.core.wc.SVNEventAction;
+import org.tmatesoft.svn.core.wc.SVNOperation;
 import org.tmatesoft.svn.util.SVNLogType;
 
 import java.io.File;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.*;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnBlob;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnBoolean;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnInt64;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnKind;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnPath;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.getColumnText;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.isColumnNull;
+import static org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbStatementUtil.reset;
 
 public class SvnWcDbRevert extends SvnWcDbShared {
     
@@ -342,8 +357,11 @@ public class SvnWcDbRevert extends SvnWcDbShared {
         } finally {
             stmt.reset();
         }
-
-        stmt = sdb.getStatement(SVNWCDbStatements.SELECT_MOVED_HERE_CHILDREN);
+        if (root.getFormat() == ISVNWCDb.WC_FORMAT_17) {
+            stmt = sdb.getStatement(SVNWCDbStatements.SELECT_MOVED_HERE_CHILDREN17);
+        } else {
+            stmt = sdb.getStatement(SVNWCDbStatements.SELECT_MOVED_HERE_CHILDREN);
+        }
         try {
             stmt.bindf("is", root.getWcId(), localRelPath);
             boolean haveRow = stmt.next();

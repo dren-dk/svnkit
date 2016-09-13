@@ -31,6 +31,7 @@ svnkit/src/main/java/org/tmatesoft/svn/core/internal/io/dav/http/INTLMEngine.jav
 svnkit/src/main/java/org/tmatesoft/svn/core/internal/io/dav/http/NTLMEngine.java -text
 svnkit/src/main/java/org/tmatesoft/svn/core/internal/io/dav/http/NTLMEngineException.java -text
 svnkit/src/main/java/org/tmatesoft/svn/core/internal/io/dav/http/NTLMJCIFSEngine.java -text
+svnkit/src/main/java/org/tmatesoft/svn/core/internal/wc17/db/statement/SVNWCDbSelectMovedHereChildren17.java -text
 svnkit/src/main/java/org/tmatesoft/svn/core/io/repository/template.jar -text
 svnkit/src/main/resources/org/tmatesoft/svn/core/internal/wc/config eol=lf
 svnkit/src/main/resources/org/tmatesoft/svn/core/internal/wc/servers eol=lf

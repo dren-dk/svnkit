@@ -224,6 +224,7 @@ public enum SVNWCDbStatements {
     UPDATE_ACTUAL_CONFLICT_DATA_17(SVNWCDbUpdateActualConflictData17.class),
     INSERT_ACTUAL_CONFLICT_DATA_17(SVNWCDbInsertActualConflictData17.class),
     SELECT_MOVED_FROM_RELPATH_17(SVNWCDbSelectMovedFromRelPath17.class),
+    SELECT_MOVED_HERE_CHILDREN17(SVNWCDbSelectMovedHereChildren17.class),
     INSERT_ACTUAL_NODE_17(SVNWCDbInsertActualNode17.class)
     ;
     
