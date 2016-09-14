@@ -252,7 +252,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
             char[] password = promptPassword(passwordPrompt);
             if (password == null) {
                 return null;
-            } else if ("".equals(password)) {
+            } else if (password.length == 0) {
                 if (defaultPassword != null) {
                     password = defaultPassword;
                 } else {
@@ -263,7 +263,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
             String keyFilePath = null;
             File keyFile = null;
             char[] passphrase = null;
-            if (password == null) {
+            if (password == null || password.length == 0) {
                 while(keyFilePath == null) {
                     String privateKeyFilePrompt = null;
                     if (defaultPrivateKeyFile != null) {
@@ -312,7 +312,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
                     }
 
                     passphrase = promptPassword(passphrasePrompt);
-                    if ("".equals(passphrase)) {
+                    if (passphrase != null && passphrase.length == 0) {
                         if (defaultPassphrase != null) {
                             passphrase = defaultPassphrase;
                         } else {
@@ -334,7 +334,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
                     port = Integer.parseInt(portValue);
                 } catch (NumberFormatException e) {}
             }
-            if (password != null) {
+            if (password != null && password.length > 0) {
                 return SVNSSHAuthentication.newInstance(name, password, port, authMayBeStored, url, false);
             } else if (keyFile != null) {
                 return SVNSSHAuthentication.newInstance(name, keyFile, passphrase, port, authMayBeStored, url, false);
@@ -397,7 +397,7 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
                 char[] alias = promptPassword("MSCAPI certificate alias");
                 if (alias == null) {
                     return null;
-                } else if ("".equals(alias)) {
+                } else if (alias.length == 0) {
                     alias = null;
                 }
                 return SVNSSLAuthentication.newInstance(SVNSSLAuthentication.MSCAPI, new String(alias), authMayBeStored, url, false);
