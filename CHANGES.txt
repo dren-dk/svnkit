@@ -1,4 +1,17 @@
+== version 1.8.13 ==
+
++ Revert operation failed on 1.7 format working copies, fixed.
++ Client SSL certificate support improved.
++ Minor bugfixes.
+
+== version 1.8.12 ==
+
++ Support for Subversion 1.9 new FSFS repository format.
+
 == version 1.8.11 ==
+
++ Trilead SSH library updated to fix 'malformed network data' error.
++ Minor bugfixes.
 
 == version 1.8.10 ==
 
