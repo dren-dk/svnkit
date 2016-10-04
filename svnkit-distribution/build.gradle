@@ -63,37 +63,43 @@ task buildSources(type: Zip) {
 
 task buildUpdateSite << {
     def tokens = new HashMap()
+    def files = new HashMap()
     File siteDir = new File(buildDir, 'site')
     File pluginsDir = new File(siteDir, 'plugins')
     File featuresDir = new File(siteDir, 'features')
     pluginsDir.mkdirs()
     
-    configurations.osgi.resolvedConfiguration.each { conf ->
-        conf.resolvedArtifacts.each { artifact ->
-            if (artifact.file.name.endsWith('.zip') || artifact.file.name.endsWith('.jar')) {
-                //org.tmatesoft.build.BuildVersion fileVersion = org.tmatesoft.build.BuildVersion.fromJarFile(artifact.file)
-                def manifestProperties = readManifest(artifact.file)
-                String name = artifact.getModuleVersion().getId().getName()
-                name = name.replace('-', '_')
-                tokens[name + '_version'] = manifestProperties['Bundle-Version']
-                //fileVersion.bundleVersion
-
-                def pattern = java.util.regex.Pattern.compile("\\d+\\.\\d+\\.\\d+_.+")
-                def matcher = pattern.matcher(tokens[name + '_version'])
-                if (matcher.matches()) {
-                    tokens[name + '_version'] = tokens[name + '_version'].replaceFirst("_", ".")
-                }
-                tokens[name + '_name'] = fileVersion.bundleSymbolicName
-                tokens[name + '_fullName'] = tokens[name + '_name'] + '_' + tokens[name + '_version'] + '.jar'
-                //fullJarName(artifact.file) 
-                copy {
-                   from artifact.file
-                   into pluginsDir
-                   eachFile { f ->
-                       f.name = build_jar_name(f.file)
-                   }
-                }
+    configurations.osgi.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+        if (artifact.file.name.endsWith('.zip') || artifact.file.name.endsWith('.jar')) {
+            name = artifact.name
+            if (name == 'org.tmatesoft.svnkit') {
+                name = 'svnkit_osgi'
             }
+            files[name] = artifact.file
+        }
+    }
+    files.each { n,file -> 
+        String name = n
+        name = name.replace('-', '_')
+        def manifestProperties = read_manifest(file)
+        if (manifestProperties['Bundle-Version'] == null) {
+            return
+        }
+        tokens[name + '_version'] = manifestProperties['Bundle-Version']
+
+        def pattern = java.util.regex.Pattern.compile("\\d+\\.\\d+\\.\\d+_.+")
+        def matcher = pattern.matcher(tokens[name + '_version'])
+        if (matcher.matches()) {
+            tokens[name + '_version'] = tokens[name + '_version'].replaceFirst("_", ".")
+        }
+        tokens[name + '_name'] = manifestProperties['Bundle-SymbolicName']
+        tokens[name + '_fullName'] = tokens[name + '_name'] + '_' + tokens[name + '_version'] + '.jar'
+        copy {
+           from file
+           into pluginsDir
+           eachFile { f ->
+               f.name = tokens[name + '_fullName']
+           }
         }
     }
     copy {
@@ -132,9 +138,39 @@ buildAll.dependsOn tasks.clean
 buildAll.dependsOn configurations.binaries
 buildAll.dependsOn configurations.sources
 buildAll.dependsOn(':svnkit-cli:jar')
+buildUpdateSite.dependsOn(':svnkit-osgi:jar')
 
 //buildUpdateSite.dependsOn configurations.osgi
 build {
-    dependsOn buildAll, buildSources
+    dependsOn buildAll, buildSources, buildUpdateSite
 }
 //task build(dependsOn: [buildAll, buildUpdateSite, buildSources])
+
+import java.util.jar.*
+
+def read_manifest(file) {
+    def result = [:]
+    result['File-Name'] = file.getName()
+    def jar = new JarFile(file)
+    try {
+        def manifest = jar.getManifest()
+        if (manifest != null) {
+            manifest.getMainAttributes().each { k,v -> result.put(k.toString(), v) }
+        }
+    } finally {
+        jar.close()
+    }
+    return result
+}
+
+def build_jar_name(file) {
+    def fileProps = read_manifest(file)
+    def fileBuildVersion = fileProps.get('Build-Version')
+    def fileBuildNumber = fileProps.get('Build-Number')
+    if (fileBuildVersion != null && (fileBuildVersion.endsWith('-SNAPSHOT') || fileBuildVersion.endsWith('-EAP'))) {
+        if (fileBuildNumber != null) {
+            return file.name.substring(0, file.name.length() - '.jar'.length()) + '_' + fileBuildNumber + '.jar'
+        }
+    }
+    return file.name
+}

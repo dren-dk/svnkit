@@ -89,6 +89,41 @@ subprojects {
                     }
                 }
             }
+
+            pom.project {
+                name "SVNKit Java(tm) Subversion Library"
+                description "Java(tm) library with API to manage Subversion working copies and repositories"
+                url "https://svnkit.com/"
+
+                scm {
+                    url "https://svn.tmatesoft.com/repos/svnkit"
+                    connection "scm:svn:https://svn.tmatesoft.com/repos/svnkit"
+                    developerConnection "scm:svn:https://svn.tmatesoft.com/repos/svnkit"
+                }
+                organization {
+                    name "TMate Software"
+                    url "https://svnkit.com/"
+                }
+                developers {
+                    developer {
+                        id "alexander.kitaev"
+                        email "support@svnkit.com"
+                        name "Alexander Kitaev"
+                        roles {
+                            role "developer"
+                        }
+                    }
+                }
+                licenses {
+                    license {
+                        name "TMate Open Source License"
+                        url "https://svnkit.com/license.html"
+                        distribution "repos"
+                        comments "GPL-like license with a dual-licensing option for closed source usage"
+                    }
+                }
+
+            }
         }
     }
 }
@@ -170,6 +205,9 @@ project(':svnkit-javahl16') {
         repositories.mavenDeployer {
             pom.artifactId = 'svnkit-javahl16'
             pom.groupId = 'org.tmatesoft.svnkit'
+            pom.project {
+                name "SVNKit based JavaHL API implementation"
+            }
         }
     }
 }
@@ -186,6 +224,9 @@ project(':svnkit-cli') {
         repositories.mavenDeployer {
             pom.artifactId = 'svnkit-cli'
             pom.groupId = 'org.tmatesoft.svnkit'
+            pom.project {
+                name "SVNKit based command line Subversion Client"
+            }
         }
     }
 }
@@ -204,6 +245,9 @@ project(':svnkit-dav') {
         repositories.mavenDeployer {
             pom.artifactId = 'svnkit-dav'
             pom.groupId = 'org.tmatesoft.svnkit'
+            pom.project {
+                name "SVNKit based Subversion HTTP server (servlet)"
+            }
         }
     }
 }
@@ -256,6 +300,7 @@ project(':svnkit-distribution') {
 import java.util.jar.*
 
 def read_manifest(file) {
+    println "reading manifest of ${file}"
     def result = [:]
     result['File-Name'] = file.getName()
     def jar = new JarFile(file)
