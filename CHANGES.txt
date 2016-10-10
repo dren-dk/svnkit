@@ -1,3 +1,8 @@
+== version 1.8.14 ==
+
++ Maven pom.xml of 1.8.13 didn't include dependencies, fixed.
++ Version 1.8.13 reported wrong version, fixed.
+
 == version 1.8.13 ==
 
 + Revert operation failed on 1.7 format working copies, fixed.
