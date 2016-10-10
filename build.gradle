@@ -89,41 +89,6 @@ subprojects {
                     }
                 }
             }
-
-            pom.project {
-                name "SVNKit Java(tm) Subversion Library"
-                description "Java(tm) library with API to manage Subversion working copies and repositories"
-                url "https://svnkit.com/"
-
-                scm {
-                    url "https://svn.tmatesoft.com/repos/svnkit"
-                    connection "scm:svn:https://svn.tmatesoft.com/repos/svnkit"
-                    developerConnection "scm:svn:https://svn.tmatesoft.com/repos/svnkit"
-                }
-                organization {
-                    name "TMate Software"
-                    url "https://svnkit.com/"
-                }
-                developers {
-                    developer {
-                        id "alexander.kitaev"
-                        email "support@svnkit.com"
-                        name "Alexander Kitaev"
-                        roles {
-                            role "developer"
-                        }
-                    }
-                }
-                licenses {
-                    license {
-                        name "TMate Open Source License"
-                        url "https://svnkit.com/license.html"
-                        distribution "repos"
-                        comments "GPL-like license with a dual-licensing option for closed source usage"
-                    }
-                }
-
-            }
         }
     }
 }
@@ -185,6 +150,40 @@ project(':svnkit') {
         repositories.mavenDeployer {
             pom.artifactId = 'svnkit'
             pom.groupId = 'org.tmatesoft.svnkit'
+            pom.project {
+                name "SVNKit Java(tm) Subversion Library"
+                description "Java(tm) library to manage Subversion working copies and repositories"
+                url "https://svnkit.com/"
+
+                scm {
+                    url "https://svn.tmatesoft.com/repos/svnkit"
+                    connection "scm:svn:https://svn.tmatesoft.com/repos/svnkit"
+                    developerConnection "scm:svn:https://svn.tmatesoft.com/repos/svnkit"
+                }
+                organization {
+                    name "TMate Software"
+                    url "https://svnkit.com/"
+                }
+                developers {
+                    developer {
+                        id "alexander.kitaev"
+                        email "support@svnkit.com"
+                        name "Alexander Kitaev"
+                        roles {
+                            role "developer"
+                        }
+                    }
+                }
+                licenses {
+                    license {
+                        name "TMate Open Source License"
+                        url "https://svnkit.com/license.html"
+                        distribution "repos"
+                        comments "GPL-like license with a dual-licensing option for closed source usage"
+                    }
+                }
+
+            }
         }
     }
 }
@@ -206,7 +205,38 @@ project(':svnkit-javahl16') {
             pom.artifactId = 'svnkit-javahl16'
             pom.groupId = 'org.tmatesoft.svnkit'
             pom.project {
-                name "SVNKit based JavaHL API implementation"
+                name "SVNKit Java(tm) Subversion JavaHL API implementation"
+                description "SVNKit Java(tm) Subversion JavaHL API implementation"
+                url "https://svnkit.com/"
+
+                scm {
+                    url "https://svn.tmatesoft.com/repos/svnkit"
+                    connection "scm:svn:https://svn.tmatesoft.com/repos/svnkit"
+                    developerConnection "scm:svn:https://svn.tmatesoft.com/repos/svnkit"
+                }
+                organization {
+                    name "TMate Software"
+                    url "https://svnkit.com/"
+                }
+                developers {
+                    developer {
+                        id "alexander.kitaev"
+                        email "support@svnkit.com"
+                        name "Alexander Kitaev"
+                        roles {
+                            role "developer"
+                        }
+                    }
+                }
+                licenses {
+                    license {
+                        name "TMate Open Source License"
+                        url "https://svnkit.com/license.html"
+                        distribution "repos"
+                        comments "GPL-like license with a dual-licensing option for closed source usage"
+                    }
+                }
+
             }
         }
     }
@@ -225,7 +255,38 @@ project(':svnkit-cli') {
             pom.artifactId = 'svnkit-cli'
             pom.groupId = 'org.tmatesoft.svnkit'
             pom.project {
-                name "SVNKit based command line Subversion Client"
+                name "SVNKit based Subversion command line client"
+                description "SVNKit based Subversion command line client"
+                url "https://svnkit.com/"
+
+                scm {
+                    url "https://svn.tmatesoft.com/repos/svnkit"
+                    connection "scm:svn:https://svn.tmatesoft.com/repos/svnkit"
+                    developerConnection "scm:svn:https://svn.tmatesoft.com/repos/svnkit"
+                }
+                organization {
+                    name "TMate Software"
+                    url "https://svnkit.com/"
+                }
+                developers {
+                    developer {
+                        id "alexander.kitaev"
+                        email "support@svnkit.com"
+                        name "Alexander Kitaev"
+                        roles {
+                            role "developer"
+                        }
+                    }
+                }
+                licenses {
+                    license {
+                        name "TMate Open Source License"
+                        url "https://svnkit.com/license.html"
+                        distribution "repos"
+                        comments "GPL-like license with a dual-licensing option for closed source usage"
+                    }
+                }
+
             }
         }
     }
@@ -247,6 +308,37 @@ project(':svnkit-dav') {
             pom.groupId = 'org.tmatesoft.svnkit'
             pom.project {
                 name "SVNKit based Subversion HTTP server (servlet)"
+                description "SVNKit based Subversion HTTP server (servlet)"
+                url "https://svnkit.com/"
+
+                scm {
+                    url "https://svn.tmatesoft.com/repos/svnkit"
+                    connection "scm:svn:https://svn.tmatesoft.com/repos/svnkit"
+                    developerConnection "scm:svn:https://svn.tmatesoft.com/repos/svnkit"
+                }
+                organization {
+                    name "TMate Software"
+                    url "https://svnkit.com/"
+                }
+                developers {
+                    developer {
+                        id "alexander.kitaev"
+                        email "support@svnkit.com"
+                        name "Alexander Kitaev"
+                        roles {
+                            role "developer"
+                        }
+                    }
+                }
+                licenses {
+                    license {
+                        name "TMate Open Source License"
+                        url "https://svnkit.com/license.html"
+                        distribution "repos"
+                        comments "GPL-like license with a dual-licensing option for closed source usage"
+                    }
+                }
+
             }
         }
     }
