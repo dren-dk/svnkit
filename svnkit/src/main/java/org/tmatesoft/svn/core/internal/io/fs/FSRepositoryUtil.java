@@ -54,8 +54,6 @@ public class FSRepositoryUtil {
     
     public static final int MAX_KEY_SIZE = 200;
     private static final int BYTES_IN_LONG = Long.SIZE / 8;
-    private static final byte[] BUFFER = new byte[BYTES_IN_LONG];
-
 
     private static final ThreadLocal<byte[]> ourCopyBuffer = new ThreadLocal<byte[]>() {
         @Override
@@ -438,23 +436,25 @@ public class FSRepositoryUtil {
     }
 
     public static long readLongLittleEndian(RandomAccessFile randomAccessFile) throws IOException {
-        final int bytesRead = randomAccessFile.read(BUFFER, 0, BYTES_IN_LONG);
+        final byte[] buffer = new byte[BYTES_IN_LONG];
+        final int bytesRead = randomAccessFile.read(buffer, 0, BYTES_IN_LONG);
         if (bytesRead < 0) {
             return bytesRead;
         }
         long value = 0;
         for (int i = BYTES_IN_LONG - 1; i >= 0; i--) {
-            value = (value << 8) + (BUFFER[i] & 0xffL);
+            value = (value << 8) + (buffer[i] & 0xffL);
         }
         return value;
     }
 
     public static void writeLongLittleEndian(RandomAccessFile randomAccessFile, long value) throws IOException {
+        final byte[] buffer = new byte[BYTES_IN_LONG];
         for (int i = 0; i < BYTES_IN_LONG; i++) {
-            BUFFER[i] = (byte) value;
+            buffer[i] = (byte) value;
             value >>= 8;
         }
-        randomAccessFile.write(BUFFER, 0, BYTES_IN_LONG);
+        randomAccessFile.write(buffer, 0, BYTES_IN_LONG);
     }
 
     public static int encodeInt(byte[] bytes, long value) {
