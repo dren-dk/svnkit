@@ -11,29 +11,19 @@
  */
 package org.tmatesoft.svn.cli.svn;
 
+import org.tmatesoft.svn.cli.SVNCommandUtil;
+import org.tmatesoft.svn.core.*;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.internal.wc.SVNPath;
+import org.tmatesoft.svn.core.wc.*;
+import org.tmatesoft.svn.util.SVNLogType;
+
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
-
-import org.tmatesoft.svn.cli.SVNCommandUtil;
-import org.tmatesoft.svn.core.SVNCancelException;
-import org.tmatesoft.svn.core.SVNDepth;
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
-import org.tmatesoft.svn.core.internal.wc.SVNPath;
-import org.tmatesoft.svn.core.wc.ISVNEventHandler;
-import org.tmatesoft.svn.core.wc.SVNEvent;
-import org.tmatesoft.svn.core.wc.SVNEventAction;
-import org.tmatesoft.svn.core.wc.SVNPropertyData;
-import org.tmatesoft.svn.core.wc.SVNRevision;
-import org.tmatesoft.svn.core.wc.SVNWCClient;
-import org.tmatesoft.svn.util.SVNLogType;
 
 
 /**
@@ -72,15 +62,21 @@ public class SVNPropDelCommand extends SVNPropertiesCommand {
         if (targets.isEmpty()) {
             targets.add("");
         }
-        
-        if (getSVNEnvironment().isRevprop()) {            
+
+        final SVNWCClient wcClient = getSVNEnvironment().getClientManager().getWCClient();
+        final SVNNotifyPrinter printer = new SVNNotifyPrinter(getSVNEnvironment());
+        if (!getSVNEnvironment().isQuiet()) {
+            wcClient.setEventHandler(printer);
+        }
+
+        if (getSVNEnvironment().isRevprop()) {
             String target = checkRevPropTarget(getSVNEnvironment().getStartRevision(), targets);
             if (SVNCommandUtil.isURL(target)) {
                 SVNURL url = SVNURL.parseURIEncoded(target);
-                getSVNEnvironment().getClientManager().getWCClient().doSetRevisionProperty(url, getSVNEnvironment().getStartRevision(), propertyName, null, getSVNEnvironment().isForce(), this);
+                wcClient.doSetRevisionProperty(url, getSVNEnvironment().getStartRevision(), propertyName, null, getSVNEnvironment().isForce(), this);
             } else {
                 File targetFile = new SVNPath(target).getFile();
-                getSVNEnvironment().getClientManager().getWCClient().doSetRevisionProperty(targetFile, getSVNEnvironment().getStartRevision(), propertyName, null, getSVNEnvironment().isForce(), this);
+                wcClient.doSetRevisionProperty(targetFile, getSVNEnvironment().getStartRevision(), propertyName, null, getSVNEnvironment().isForce(), this);
             }
         } else if (getSVNEnvironment().getStartRevision() != SVNRevision.UNDEFINED) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.CL_ARG_PARSING_ERROR, 
@@ -93,12 +89,14 @@ public class SVNPropDelCommand extends SVNPropertiesCommand {
             }
 
             Collection changeLists = getSVNEnvironment().getChangelistsCollection();
-            SVNWCClient client = getSVNEnvironment().getClientManager().getWCClient();
+            SVNWCClient client = wcClient;
             final boolean[] deletedNonExistent = new boolean[] {false}; 
             client.setEventHandler(new ISVNEventHandler() {
                 public void handleEvent(SVNEvent event, double progress) throws SVNException {
                     if (event.getAction() == SVNEventAction.PROPERTY_DELETE_NONEXISTENT) {
                         deletedNonExistent[0] = true;
+                    } else {
+                        printer.handleEvent(event, progress);
                     }
                 }
                 public void checkCancelled() throws SVNCancelException {

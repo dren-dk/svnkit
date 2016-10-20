@@ -1,7 +1,5 @@
 package org.tmatesoft.svn.core.internal.wc2.ng;
 
-import java.io.File;
-
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
@@ -23,6 +21,8 @@ import org.tmatesoft.svn.core.wc2.SvnCopySource;
 import org.tmatesoft.svn.core.wc2.SvnTarget;
 import org.tmatesoft.svn.util.SVNLogType;
 
+import java.io.File;
+
 public class SvnNgRepositoryAccess extends SvnRepositoryAccess {
 
     public SvnNgRepositoryAccess(ISvnOperationOptionsProvider operationOptionsProvider, SVNWCContext context) throws SVNException {
@@ -40,10 +40,10 @@ public class SvnNgRepositoryAccess extends SvnRepositoryAccess {
         SVNRevision pegRev = resolvedRevisions[0];
         SVNRevision startRev = resolvedRevisions[1];
         SVNRepository repository = createRepository(url, baseDirectory);
+        Structure<LocationsInfo> locationsInfo = getLocations(repository, target, pegRev, startRev, SVNRevision.UNDEFINED);
         if (target.isURL() && !url.equals(repository.getLocation())) {
             url = repository.getLocation();
         }
-        Structure<LocationsInfo> locationsInfo = getLocations(repository, target, pegRev, startRev, SVNRevision.UNDEFINED);
         long rev = locationsInfo.lng(LocationsInfo.startRevision);
         url = locationsInfo.<SVNURL>get(LocationsInfo.startUrl);
         locationsInfo.release();

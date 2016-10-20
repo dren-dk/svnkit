@@ -11,23 +11,8 @@
  */
 package org.tmatesoft.svn.cli.svn;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 import org.tmatesoft.svn.cli.SVNCommandUtil;
-import org.tmatesoft.svn.core.SVNDepth;
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNNodeKind;
-import org.tmatesoft.svn.core.SVNProperties;
-import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.util.SVNXMLUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
@@ -35,12 +20,12 @@ import org.tmatesoft.svn.core.internal.wc.SVNPath;
 import org.tmatesoft.svn.core.wc.SVNPropertyData;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
-import org.tmatesoft.svn.core.wc2.ISvnObjectReceiver;
-import org.tmatesoft.svn.core.wc2.SvnGetProperties;
-import org.tmatesoft.svn.core.wc2.SvnInheritedProperties;
-import org.tmatesoft.svn.core.wc2.SvnOperationFactory;
-import org.tmatesoft.svn.core.wc2.SvnTarget;
+import org.tmatesoft.svn.core.wc2.*;
 import org.tmatesoft.svn.util.SVNLogType;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 
 /**
@@ -76,7 +61,9 @@ public class SVNPropListCommand extends SVNPropertiesCommand {
 
         if (getSVNEnvironment().isRevprop()) {
             SVNWCClient wcClient = getSVNEnvironment().getClientManager().getWCClient();
-            String target = checkRevPropTarget(getSVNEnvironment().getStartRevision(), targets);            
+            final SVNNotifyPrinter printer = new SVNNotifyPrinter(getSVNEnvironment());
+            wcClient.setEventHandler(printer);
+            String target = checkRevPropTarget(getSVNEnvironment().getStartRevision(), targets);
             long rev;
             if (SVNCommandUtil.isURL(target)) {
                 rev = wcClient.doGetRevisionProperty(SVNURL.parseURIEncoded(target), null, getSVNEnvironment().getStartRevision(), this);
@@ -131,6 +118,9 @@ public class SVNPropListCommand extends SVNPropertiesCommand {
             
             Collection<String> changeLists = getSVNEnvironment().getChangelistsCollection();
             SVNWCClient client = getSVNEnvironment().getClientManager().getWCClient();
+            final SVNNotifyPrinter printer = new SVNNotifyPrinter(getSVNEnvironment());
+            client.setEventHandler(printer);
+
             SVNErrorCode errorCode = null;
             for (Iterator<String> ts = targets.iterator(); ts.hasNext();) {
                 final String targetPath = (String) ts.next();

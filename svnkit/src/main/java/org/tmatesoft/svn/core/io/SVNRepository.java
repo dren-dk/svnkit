@@ -11,41 +11,7 @@
  */
 package org.tmatesoft.svn.core.io;
 
-import java.io.File;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
-import org.tmatesoft.svn.core.ISVNCanceller;
-import org.tmatesoft.svn.core.ISVNDirEntryHandler;
-import org.tmatesoft.svn.core.ISVNLogEntryHandler;
-import org.tmatesoft.svn.core.SVNAuthenticationException;
-import org.tmatesoft.svn.core.SVNDepth;
-import org.tmatesoft.svn.core.SVNDirEntry;
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNLock;
-import org.tmatesoft.svn.core.SVNLogEntry;
-import org.tmatesoft.svn.core.SVNLogEntryPath;
-import org.tmatesoft.svn.core.SVNMergeInfo;
-import org.tmatesoft.svn.core.SVNMergeInfoInheritance;
-import org.tmatesoft.svn.core.SVNNodeKind;
-import org.tmatesoft.svn.core.SVNProperties;
-import org.tmatesoft.svn.core.SVNProperty;
-import org.tmatesoft.svn.core.SVNPropertyValue;
-import org.tmatesoft.svn.core.SVNRevisionProperty;
-import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryUtil;
 import org.tmatesoft.svn.core.internal.util.SVNHashMap;
@@ -55,9 +21,15 @@ import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.io.diff.SVNDeltaGenerator;
 import org.tmatesoft.svn.core.io.diff.SVNDiffWindow;
+import org.tmatesoft.svn.core.wc.ISVNEventHandler;
 import org.tmatesoft.svn.util.ISVNDebugLog;
 import org.tmatesoft.svn.util.SVNDebugLog;
 import org.tmatesoft.svn.util.SVNLogType;
+
+import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.*;
 
 /**
  * The abstract class <b>SVNRepository</b> provides an interface for protocol
@@ -165,6 +137,7 @@ public abstract class SVNRepository {
     private ISVNTunnelProvider myTunnelProvider;
     private ISVNDebugLog myDebugLog;
     private ISVNCanceller myCanceller;
+    private ISVNEventHandler myEventHandler;
     private Collection myConnectionListeners;
 
     protected SVNRepository(SVNURL location, ISVNSession options) {
@@ -225,34 +198,38 @@ public abstract class SVNRepository {
     public void setLocation(SVNURL url, boolean forceReconnect) throws SVNException {
         lock();
         try {
-            if (url == null) {
-                return;
-            } else if (!url.getProtocol().equals(myLocation.getProtocol())) {
-                SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_NOT_IMPLEMENTED, "SVNRepository URL could not be changed from ''{0}'' to ''{1}''; create new SVNRepository instance instead", new Object[] {myLocation, url});
-                SVNErrorManager.error(err, SVNLogType.NETWORK);
-            }
-            if (forceReconnect) {
-                closeSession();
-                myRepositoryRoot = null;
-                myRepositoryUUID = null;
-            } else if (myRepositoryRoot == null) {
-                // no way to check whether repos is the same. just compare urls
-                if (!(url.toString().startsWith(myLocation.toString() + "/") || url.equals(getLocation()))) {
-                    closeSession();
-                    myRepositoryRoot = null;
-                    myRepositoryUUID = null;
-                }
-            } else if (url.toString().startsWith(myRepositoryRoot.toString() + "/") || myRepositoryRoot.equals(url)) {
-                // just do nothing, we are still below old root.
-            } else {
-                closeSession();
-                myRepositoryRoot = null;
-                myRepositoryUUID = null;
-            }
-            myLocation = url;
+            setLocationInternal(url, forceReconnect);
         } finally {
             unlock();
         }
+    }
+
+    protected void setLocationInternal(SVNURL url, boolean forceReconnect) throws SVNException {
+        if (url == null) {
+            return;
+        } else if (!url.getProtocol().equals(myLocation.getProtocol())) {
+            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_NOT_IMPLEMENTED, "SVNRepository URL could not be changed from ''{0}'' to ''{1}''; create new SVNRepository instance instead", new Object[] {myLocation, url});
+            SVNErrorManager.error(err, SVNLogType.NETWORK);
+        }
+        if (forceReconnect) {
+            closeSession();
+            myRepositoryRoot = null;
+            myRepositoryUUID = null;
+        } else if (myRepositoryRoot == null) {
+            // no way to check whether repos is the same. just compare urls
+            if (!(url.toString().startsWith(myLocation.toString() + "/") || url.equals(getLocation()))) {
+                closeSession();
+                myRepositoryRoot = null;
+                myRepositoryUUID = null;
+            }
+        } else if (url.toString().startsWith(myRepositoryRoot.toString() + "/") || myRepositoryRoot.equals(url)) {
+            // just do nothing, we are still below old root.
+        } else {
+            closeSession();
+            myRepositoryRoot = null;
+            myRepositoryUUID = null;
+        }
+        myLocation = url;
     }
 
     /**
@@ -401,7 +378,25 @@ public abstract class SVNRepository {
     public ISVNCanceller getCanceller() {
         return myCanceller == null ? ISVNCanceller.NULL : myCanceller;
     }
-    
+
+    /**
+     * Sets a event handler to this object.
+     *
+     * @since 1.8.14
+     */
+    public void setEventHandler(ISVNEventHandler myEventHandler) {
+        this.myEventHandler = myEventHandler;
+    }
+
+    /**
+     * Returns the event handler, stored in this object.
+     *
+     * @since 1.8.14
+     */
+    public ISVNEventHandler getEventHandler() {
+        return myEventHandler;
+    }
+
     /**
      * Caches identification parameters (UUID, rood directory location) 
      * of the repository with which this driver is working.

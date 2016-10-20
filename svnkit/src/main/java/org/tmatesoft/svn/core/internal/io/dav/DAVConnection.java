@@ -12,28 +12,12 @@
 
 package org.tmatesoft.svn.core.internal.io.dav;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.util.*;
-
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNLock;
-import org.tmatesoft.svn.core.SVNProperty;
-import org.tmatesoft.svn.core.SVNPropertyValue;
-import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVGetLocksHandler;
 import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVLockHandler;
 import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVMergeHandler;
 import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVOptionsHandler;
-import org.tmatesoft.svn.core.internal.io.dav.http.HTTPConnection;
-import org.tmatesoft.svn.core.internal.io.dav.http.HTTPHeader;
-import org.tmatesoft.svn.core.internal.io.dav.http.HTTPStatus;
-import org.tmatesoft.svn.core.internal.io.dav.http.IHTTPConnection;
-import org.tmatesoft.svn.core.internal.io.dav.http.IHTTPConnectionFactory;
+import org.tmatesoft.svn.core.internal.io.dav.http.*;
 import org.tmatesoft.svn.core.internal.util.*;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.io.ISVNWorkspaceMediator;
@@ -41,6 +25,12 @@ import org.tmatesoft.svn.core.io.SVNCapability;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.util.SVNLogType;
 import org.xml.sax.helpers.DefaultHandler;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.util.*;
 
 
 /**
@@ -106,7 +96,12 @@ public class DAVConnection {
         myActivityCollectionURL = null;
     }
 
+
     public void open(DAVRepository repository) throws SVNException {
+        open(repository, null);
+    }
+
+    public void open(DAVRepository repository, SVNURL[] correctedUrl) throws SVNException {
         if (myHttpConnection == null) {
             myHttpConnection = myConnectionFactory.createHTTPConnection(repository);
             if (repository.getSpoolLocation() != null) {
@@ -115,7 +110,7 @@ public class DAVConnection {
                     ((HTTPConnection) myHttpConnection).setSpoolDirectory(repository.getSpoolLocation());
                 }
             }
-            exchangeCapabilities();
+            exchangeCapabilities(correctedUrl);
         }
     }
 
@@ -651,7 +646,7 @@ public class DAVConnection {
 
     public String getCapabilityResponse(SVNCapability capability) throws SVNException {
     	if (myCapabilities == null || myCapabilities.get(capability) == null) {
-    		exchangeCapabilities();
+    		exchangeCapabilities(null);
     	}
         return (String) myCapabilities.get(capability);
     }
@@ -692,17 +687,48 @@ public class DAVConnection {
         return myHttpConnection;
     }
 
-    protected void exchangeCapabilities() throws SVNException {
+    protected void exchangeCapabilities(SVNURL[] correctedUrl) throws SVNException {
         String path = SVNEncodingUtil.uriEncode(getLocation().getPath());
         IHTTPConnection httpConnection = getConnection();
         HTTPStatus status = performHttpRequest(httpConnection, "OPTIONS", path, null, DAVOptionsHandler.OPTIONS_REQUEST, 200, 0, null, null);
+
+        if (correctedUrl != null && status.getCode() == 301) {
+            final String newLocation = status.getHeader().getFirstHeaderValue(HTTPHeader.LOCATION_HEADER);
+            if (newLocation == null || newLocation.length() == 0) {
+                final SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.RA_DAV_RESPONSE_HEADER_BADNESS, "Location header not set on redirect response");
+                SVNErrorManager.error(errorMessage, SVNLogType.NETWORK);
+            } else if (SVNPathUtil.isURL(newLocation)) {
+                correctedUrl[0] = SVNURL.parseURIEncoded(newLocation);
+            } else {
+                final SVNURL currentLocation = getLocation();
+                correctedUrl[0] = SVNURL.create(currentLocation.getProtocol(), currentLocation.getUserInfo(), currentLocation.getHost(), currentLocation.getPort(),
+                        newLocation, /*URI encoded*/false);
+            }
+            return;
+        } else if (status.getCode() >= 300 && status.getCode() < 399) {
+            final String location = status.getHeader() != null ? status.getHeader().getFirstHeaderValue("Location") : null;
+
+            String message;
+            SVNErrorMessage errorMessage;
+            if (location != null) {
+                message = status.getCode() == HttpURLConnection.HTTP_MOVED_PERM ? "Repository moved permanently to ''{0}''; please relocate" :
+                        "Repository moved temporarily to ''{0}''; please relocate";
+                errorMessage = SVNErrorMessage.create(SVNErrorCode.RA_DAV_RELOCATED, message, location);
+            } else {
+                message = status.getCode() == HttpURLConnection.HTTP_MOVED_PERM ? "Repository moved permanently; please relocate" :
+                        "Repository moved temporarily; please relocate";
+                errorMessage = SVNErrorMessage.create(SVNErrorCode.RA_DAV_RELOCATED, message);
+            }
+            SVNErrorManager.error(errorMessage, SVNLogType.NETWORK);
+        }
+
         if (status.getCode() == 200) {
-        	parseCapabilities(status);
+            parseCapabilities(status);
         } else {
-        	SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_DAV_OPTIONS_REQ_FAILED,
-        			"OPTIONS request (for capabilities) got HTTP response code {0}",
-        			new Integer(status.getCode()));
-        	SVNErrorManager.error(err, SVNLogType.NETWORK);
+            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_DAV_OPTIONS_REQ_FAILED,
+                    "OPTIONS request (for capabilities) got HTTP response code {0}",
+                    new Integer(status.getCode()));
+            SVNErrorManager.error(err, SVNLogType.NETWORK);
         }
     }
 

@@ -285,11 +285,18 @@ public class SVNEventAction {
      * area is upgraded to a newer one.
      */
     public static final SVNEventAction UPGRADE = createEventAction(-2, "wc_upgrade");
+
     /**
      * An working copy directory was upgraded to the latest format
      * @since New in 1.7. 
      */
     public static final SVNEventAction UPGRADED_PATH = createEventAction(50, "upgraded_path");
+
+    /**
+     * The server has instructed the client to follow a URL redirection.
+     * @since SVN 1.7.
+     */
+    public static final SVNEventAction URL_REDIRECT = createEventAction(59, "url_redirect");
 
     /**
      * Denotes that tried adding a path that already exists.

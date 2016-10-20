@@ -11,17 +11,7 @@
  */
 package org.tmatesoft.svn.cli.svn;
 
-import java.text.MessageFormat;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-
-import org.tmatesoft.svn.core.ISVNLogEntryHandler;
-import org.tmatesoft.svn.core.SVNDepth;
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNLogEntry;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNPath;
 import org.tmatesoft.svn.core.wc.SVNDiffClient;
@@ -29,6 +19,11 @@ import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNRevisionRange;
 import org.tmatesoft.svn.core.wc2.*;
 import org.tmatesoft.svn.util.SVNLogType;
+
+import java.text.MessageFormat;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 
 
 /**
@@ -103,6 +98,8 @@ public class SVNMergeInfoCommand extends SVNCommand implements ISVNLogEntryHandl
 
         if (getSVNEnvironment().getShowRevisionType() == SVNShowRevisionType.MERGED || getSVNEnvironment().getShowRevisionType() == SVNShowRevisionType.ELIGIBLE) {
             SVNDiffClient client = getSVNEnvironment().getClientManager().getDiffClient();
+            final SVNNotifyPrinter printer = new SVNNotifyPrinter(getSVNEnvironment());
+            client.setEventHandler(printer);
             SvnOperationFactory of = client.getOperationsFactory();
             SVNDepth depth = getSVNEnvironment().getDepth();
             if (depth == SVNDepth.UNKNOWN) {

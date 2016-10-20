@@ -11,26 +11,16 @@
  */
 package org.tmatesoft.svn.cli.svn;
 
-import java.io.File;
-import java.util.*;
-
 import org.tmatesoft.svn.cli.SVNCommandUtil;
 import org.tmatesoft.svn.core.*;
-import org.tmatesoft.svn.core.internal.util.SVNDate;
-import org.tmatesoft.svn.core.internal.util.SVNHashMap;
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
-import org.tmatesoft.svn.core.internal.util.SVNURLUtil;
-import org.tmatesoft.svn.core.internal.util.SVNXMLUtil;
+import org.tmatesoft.svn.core.internal.util.*;
 import org.tmatesoft.svn.core.internal.wc.*;
 import org.tmatesoft.svn.core.internal.wc17.SVNWCUtils;
-import org.tmatesoft.svn.core.wc.ISVNInfoHandler;
-import org.tmatesoft.svn.core.wc.SVNConflictAction;
-import org.tmatesoft.svn.core.wc.SVNConflictReason;
-import org.tmatesoft.svn.core.wc.SVNInfo;
-import org.tmatesoft.svn.core.wc.SVNRevision;
-import org.tmatesoft.svn.core.wc.SVNTreeConflictDescription;
-import org.tmatesoft.svn.core.wc.SVNWCClient;
+import org.tmatesoft.svn.core.wc.*;
 import org.tmatesoft.svn.util.SVNLogType;
+
+import java.io.File;
+import java.util.*;
 
 
 /**
@@ -109,6 +99,8 @@ public class SVNInfoCommand extends SVNXMLCommand implements ISVNInfoHandler {
             depth = SVNDepth.EMPTY;
         }
         SVNWCClient client = getSVNEnvironment().getClientManager().getWCClient();
+        SVNNotifyPrinter printer = new SVNNotifyPrinter(getSVNEnvironment());
+        client.setEventHandler(printer);
         boolean seenNonExistingTargets = false;
         for(int i = 0; i < targets.size(); i++) {
             String targetName = (String) targets.get(i);

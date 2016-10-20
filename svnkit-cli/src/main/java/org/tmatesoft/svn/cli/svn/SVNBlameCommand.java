@@ -11,13 +11,6 @@
  */
 package org.tmatesoft.svn.cli.svn;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.tmatesoft.svn.cli.SVNCommandUtil;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
@@ -31,6 +24,9 @@ import org.tmatesoft.svn.core.wc.ISVNAnnotateHandler;
 import org.tmatesoft.svn.core.wc.SVNLogClient;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.util.SVNLogType;
+
+import java.io.File;
+import java.util.*;
 
 
 /**
@@ -90,6 +86,8 @@ public class SVNBlameCommand extends SVNXMLCommand implements ISVNAnnotateHandle
         
         myBuffer = new StringBuffer();
         SVNLogClient client = getSVNEnvironment().getClientManager().getLogClient();
+        final SVNNotifyPrinter printer = new SVNNotifyPrinter(getSVNEnvironment());
+        client.setEventHandler(printer);
         client.setDiffOptions(getSVNEnvironment().getDiffOptions());
         boolean hasMissingTargets = false;
         for (Iterator ts = targets.iterator(); ts.hasNext();) {

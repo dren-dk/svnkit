@@ -11,14 +11,6 @@
  */
 package org.tmatesoft.svn.cli.svn;
 
-import java.io.File;
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
 import org.tmatesoft.svn.cli.SVNCommandUtil;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
@@ -31,12 +23,12 @@ import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNPath;
 import org.tmatesoft.svn.core.internal.wc2.ng.SvnDiffGenerator;
 import org.tmatesoft.svn.core.internal.wc2.ng.SvnNewDiffGenerator;
-import org.tmatesoft.svn.core.wc.ISVNDiffStatusHandler;
-import org.tmatesoft.svn.core.wc.SVNDiffClient;
-import org.tmatesoft.svn.core.wc.SVNDiffStatus;
-import org.tmatesoft.svn.core.wc.SVNRevision;
-import org.tmatesoft.svn.core.wc.SVNStatusType;
+import org.tmatesoft.svn.core.wc.*;
 import org.tmatesoft.svn.util.SVNLogType;
+
+import java.io.File;
+import java.io.PrintStream;
+import java.util.*;
 
 
 /**
@@ -180,6 +172,8 @@ public class SVNDiffCommand extends SVNXMLCommand implements ISVNDiffStatusHandl
         }
 
         SVNDiffClient client = getSVNEnvironment().getClientManager().getDiffClient();
+        final SVNNotifyPrinter printer = new SVNNotifyPrinter(getSVNEnvironment());
+        client.setEventHandler(printer);
         SVNCommandEnvironment environment = (SVNCommandEnvironment) getEnvironment();
         client.setShowCopiesAsAdds(environment.isShowCopiesAsAdds());
         client.setGitDiffFormat(environment.isGitDiffFormat());

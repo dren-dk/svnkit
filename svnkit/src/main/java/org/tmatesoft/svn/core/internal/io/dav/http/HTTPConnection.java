@@ -11,70 +11,31 @@
  */
 package org.tmatesoft.svn.core.internal.io.dav.http;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.EOFException;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.net.*;
-import java.text.ParseException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.zip.GZIPInputStream;
-
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLHandshakeException;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.TrustManager;
-import javax.xml.parsers.FactoryConfigurationError;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
-
-import org.tmatesoft.svn.core.SVNCancelException;
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.auth.BasicAuthenticationManager;
-import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
-import org.tmatesoft.svn.core.auth.ISVNAuthenticationManagerExt;
-import org.tmatesoft.svn.core.auth.ISVNProxyManager;
-import org.tmatesoft.svn.core.auth.ISVNProxyManagerEx;
-import org.tmatesoft.svn.core.auth.SVNAuthentication;
-import org.tmatesoft.svn.core.auth.SVNPasswordAuthentication;
+import org.tmatesoft.svn.core.*;
+import org.tmatesoft.svn.core.auth.*;
 import org.tmatesoft.svn.core.internal.io.dav.handlers.DAVErrorHandler;
 import org.tmatesoft.svn.core.internal.util.ChunkedInputStream;
 import org.tmatesoft.svn.core.internal.util.FixedSizeInputStream;
 import org.tmatesoft.svn.core.internal.util.SVNSSLUtil;
 import org.tmatesoft.svn.core.internal.util.SVNSocketFactory;
-import org.tmatesoft.svn.core.internal.wc.DefaultSVNAuthenticationManager;
-import org.tmatesoft.svn.core.internal.wc.IOExceptionWrapper;
-import org.tmatesoft.svn.core.internal.wc.SVNCancellableOutputStream;
-import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
-import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
+import org.tmatesoft.svn.core.internal.wc.*;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.util.ISVNDebugLog;
 import org.tmatesoft.svn.util.SVNDebugLog;
 import org.tmatesoft.svn.util.SVNLogType;
-import org.xml.sax.EntityResolver;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXNotRecognizedException;
-import org.xml.sax.SAXNotSupportedException;
-import org.xml.sax.SAXParseException;
+import org.xml.sax.*;
 import org.xml.sax.helpers.DefaultHandler;
+
+import javax.net.ssl.*;
+import javax.xml.parsers.FactoryConfigurationError;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+import java.io.*;
+import java.net.*;
+import java.text.ParseException;
+import java.util.*;
+import java.util.zip.GZIPInputStream;
 
 /**
  * @version 1.3
@@ -519,6 +480,7 @@ public class HTTPConnection implements IHTTPConnection {
                 }
                 myNextRequestTimeout = request.getNextRequestTimeout();
                 myLastStatus = request.getStatus();
+                myLastStatus.setHeader(request.getResponseHeader());
             } catch (SSLHandshakeException ssl) {
                 myRepository.getDebugLog().logFine(SVNLogType.NETWORK, ssl);
                 close();
@@ -734,26 +696,22 @@ public class HTTPConnection implements IHTTPConnection {
                 continue;
             } else if (myLastStatus.getCode() == HttpURLConnection.HTTP_MOVED_PERM || myLastStatus.getCode() == HttpURLConnection.HTTP_MOVED_TEMP) {
                 String newLocation = request.getResponseHeader().getFirstHeaderValue(HTTPHeader.LOCATION_HEADER);
-                if (newLocation == null) {
-                    err = request.getErrorMessage();
-                    break;
-                }
-                int hostIndex = newLocation.indexOf("://");
-                if (hostIndex > 0) {
-                    hostIndex += 3;
-                    hostIndex = newLocation.indexOf("/", hostIndex);
-                }
-                if (hostIndex > 0 && hostIndex < newLocation.length()) {
-                    String newPath = newLocation.substring(hostIndex);
-                    if (newPath.endsWith("/") &&
-                            !newPath.endsWith("//") && !path.endsWith("/") &&
-                            newPath.substring(0, newPath.length() - 1).equals(path)) {
-                        path += "//";
-                        continue;
+                if (newLocation != null) {
+                    int hostIndex = newLocation.indexOf("://");
+                    if (hostIndex > 0) {
+                        hostIndex += 3;
+                        hostIndex = newLocation.indexOf("/", hostIndex);
+                    }
+                    if (hostIndex > 0 && hostIndex < newLocation.length()) {
+                        String newPath = newLocation.substring(hostIndex);
+                        if (newPath.endsWith("/") &&
+                                !newPath.endsWith("//") && !path.endsWith("/") &&
+                                newPath.substring(0, newPath.length() - 1).equals(path)) {
+                            path += "//";
+                            continue;
+                        }
                     }
                 }
-                err = request.getErrorMessage();
-                close();
             } else if (request.getErrorMessage() != null) {
                 err = request.getErrorMessage();
             } else {

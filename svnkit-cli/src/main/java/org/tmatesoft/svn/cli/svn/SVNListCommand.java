@@ -11,8 +11,6 @@
  */
 package org.tmatesoft.svn.cli.svn;
 
-import java.util.*;
-
 import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.util.SVNDate;
 import org.tmatesoft.svn.core.internal.util.SVNFormatUtil;
@@ -21,6 +19,8 @@ import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNPath;
 import org.tmatesoft.svn.core.wc.SVNLogClient;
 import org.tmatesoft.svn.util.SVNLogType;
+
+import java.util.*;
 
 
 /**
@@ -73,6 +73,8 @@ public class SVNListCommand extends SVNXMLCommand implements ISVNDirEntryHandler
                 SVNDirEntry.DIRENT_ALL : SVNDirEntry.DIRENT_KIND | SVNDirEntry.DIRENT_TIME;
         boolean fetchLocks = getSVNEnvironment().isXML() || getSVNEnvironment().isVerbose();
         SVNLogClient client = getSVNEnvironment().getClientManager().getLogClient();
+        SVNNotifyPrinter printer = new SVNNotifyPrinter(getSVNEnvironment());
+        client.setEventHandler(printer);
         if (getSVNEnvironment().isIncludeExternals()) {
             client.setIgnoreExternals(false);
         }

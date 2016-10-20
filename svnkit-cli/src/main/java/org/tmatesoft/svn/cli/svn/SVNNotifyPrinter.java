@@ -14,7 +14,6 @@ package org.tmatesoft.svn.cli.svn;
 import org.tmatesoft.svn.cli.SVNCommandUtil;
 import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.util.SVNFormatUtil;
-import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc.patch.SVNPatchHunk;
 import org.tmatesoft.svn.core.internal.wc.patch.SVNPatchHunkInfo;
 import org.tmatesoft.svn.core.internal.wc2.patch.SvnHunkInfo;
@@ -673,6 +672,8 @@ public class SVNNotifyPrinter implements ISVNEventHandler {
         } else if (event.getAction() == SVNEventAction.UPGRADED_PATH) {
         	myIsChangesReceived = true;
             buffer.append("Upgraded '" + path + "'\n");
+        } else if (event.getAction() == SVNEventAction.URL_REDIRECT) {
+            buffer.append("Redirecting to URL '").append(event.getURL()).append("':\n");
         } else if (event.getAction() == SVNEventAction.FOREIGN_COPY_BEGIN) {
             if (event.getMergeRange() == null) {
                 buffer.append("--- Copying from foreign repository URL '");

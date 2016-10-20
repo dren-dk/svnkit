@@ -11,14 +11,6 @@
  */
 package org.tmatesoft.svn.cli.svn;
 
-import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-
 import org.tmatesoft.svn.cli.SVNCommandUtil;
 import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.wc.*;
@@ -26,6 +18,14 @@ import org.tmatesoft.svn.core.wc.SVNPropertyData;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
 import org.tmatesoft.svn.util.SVNLogType;
+
+import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
 
 
 /**
@@ -155,6 +155,10 @@ public class SVNPropSetCommand extends SVNPropertiesCommand {
             
             Collection changeLists = getSVNEnvironment().getChangelistsCollection();
             SVNWCClient client = getSVNEnvironment().getClientManager().getWCClient();
+            final SVNNotifyPrinter printer = new SVNNotifyPrinter(getSVNEnvironment());
+            if (!getSVNEnvironment().isQuiet()) {
+                client.setEventHandler(printer);
+            }
             for (Iterator ts = targets.iterator(); ts.hasNext();) {
                 String targetName = (String) ts.next();
                 SVNPath target = new SVNPath(targetName);

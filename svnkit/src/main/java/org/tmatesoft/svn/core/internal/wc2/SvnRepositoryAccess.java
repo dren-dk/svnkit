@@ -1,39 +1,21 @@
 package org.tmatesoft.svn.core.internal.wc2;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNMergeInfo;
-import org.tmatesoft.svn.core.SVNMergeInfoInheritance;
-import org.tmatesoft.svn.core.SVNMergeRange;
-import org.tmatesoft.svn.core.SVNMergeRangeList;
-import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNMergeDriver;
 import org.tmatesoft.svn.core.internal.wc17.SVNWCContext;
 import org.tmatesoft.svn.core.internal.wc17.db.Structure;
 import org.tmatesoft.svn.core.internal.wc17.db.StructureFields;
-import org.tmatesoft.svn.core.internal.wc2.ng.SvnNgRepositoryAccess;
-import org.tmatesoft.svn.core.internal.wc2.old.SvnOldRepositoryAccess;
-import org.tmatesoft.svn.core.io.ISVNLocationSegmentHandler;
-import org.tmatesoft.svn.core.io.SVNLocationEntry;
-import org.tmatesoft.svn.core.io.SVNLocationSegment;
-import org.tmatesoft.svn.core.io.SVNRepository;
-import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
+import org.tmatesoft.svn.core.io.*;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc2.ISvnOperationOptionsProvider;
 import org.tmatesoft.svn.core.wc2.SvnCopySource;
 import org.tmatesoft.svn.core.wc2.SvnTarget;
 import org.tmatesoft.svn.util.SVNLogType;
+
+import java.io.File;
+import java.util.*;
 
 public abstract class SvnRepositoryAccess {
     
@@ -127,6 +109,7 @@ public abstract class SvnRepositoryAccess {
             }
         }
         repository.setCanceller(getOperationOptionsProvider().getCanceller());
+        repository.setEventHandler(getOperationOptionsProvider().getEventHandler());
         return repository;
     }
 
@@ -189,7 +172,7 @@ public abstract class SvnRepositoryAccess {
         if (repository == null) {
             repository = createRepository(url, null, true);
         }
-    
+
         Structure<RevisionsPair> pair = null;
         if (pegRevisionNumber < 0) {
             pair = getRevisionNumber(repository, path, revision, pair);
@@ -210,6 +193,7 @@ public abstract class SvnRepositoryAccess {
         if (end != SVNRevision.UNDEFINED) {
             result.set(LocationsInfo.startRevision, endRevisionNumber);
         }
+        url = repository.getLocation();
         if (startRevisionNumber == pegRevisionNumber && (endRevisionNumber == pegRevisionNumber || !SVNRevision.isValidRevisionNumber(endRevisionNumber))) {
             result.set(LocationsInfo.startUrl, url);
             result.set(LocationsInfo.endUrl, url);

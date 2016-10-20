@@ -12,55 +12,30 @@
 
 package org.tmatesoft.svn.core.internal.io.dav;
 
-import java.io.File;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
-import org.tmatesoft.svn.core.ISVNDirEntryHandler;
-import org.tmatesoft.svn.core.ISVNLogEntryHandler;
-import org.tmatesoft.svn.core.SVNDepth;
-import org.tmatesoft.svn.core.SVNDirEntry;
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNLock;
-import org.tmatesoft.svn.core.SVNLogEntry;
-import org.tmatesoft.svn.core.SVNMergeInfo;
-import org.tmatesoft.svn.core.SVNMergeInfoInheritance;
-import org.tmatesoft.svn.core.SVNNodeKind;
-import org.tmatesoft.svn.core.SVNProperties;
-import org.tmatesoft.svn.core.SVNProperty;
-import org.tmatesoft.svn.core.SVNPropertyValue;
-import org.tmatesoft.svn.core.SVNRevisionProperty;
-import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.internal.io.dav.handlers.*;
 import org.tmatesoft.svn.core.internal.io.dav.http.HTTPStatus;
 import org.tmatesoft.svn.core.internal.io.dav.http.IHTTPConnectionFactory;
 import org.tmatesoft.svn.core.internal.io.fs.FSErrors;
 import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryUtil;
-import org.tmatesoft.svn.core.internal.util.SVNDate;
-import org.tmatesoft.svn.core.internal.util.SVNEncodingUtil;
-import org.tmatesoft.svn.core.internal.util.SVNHashMap;
-import org.tmatesoft.svn.core.internal.util.SVNHashSet;
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
+import org.tmatesoft.svn.core.internal.util.*;
 import org.tmatesoft.svn.core.internal.wc.SVNDepthFilterEditor;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.internal.wc.SVNEventFactory;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.io.*;
-import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.ISVNEventHandler;
+import org.tmatesoft.svn.core.wc.SVNEvent;
+import org.tmatesoft.svn.core.wc.SVNEventAction;
 import org.tmatesoft.svn.core.wc2.SvnChecksum;
 import org.tmatesoft.svn.util.SVNLogType;
 import org.tmatesoft.svn.util.Version;
+
+import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.*;
 
 /**
  * @version 1.3
@@ -1044,9 +1019,36 @@ public class DAVRepository extends SVNRepository {
         fireConnectionOpened();
         lock();
         if (myConnection == null) {
-            myConnection = createDAVConnection(myConnectionFactory, this);
-            myConnection.setReportResponseSpooled(isSpoolResponse());
-            myConnection.open(this);
+
+            final Set<SVNURL> attempted = new HashSet<SVNURL>();
+            final SVNURL[] correctedUrl = new SVNURL[1];
+            int attemptsLeft = 4;
+            while (attemptsLeft-- > 0) {
+                correctedUrl[0] = null;
+                myConnection = createDAVConnection(myConnectionFactory, this);
+                myConnection.setReportResponseSpooled(isSpoolResponse());
+                myConnection.open(this, correctedUrl);
+
+                if (correctedUrl[0] == null) {
+                    break;
+                }
+
+                ISVNEventHandler eventHandler = getEventHandler();
+                if (eventHandler != null) {
+                    final SVNEvent event = SVNEventFactory.createSVNEvent(new File("."), SVNNodeKind.UNKNOWN, null, SVNRepository.INVALID_REVISION, SVNEventAction.URL_REDIRECT, SVNEventAction.URL_REDIRECT, null, null);
+                    event.setURL(correctedUrl[0]);
+                    eventHandler.handleEvent(event, -1);
+                }
+
+                if (attempted.contains(correctedUrl[0])) {
+                    final SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.CLIENT_CYCLE_DETECTED, "Redirect cycle detected for URL ''{0}''", correctedUrl[0]);
+                    SVNErrorManager.error(errorMessage, SVNLogType.NETWORK);
+                }
+                attempted.add(correctedUrl[0]);
+
+                //setLocation() but avoid double locking
+                setLocationInternal(correctedUrl[0], false);
+            }
         }
     }
 

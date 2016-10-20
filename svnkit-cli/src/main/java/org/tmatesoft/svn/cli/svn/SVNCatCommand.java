@@ -11,10 +11,6 @@
  */
 package org.tmatesoft.svn.cli.svn;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
@@ -22,6 +18,10 @@ import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNPath;
 import org.tmatesoft.svn.core.wc.SVNWCClient;
 import org.tmatesoft.svn.util.SVNLogType;
+
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 
 
 /**
@@ -46,6 +46,8 @@ public class SVNCatCommand extends SVNCommand {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.CL_INSUFFICIENT_ARGS), SVNLogType.CLIENT);
         }
         SVNWCClient client = getSVNEnvironment().getClientManager().getWCClient();
+        final SVNNotifyPrinter printer = new SVNNotifyPrinter(getSVNEnvironment());
+        client.setEventHandler(printer);
 
         boolean seenNonExistentTarget = false;
         
