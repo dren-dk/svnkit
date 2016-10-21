@@ -198,6 +198,12 @@ public abstract class SVNRepository {
     public void setLocation(SVNURL url, boolean forceReconnect) throws SVNException {
         lock();
         try {
+            if (url == null) {
+                return;
+            } else if (!url.getProtocol().equals(myLocation.getProtocol())) {
+                SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_NOT_IMPLEMENTED, "SVNRepository URL could not be changed from ''{0}'' to ''{1}''; create new SVNRepository instance instead", new Object[] {myLocation, url});
+                SVNErrorManager.error(err, SVNLogType.NETWORK);
+            }
             setLocationInternal(url, forceReconnect);
         } finally {
             unlock();
@@ -205,12 +211,7 @@ public abstract class SVNRepository {
     }
 
     protected void setLocationInternal(SVNURL url, boolean forceReconnect) throws SVNException {
-        if (url == null) {
-            return;
-        } else if (!url.getProtocol().equals(myLocation.getProtocol())) {
-            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_NOT_IMPLEMENTED, "SVNRepository URL could not be changed from ''{0}'' to ''{1}''; create new SVNRepository instance instead", new Object[] {myLocation, url});
-            SVNErrorManager.error(err, SVNLogType.NETWORK);
-        }
+
         if (forceReconnect) {
             closeSession();
             myRepositoryRoot = null;
