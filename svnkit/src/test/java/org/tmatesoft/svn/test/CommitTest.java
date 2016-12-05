@@ -1,41 +1,23 @@
 package org.tmatesoft.svn.test;
 
-import java.io.File;
-import java.util.Map;
-
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
-import org.tmatesoft.svn.core.SVNCommitInfo;
-import org.tmatesoft.svn.core.SVNDepth;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNLogEntry;
-import org.tmatesoft.svn.core.SVNLogEntryPath;
-import org.tmatesoft.svn.core.SVNProperty;
-import org.tmatesoft.svn.core.SVNPropertyValue;
-import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.wc.SVNExternal;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc17.SVNWCContext;
 import org.tmatesoft.svn.core.internal.wc17.db.Structure;
 import org.tmatesoft.svn.core.internal.wc17.db.StructureFields;
 import org.tmatesoft.svn.core.internal.wc2.SvnWcGeneration;
-import org.tmatesoft.svn.core.wc.DefaultSVNCommitHandler;
-import org.tmatesoft.svn.core.wc.SVNClientManager;
-import org.tmatesoft.svn.core.wc.SVNCommitClient;
-import org.tmatesoft.svn.core.wc.SVNCommitItem;
-import org.tmatesoft.svn.core.wc.SVNCommitPacket;
-import org.tmatesoft.svn.core.wc.SVNRevision;
-import org.tmatesoft.svn.core.wc.SVNStatusType;
-import org.tmatesoft.svn.core.wc2.SvnCheckout;
-import org.tmatesoft.svn.core.wc2.SvnCommit;
-import org.tmatesoft.svn.core.wc2.SvnLog;
-import org.tmatesoft.svn.core.wc2.SvnOperationFactory;
-import org.tmatesoft.svn.core.wc2.SvnRevisionRange;
-import org.tmatesoft.svn.core.wc2.SvnScheduleForAddition;
-import org.tmatesoft.svn.core.wc2.SvnStatus;
-import org.tmatesoft.svn.core.wc2.SvnTarget;
+import org.tmatesoft.svn.core.io.ISVNEditor;
+import org.tmatesoft.svn.core.io.SVNRepository;
+import org.tmatesoft.svn.core.wc.*;
+import org.tmatesoft.svn.core.wc2.*;
 import org.tmatesoft.svn.core.wc2.admin.SvnRepositoryCreate;
+
+import java.io.File;
+import java.util.Map;
 
 public class CommitTest {
     @Test
@@ -94,14 +76,14 @@ public class CommitTest {
             
             final File path = workingCopy.getFile("trunk/ext/file");
             SVNCommitClient ci = SVNClientManager.newInstance().getCommitClient();
-            final SVNCommitInfo info = ci.doCommit(new File[] {path}, 
-                    false, 
+            final SVNCommitInfo info = ci.doCommit(new File[]{path},
+                    false,
                     "message", null, null, false, true, SVNDepth.INFINITY);
             Assert.assertNotNull(info);
             Assert.assertEquals(2, info.getNewRevision());
 
-            final SVNCommitInfo info2 = ci.doCommit(new File[] {path}, 
-                    false, 
+            final SVNCommitInfo info2 = ci.doCommit(new File[]{path},
+                    false,
                     "message", null, null, false, true, SVNDepth.INFINITY);
             Assert.assertNotNull(info2);
             Assert.assertEquals(-1, info2.getNewRevision());
@@ -437,6 +419,73 @@ public class CommitTest {
 
         } finally {
             svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
+    @Test
+    public void testConflictOnRemovingNonExistentProperty() throws Exception {
+        //SVNKIT-694
+        final TestOptions testOptions = TestOptions.getInstance();
+
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testConflictOnRemovingNonExistentProperty", testOptions);
+
+        final SvnOperationFactory operationFactory = new SvnOperationFactory();
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final CommitBuilder commitBuilder = new CommitBuilder(url);
+            commitBuilder.addFile("trunk/conf/conf/file");
+            commitBuilder.commit();
+
+            final File workingCopy = sandbox.createDirectory("wc");
+
+            final SvnCheckout checkout = operationFactory.createCheckout();
+            checkout.setSingleTarget(SvnTarget.fromFile(workingCopy));
+            checkout.setSource(SvnTarget.fromURL(url.appendPath("trunk/conf", false)));
+            checkout.run();
+
+            final File newFile = new File(workingCopy, "conf/newFile");
+            Assert.assertTrue(newFile.createNewFile());
+
+            final SvnScheduleForAddition scheduleForAddition = operationFactory.createScheduleForAddition();
+            scheduleForAddition.setSingleTarget(SvnTarget.fromFile(newFile));
+            scheduleForAddition.run();
+
+            final DefaultSVNRepositoryPool svnRepositoryPool = new DefaultSVNRepositoryPool(null, null);
+            try {
+                final SVNRepository svnRepository = svnRepositoryPool.createRepository(url, true);
+
+                final ISVNEditor commitEditor = svnRepository.getCommitEditor("", null);
+                commitEditor.openRoot(1);
+                commitEditor.openDir("trunk", 1);
+                commitEditor.changeDirProperty("custom:lock", null);
+
+                final SvnCommit commit = operationFactory.createCommit();
+                commit.setSingleTarget(SvnTarget.fromFile(workingCopy.getAbsoluteFile()));
+                commit.run();
+
+                commitEditor.openDir("trunk/conf", 1);
+                commitEditor.openDir("trunk/conf/conf", 1);
+                commitEditor.addDir("trunk/conf/conf/dir", null, -1);
+                commitEditor.closeDir();
+                commitEditor.closeDir();
+                commitEditor.closeDir();
+                commitEditor.closeDir();
+                commitEditor.closeDir();
+                try {
+                    commitEditor.closeEdit();
+                    Assert.fail("An exception should be thrown");
+                } catch (SVNException e) {
+                    //expected
+                    e.printStackTrace();
+                    Assert.assertEquals(SVNErrorCode.FS_CONFLICT, e.getErrorMessage().getErrorCode());
+                }
+            } finally {
+                svnRepositoryPool.dispose();
+            }
+        } finally {
+            operationFactory.dispose();
             sandbox.dispose();
         }
     }

@@ -11,28 +11,7 @@
  */
 package org.tmatesoft.svn.core.internal.io.fs;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
-import org.tmatesoft.svn.core.SVNErrorCode;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNLock;
-import org.tmatesoft.svn.core.SVNNodeKind;
-import org.tmatesoft.svn.core.SVNProperties;
-import org.tmatesoft.svn.core.SVNProperty;
-import org.tmatesoft.svn.core.SVNPropertyValue;
-import org.tmatesoft.svn.core.SVNRevisionProperty;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.util.SVNDate;
 import org.tmatesoft.svn.core.internal.util.SVNHashSet;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
@@ -42,6 +21,11 @@ import org.tmatesoft.svn.core.io.ISVNLockHandler;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.util.SVNDebugLog;
 import org.tmatesoft.svn.util.SVNLogType;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.*;
 
 
 /**
@@ -118,10 +102,6 @@ public class FSCommitter {
 
         makePathMutable(parentPath, path);
         SVNProperties properties = parentPath.getRevNode().getProperties(myFSFS);
-
-        if (properties.isEmpty() && propValue == null) {
-            return;
-        }
 
         boolean mergeInfoModified = false;
         if (myFSFS.supportsMergeInfo() && name.equals(SVNProperty.MERGE_INFO)) {
