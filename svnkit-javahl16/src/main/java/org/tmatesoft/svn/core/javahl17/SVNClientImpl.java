@@ -1533,7 +1533,22 @@ public class SVNClientImpl implements ISVNClient {
 
     public static ClientException getClientException(Throwable e) throws ClientException {
         ClientException ce = ClientException.fromException(e);
-        ce.initCause(e);
+        if (ce != e) {
+            // due to the changes of the initialization code in ClientException it is not possible anymore to override the cause this way!
+//        	ce.initCause(e);
+        	// so, we hack it here...
+            try {
+                Field f = Throwable.class.getDeclaredField("cause");
+                if (f != null) {
+                    f.setAccessible(true);
+                    f.set(ce, e);
+                }
+            } catch (SecurityException e1) {
+            } catch (NoSuchFieldException e1) {
+            } catch (IllegalArgumentException e1) {
+            } catch (IllegalAccessException e1) {
+            }
+        }
         
         if (e instanceof SVNException) {
             int errorCode = ((SVNException) e).getErrorMessage().getErrorCode().getCode();
