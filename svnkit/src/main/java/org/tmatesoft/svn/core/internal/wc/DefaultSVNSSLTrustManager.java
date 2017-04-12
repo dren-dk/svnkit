@@ -163,7 +163,7 @@ public class DefaultSVNSSLTrustManager implements X509TrustManager {
 					myAuthManager.getRuntimeAuthStorage().putData("svn.ssl.server", myRealm, data);
 					return;
 				}
-				throw new SVNSSLUtil.CertificateNotTrustedException("svn: Server SSL certificate for '" + myRealm + "' rejected");
+				throw new SVNSSLUtil.CertificateNotTrustedException("svn: Server SSL certificate for '" + myRealm + "' rejected", exception);
 			}
 			// like as tmp. accepted.
         }

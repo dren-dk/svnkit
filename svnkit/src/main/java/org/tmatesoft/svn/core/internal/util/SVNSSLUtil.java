@@ -155,12 +155,8 @@ public class SVNSSLUtil {
 
         private static final long serialVersionUID = 4845L;
 
-        public CertificateNotTrustedException() {
-            super();
-        }
-
-        public CertificateNotTrustedException(String msg) {
-            super(msg);
+        public CertificateNotTrustedException(String msg, Throwable parent) {
+            super(msg, parent);
         }
     }
 
