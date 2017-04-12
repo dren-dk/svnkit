@@ -110,7 +110,7 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
             if (authFile.isFile()) {
                 SVNWCProperties props = new SVNWCProperties(authFile, "");
                 try {
-                    SVNPasswordAuthentication auth = readSSLPassphrase(realm, props);
+                    SVNPasswordAuthentication auth = readSSLPassphrase(realm, props, url);
                     if (auth != null) {
                         matchedAuths.put(auth.getUserName(), auth);
                     }
@@ -133,7 +133,7 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
         return null;
     }
 
-    private SVNPasswordAuthentication readSSLPassphrase(String expectedCertificatePath, SVNWCProperties props) throws SVNException {
+    private SVNPasswordAuthentication readSSLPassphrase(String expectedCertificatePath, SVNWCProperties props, SVNURL url) throws SVNException {
         SVNProperties values = props.asMap();
         try {
             String storedRealm = values.getStringValue("svn:realmstring");
@@ -156,7 +156,7 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
             } else {
                 passphrase = SVNPropertyValue.getPropertyAsChars(values.getSVNPropertyValue("passphrase"));
             }
-            return SVNPasswordAuthentication.newInstance(storedRealm, passphrase, false, null, false);
+            return SVNPasswordAuthentication.newInstance(storedRealm, passphrase, false, url, false);
         } finally {
             if (values != null) {
                 values.clear();
@@ -252,10 +252,8 @@ public class DefaultSVNPersistentAuthenticationProvider implements ISVNAuthentic
 
                 if (ISVNAuthenticationManager.PASSWORD.equals(kind)) {
                     char[] password = readPassword(realm, userName, passwordStorage, values);
-                    if (password == null) {
-                        return SVNPasswordAuthentication.newInstance(userName, password, authMayBeStored, null, true);
-                    }
-                    return SVNPasswordAuthentication.newInstance(userName, password, authMayBeStored, url, false);
+                    return SVNPasswordAuthentication.newInstance(userName, password, authMayBeStored, url, password == null);
+
                 } else if (ISVNAuthenticationManager.SSH.equals(kind)) {
                     // get port from config file or system property?
                     int portNumber;
