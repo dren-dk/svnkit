@@ -444,7 +444,7 @@ public class HTTPConnection implements IHTTPConnection {
                       final SSLSession session = ((SSLSocket)mySocket).getSession();
                       if (session != null) {
                         myRepository.getDebugLog().logFine(SVNLogType.NETWORK, "Connected to " + myRepository.getLocation() + " using " + session.getProtocol());
-	                      myLogSSLParams = false;
+                        myLogSSLParams = false;
                       }
                     }
                     try {
@@ -664,10 +664,14 @@ public class HTTPConnection implements IHTTPConnection {
                     if (!ntlmAuth.allowPropmtForCredentials()) {
                         continue;
                     }
+                    httpAuth = null;
                }
 
-                if (negoAuth != null && !negoAuth.needsLogin()) {
-                    continue;
+                if (negoAuth != null) {
+                    if (!negoAuth.needsLogin()) {
+                        continue;
+                    }
+                    httpAuth = null;
                 }
 
                 if (authManager == null) {
@@ -782,22 +786,21 @@ public class HTTPConnection implements IHTTPConnection {
     }
 
     private boolean isClearCredentialsOnClose(HTTPAuthentication auth) {
-        return !(auth instanceof HTTPBasicAuthentication || auth instanceof HTTPDigestAuthentication
-                || auth instanceof HTTPNegotiateAuthentication);
+        return !(auth instanceof HTTPBasicAuthentication || auth instanceof HTTPDigestAuthentication || auth instanceof HTTPNegotiateAuthentication);
     }
 
-	private HTTPSSLKeyManager createKeyManager() {
-		if (!myIsSecured) {
-			return null;
-		}
+    private HTTPSSLKeyManager createKeyManager() {
+        if (!myIsSecured) {
+            return null;
+        }
 
-		SVNURL location = myRepository.getLocation();
-		ISVNAuthenticationManager authManager = myRepository.getAuthenticationManager();
-		String sslRealm = "<" + location.getProtocol() + "://" + location.getHost() + ":" + location.getPort() + ">";
-		return new HTTPSSLKeyManager(authManager, sslRealm, location);
-	}
+        SVNURL location = myRepository.getLocation();
+        ISVNAuthenticationManager authManager = myRepository.getAuthenticationManager();
+        String sslRealm = "<" + location.getProtocol() + "://" + location.getHost() + ":" + location.getPort() + ">";
+        return new HTTPSSLKeyManager(authManager, sslRealm, location);
+    }
 
-	public SVNErrorMessage readData(HTTPRequest request, OutputStream dst) throws IOException {
+    public SVNErrorMessage readData(HTTPRequest request, OutputStream dst) throws IOException {
         InputStream stream = createInputStream(request.getResponseHeader(), getInputStream());
         byte[] buffer = getBuffer();
         boolean willCloseConnection = false;
