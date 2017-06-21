@@ -1,11 +1,14 @@
 package org.tmatesoft.svn.core.internal.wc;
 
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509ExtendedTrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import java.io.File;
 import java.io.InputStream;
+import java.net.Socket;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -32,7 +35,7 @@ import org.tmatesoft.svn.util.SVNLogType;
  * @author TMate Software Ltd.
  * @version 1.3
  */
-public class DefaultSVNSSLTrustManager implements X509TrustManager {
+public class DefaultSVNSSLTrustManager extends X509ExtendedTrustManager {
 
 	private SVNURL myURL;
 	private DefaultSVNAuthenticationManager myAuthManager;
@@ -211,9 +214,9 @@ public class DefaultSVNSSLTrustManager implements X509TrustManager {
         map.put("ascii_cert", data);
         map.put("svn:realmstring", realm);
         map.put("failures", Integer.toString(failures));
-        
+
 		SVNFileUtil.deleteFile(file);
-        
+
         File tmpFile = SVNFileUtil.createUniqueFile(myAuthDirectory, "auth", ".tmp", true);
         try {
             SVNWCProperties.setProperties(SVNProperties.wrap(map), file, tmpFile, SVNWCProperties.SVN_HASH_TERMINATOR);
@@ -240,5 +243,25 @@ public class DefaultSVNSSLTrustManager implements X509TrustManager {
 		finally {
 			SVNFileUtil.closeFile(is);
 		}
+	}
+
+	@Override
+	public void checkClientTrusted(X509Certificate[] x509Certificates, String algorithm, Socket socket) throws CertificateException {
+		checkClientTrusted(x509Certificates, algorithm);
+	}
+
+	@Override
+	public void checkClientTrusted(X509Certificate[] x509Certificates, String algorithm, SSLEngine sslEngine) throws CertificateException {
+		checkClientTrusted(x509Certificates, algorithm);
+	}
+
+	@Override
+	public void checkServerTrusted(X509Certificate[] x509Certificates, String algorithm, Socket socket) throws CertificateException {
+	    checkServerTrusted(x509Certificates, algorithm);
+	}
+
+	@Override
+	public void checkServerTrusted(X509Certificate[] x509Certificates, String algorithm, SSLEngine sslEngine) throws CertificateException {
+        checkServerTrusted(x509Certificates, algorithm);
 	}
 }
