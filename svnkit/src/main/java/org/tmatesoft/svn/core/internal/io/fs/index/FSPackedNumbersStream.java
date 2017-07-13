@@ -114,11 +114,11 @@ public class FSPackedNumbersStream {
                 int j = i;
                 long shift = 0;
                 while ((bytes[j] & 0x80) != 0) {
-                    value += (bytes[j] & 0x7f) << shift;
+                    value += (long)(bytes[j] & 0x7f) << shift;
                     shift += 7;
                     j++;
                 }
-                value += (bytes[j] & 0x7f) << shift;
+                value += (long)(bytes[j] & 0x7f) << shift;
                 int bytesProcessed = j - i + 1;
                 length = bytesProcessed;
                 i += bytesProcessed;
