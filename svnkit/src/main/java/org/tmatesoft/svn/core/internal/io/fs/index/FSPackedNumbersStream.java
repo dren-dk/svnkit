@@ -116,17 +116,18 @@ public class FSPackedNumbersStream {
                 while (bytes[j] < 0) {
                     j++;
                 }
-                if (j - i > 8) {
+                int bytesProcessed = j - i + 1;
+                if (bytesProcessed > 9) {
                     throw new RuntimeException("Packed number exceeds capacity of signed long");
                 }
 
                 value = bytes[j];
-                for (int n = j - 1; n >= i; n--) {
+                while (j > i) {
+                    j--;
                     value <<= 7;
-                    value += (bytes[n] & 0x7f);
+                    value += (bytes[j] & 0x7f);
                 }
 
-                int bytesProcessed = j - i + 1;
                 length = bytesProcessed;
                 i += bytesProcessed;
                 bytesStart += bytesProcessed;
