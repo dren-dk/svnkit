@@ -57,6 +57,7 @@ public class SVNIntMap {
         while (index != -1) {
             if (keys[index] == key) {
                 //the entry already exists, rewrite it
+                values[index] = value;
                 return;
             }
             previousIndex = index;

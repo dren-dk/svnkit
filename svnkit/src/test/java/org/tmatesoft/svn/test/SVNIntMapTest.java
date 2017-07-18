@@ -72,6 +72,7 @@ public class SVNIntMapTest {
         final Object[] objects = new Object[SVNIntMap.INITIAL_CAPACITY * 2];
 
         for (int i = 0; i < objects.length; i++) {
+            objects[i] = new Object();
             map.put(i, objects[i]);
             Assert.assertTrue(map.containsKey(i));
             Assert.assertEquals(objects[i], map.get(i));
@@ -80,6 +81,19 @@ public class SVNIntMapTest {
         for (int i = 0; i < objects.length; i++) {
             Assert.assertTrue(map.containsKey(i));
             Assert.assertEquals(objects[i], map.get(i));
+        }
+    }
+
+    @Test
+    public void testRewriteValues() throws Exception {
+        final SVNIntMap map = new SVNIntMap();
+
+        int sameKey = 16;
+
+        for (int i = 0; i < SVNIntMap.INITIAL_CAPACITY * 2; i++) {
+            final Object object = new Object();
+            map.put(16, object);
+            Assert.assertEquals(object, map.get(16));
         }
     }
 }
