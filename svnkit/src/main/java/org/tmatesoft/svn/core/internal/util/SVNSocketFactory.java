@@ -57,6 +57,8 @@ import org.tmatesoft.svn.util.SVNLogType;
  */
 public class SVNSocketFactory {
 
+    private static final String EMPTY_JAVA7_TRUST_MANAGER_CLASSNAME = "org.tmatesoft.svn.core.internal.util.Java7EmptyTrustManager";
+
     private static boolean ourIsSocketStaleCheck = false;
     private static int ourSocketReceiveBufferSize = 0; // default
     private static ISVNThreadPool ourThreadPool = SVNClassLoader.getThreadPool();
@@ -268,8 +270,37 @@ public class SVNSocketFactory {
 
     private static KeyManager[] EMPTY_KEY_MANAGERS = new KeyManager[0];
 
+    private static X509TrustManager getEmptyTrustManager() {
+        final String jreVersion = System.getProperty("java.runtime.version", "1.6.0");
+        final String[] jreVersionComponents = jreVersion.split("\\.");
+        if (jreVersionComponents.length > 1) {
+            try {
+                final int version = Integer.parseInt(jreVersionComponents[1]);
+                if (version >= 7) {
+                    final Class clazz;
+                    try {
+                        clazz = SVNSocketFactory.class.getClassLoader().loadClass(EMPTY_JAVA7_TRUST_MANAGER_CLASSNAME);
+                        final Object obj = clazz.newInstance();
+                        if (obj instanceof X509TrustManager) {
+                            return (X509TrustManager) obj;
+                        }
+                    } catch (ClassNotFoundException e) {
+                        //
+                    } catch (IllegalAccessException e) {
+                        //
+                    } catch (InstantiationException e) {
+                        //
+                    }
+                }
+            } catch (NumberFormatException nfe) {
+                //
+            }
+        }
+        return EMPTY_TRUST_MANAGER;
+    }
+
 	public static SSLContext createSSLContext(KeyManager[] keyManagers, TrustManager trustManager) throws IOException {
-        final TrustManager[] trustManagers = new TrustManager[] {trustManager != null ? trustManager : EMPTY_TRUST_MANAGER};
+        final TrustManager[] trustManagers = new TrustManager[] {trustManager != null ? trustManager : getEmptyTrustManager()};
         keyManagers = keyManagers != null ? keyManagers : EMPTY_KEY_MANAGERS;
 
         try {
