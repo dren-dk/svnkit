@@ -1,3 +1,10 @@
+== version 1.9.0  ==
+
++ NTML authentication support improved.
++ Improved commit operation performance.
++ Crash in GNOME keyring support code fixed. 
++ Potential compatibility issue with FSFS repositories created by SVN 1.9 fixed.
+
 == version 1.8.15 ==
 
 + JavaHL API compatbility fix.
