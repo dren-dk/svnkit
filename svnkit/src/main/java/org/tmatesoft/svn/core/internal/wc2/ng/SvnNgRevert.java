@@ -1,6 +1,19 @@
 package org.tmatesoft.svn.core.internal.wc2.ng;
 
-import org.tmatesoft.svn.core.*;
+import java.io.File;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.tmatesoft.svn.core.SVNDepth;
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNNodeKind;
+import org.tmatesoft.svn.core.SVNProperties;
+import org.tmatesoft.svn.core.SVNProperty;
 import org.tmatesoft.svn.core.internal.db.SVNSqlJetDb;
 import org.tmatesoft.svn.core.internal.util.SVNSkel;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
@@ -8,20 +21,22 @@ import org.tmatesoft.svn.core.internal.wc.SVNEventFactory;
 import org.tmatesoft.svn.core.internal.wc.SVNFileType;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc17.SVNWCContext;
-import org.tmatesoft.svn.core.internal.wc17.db.*;
+import org.tmatesoft.svn.core.internal.wc17.db.ISVNWCDb;
 import org.tmatesoft.svn.core.internal.wc17.db.ISVNWCDb.SVNWCDbKind;
 import org.tmatesoft.svn.core.internal.wc17.db.ISVNWCDb.SVNWCDbStatus;
+import org.tmatesoft.svn.core.internal.wc17.db.SVNWCDb;
+import org.tmatesoft.svn.core.internal.wc17.db.Structure;
 import org.tmatesoft.svn.core.internal.wc17.db.StructureFields.NodeInfo;
+import org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbPristines;
+import org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbRevert;
 import org.tmatesoft.svn.core.internal.wc17.db.SvnWcDbRevert.RevertInfo;
 import org.tmatesoft.svn.core.wc.ISVNEventHandler;
 import org.tmatesoft.svn.core.wc.SVNEvent;
 import org.tmatesoft.svn.core.wc.SVNEventAction;
 import org.tmatesoft.svn.core.wc2.SvnRevert;
 import org.tmatesoft.svn.core.wc2.SvnTarget;
+import org.tmatesoft.svn.util.SVNDebugLog;
 import org.tmatesoft.svn.util.SVNLogType;
-
-import java.io.File;
-import java.util.*;
 
 public class SvnNgRevert extends SvnNgOperationRunner<Void, SvnRevert> {
 
@@ -127,6 +142,8 @@ public class SvnNgRevert extends SvnNgOperationRunner<Void, SvnRevert> {
 //            populateModifiedCopiesThatShouldBePreserved(localAbsPath, wcRoot, modifiedCopiesThatShouldBePreserved);
 
             restore(getWcContext(), localAbsPath, depth, metadataOnly, useCommitTimes, true, getWcContext().getEventHandler());
+        } catch (SVNException e) {
+            SVNDebugLog.getDefaultLog().logError(SVNLogType.WC, e);
         } finally {
             SvnWcDbRevert.dropRevertList(getWcContext(), localAbsPath);
         }
