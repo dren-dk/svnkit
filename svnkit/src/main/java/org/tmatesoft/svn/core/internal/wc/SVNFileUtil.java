@@ -262,6 +262,14 @@ public class SVNFileUtil {
             return null;
         }
         String path = file.getAbsolutePath();
+        if (File.separatorChar == '\\') {
+            if ("\\".equals(path) && file.getPath().startsWith("\\\\")) {
+                return null;
+            }
+            if (file.getPath().equals("\\")) {
+                return null;
+            }
+        }
         path = path.replace(File.separatorChar, '/');
         path = SVNPathUtil.canonicalizePath(path);
         int up = 0;
