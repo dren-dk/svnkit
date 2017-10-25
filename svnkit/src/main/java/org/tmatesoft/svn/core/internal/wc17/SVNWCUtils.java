@@ -185,11 +185,7 @@ public class SVNWCUtils {
         }
         childPath = childPath.replace(File.separatorChar, '/');
         parentPath = parentPath.replace(File.separatorChar, '/');
-        if (!childPath.startsWith(parentPath + '/')) {
-            return null;
-        }
-
-        return childPath.substring(parentPath.length() + 1);
+        return SVNPathUtil.getPathAsChild(parentPath, childPath);
     }
 
     public static boolean isAncestor(File parent, File child) {
@@ -202,10 +198,7 @@ public class SVNWCUtils {
         final String parentPath = parent.getPath().replace(File.separatorChar, '/');
         final String childPath = child.getPath().replace(File.separatorChar, '/');
 
-        if ("".equals(parentPath)) {
-            return !childPath.startsWith("/");
-        }
-        return childPath.startsWith(parentPath + "/");
+        return SVNPathUtil.isAncestor(parentPath, childPath);
     }
 
     public static File skipAncestor(File parent, File child) {
