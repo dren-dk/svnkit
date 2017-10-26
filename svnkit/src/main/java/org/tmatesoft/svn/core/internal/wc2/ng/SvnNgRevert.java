@@ -144,6 +144,7 @@ public class SvnNgRevert extends SvnNgOperationRunner<Void, SvnRevert> {
             restore(getWcContext(), localAbsPath, depth, metadataOnly, useCommitTimes, true, getWcContext().getEventHandler());
         } catch (SVNException e) {
             SVNDebugLog.getDefaultLog().logError(SVNLogType.WC, e);
+            throw e;
         } finally {
             SvnWcDbRevert.dropRevertList(getWcContext(), localAbsPath);
         }

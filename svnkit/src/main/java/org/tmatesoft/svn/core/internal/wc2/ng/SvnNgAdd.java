@@ -269,6 +269,7 @@ public class SvnNgAdd extends SvnNgOperationRunner<Void, SvnScheduleForAddition>
                 SvnNgRevert.restore(getWcContext(), path, SVNDepth.EMPTY, false, false, true, null);
             } catch (SVNException e) {
                 SVNDebugLog.getDefaultLog().logError(SVNLogType.WC, e);
+                throw e;
             } finally {
                 SvnWcDbRevert.dropRevertList(getWcContext(), path);
             }
