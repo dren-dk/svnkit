@@ -1024,6 +1024,7 @@ public class DAVRepository extends SVNRepository {
             final SVNURL[] correctedUrl = new SVNURL[1];
             int attemptsLeft = 4;
             while (attemptsLeft-- > 0) {
+                SVNURL originalLocation = myLocation;
                 correctedUrl[0] = null;
                 myConnection = createDAVConnection(myConnectionFactory, this);
                 myConnection.setReportResponseSpooled(isSpoolResponse());
@@ -1032,6 +1033,7 @@ public class DAVRepository extends SVNRepository {
                 if (correctedUrl[0] == null) {
                     break;
                 }
+                myOriginalLocations.add(originalLocation);
 
                 ISVNEventHandler eventHandler = getEventHandler();
                 if (eventHandler != null) {

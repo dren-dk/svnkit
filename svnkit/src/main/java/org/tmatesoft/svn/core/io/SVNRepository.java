@@ -129,6 +129,7 @@ public abstract class SVNRepository {
     protected String myRepositoryUUID;
     protected SVNURL myRepositoryRoot;
     protected SVNURL myLocation;
+    protected Set<SVNURL> myOriginalLocations; //after redirect url1->url2->url3->url4 save url1,url2,url3 in this set
     
     private int myLockCount;
     private Thread myLocker;
@@ -144,6 +145,7 @@ public abstract class SVNRepository {
         myLocation = location;
         myOptions = options;
         myConnectionListeners = new SVNHashSet();
+        myOriginalLocations = new HashSet<SVNURL>();
     }
 	
     /**
@@ -201,8 +203,13 @@ public abstract class SVNRepository {
             if (url == null) {
                 return;
             } else if (!url.getProtocol().equals(myLocation.getProtocol())) {
-                SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_NOT_IMPLEMENTED, "SVNRepository URL could not be changed from ''{0}'' to ''{1}''; create new SVNRepository instance instead", new Object[] {myLocation, url});
-                SVNErrorManager.error(err, SVNLogType.NETWORK);
+                if (!myOriginalLocations.contains(url)) {
+                    SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_NOT_IMPLEMENTED, "SVNRepository URL could not be changed from ''{0}'' to ''{1}''; create new SVNRepository instance instead", new Object[]{myLocation, url});
+                    SVNErrorManager.error(err, SVNLogType.NETWORK);
+                } else {
+                    //it's ok, we know that once setLocation() is called for this url,
+                    //it would be redirected to the current location anyway, so do nothing
+                }
             }
             setLocationInternal(url, forceReconnect);
         } finally {
