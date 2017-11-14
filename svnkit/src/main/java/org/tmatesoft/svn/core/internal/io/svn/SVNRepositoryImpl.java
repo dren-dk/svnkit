@@ -894,6 +894,7 @@ public class SVNRepositoryImpl extends SVNRepository implements ISVNReporter {
             if (defaultRevisionProperties != null) {
                 defaultRevisionProperties.put(SVNRevisionProperty.SVN_TXN_CLIENT_COMPAT_VERSION, Version.getSVNVersion());
                 defaultRevisionProperties.put(SVNRevisionProperty.SVN_TXN_USER_AGENT, Version.getUserAgent());
+                defaultRevisionProperties.put(SVNRevisionProperty.LOG, logMessage);
             }
             if (locks != null) {
                 if (defaultRevisionProperties != null) {
