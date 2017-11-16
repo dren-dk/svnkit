@@ -187,7 +187,8 @@ public class SvnNgRevert extends SvnNgOperationRunner<Void, SvnRevert> {
                     long fileTime = SVNFileUtil.getFileLastModifiedMicros(localAbsPath);
 
                     if (wcDbInfo.translatedSize != -1 && wcDbInfo.lastModTime != 0 &&
-                            wcDbInfo.translatedSize == fileSize && wcDbInfo.lastModTime == fileTime) {
+                            wcDbInfo.translatedSize == fileSize &&
+                            SVNFileUtil.areLastModifiedTimestampsEqualWithPrecision(wcDbInfo.lastModTime, fileTime)) {
                         //not modified
                     } else {
                         SVNWCDb db = (SVNWCDb) getWcContext().getDb();
@@ -338,7 +339,7 @@ public class SvnNgRevert extends SvnNgOperationRunner<Void, SvnRevert> {
                     if (recordedSize != -1
                             && recordedTime != 0
                             && recordedSize == size
-                            && recordedTime == lastModified) {
+                            && SVNFileUtil.areLastModifiedTimestampsEqualWithPrecision(recordedTime, lastModified)) {
                         modified = false;
                     } else {
                         modified = context.isTextModified(localAbsPath, true);
