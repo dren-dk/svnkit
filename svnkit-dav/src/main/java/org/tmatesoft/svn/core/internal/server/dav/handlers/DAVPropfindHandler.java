@@ -11,6 +11,8 @@
  */
 package org.tmatesoft.svn.core.internal.server.dav.handlers;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
@@ -20,9 +22,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
@@ -306,55 +305,57 @@ public class DAVPropfindHandler extends ServletDAVHandler implements IDAVResourc
         DAVElementProperty propElement = docRootElement.getChild(DAVElement.PROP);
         List childrenElements = propElement.getChildren();
         boolean filledNamespaces = false;
-        for (Iterator childrenIter = childrenElements.iterator(); childrenIter.hasNext();) {
-            DAVElementProperty childElement = (DAVElementProperty) childrenIter.next();
-            LivePropertySpecification livePropSpec = findLiveProperty(childElement.getName());
-            if (livePropSpec != null) {
-                DAVInsertPropAction doneAction = insertLiveProp(propsProvider.getResource(), livePropSpec, 
-                        DAVInsertPropAction.INSERT_VALUE, buffer);
-                if (doneAction == DAVInsertPropAction.INSERT_VALUE) {
-                    haveGood = true;
-                    if (!filledNamespaces) {
-                        int ind = 0;
-                        for (Iterator namespacesIter = NAMESPACES.iterator(); namespacesIter.hasNext();) {
-                            String namespace = (String) namespacesIter.next();
-                            String xmlns = " xmlns:lp" + ind + "=\"" + namespace + "\"";
-                            xmlnses.add(xmlns);
-                            ind++;
+        if (childrenElements != null) {
+            for (Iterator childrenIter = childrenElements.iterator(); childrenIter.hasNext(); ) {
+                DAVElementProperty childElement = (DAVElementProperty) childrenIter.next();
+                LivePropertySpecification livePropSpec = findLiveProperty(childElement.getName());
+                if (livePropSpec != null) {
+                    DAVInsertPropAction doneAction = insertLiveProp(propsProvider.getResource(), livePropSpec,
+                            DAVInsertPropAction.INSERT_VALUE, buffer);
+                    if (doneAction == DAVInsertPropAction.INSERT_VALUE) {
+                        haveGood = true;
+                        if (!filledNamespaces) {
+                            int ind = 0;
+                            for (Iterator namespacesIter = NAMESPACES.iterator(); namespacesIter.hasNext(); ) {
+                                String namespace = (String) namespacesIter.next();
+                                String xmlns = " xmlns:lp" + ind + "=\"" + namespace + "\"";
+                                xmlnses.add(xmlns);
+                                ind++;
+                            }
+                            filledNamespaces = true;
                         }
-                        filledNamespaces = true;
+                        continue;
+                    }
+                }
+
+                if (propsProvider.isDeferred()) {
+                    propsProvider.open(true);
+                }
+
+                boolean found = false;
+                try {
+                    found = propsProvider.outputValue(childElement.getName(), buffer);
+                } catch (DAVException dave) {
+                    continue;
+                }
+
+                if (found) {
+                    haveGood = true;
+                    if (!definedNamespaces) {
+                        propsProvider.defineNamespaces(namespacesToPrefixes);
+                        definedNamespaces = true;
                     }
                     continue;
-                } 
-            }
-            
-            if (propsProvider.isDeferred()) {
-                propsProvider.open(true);
-            }
-            
-            boolean found = false;
-            try {
-                found = propsProvider.outputValue(childElement.getName(), buffer);
-            } catch (DAVException dave) {
-                continue;
-            }
-            
-            if (found) {
-                haveGood = true;
-                if (!definedNamespaces) {
-                    propsProvider.defineNamespaces(namespacesToPrefixes);
-                    definedNamespaces = true;
                 }
-                continue;
+
+                if (badRes == null) {
+                    badRes = new StringBuffer();
+                    SVNXMLUtil.openXMLTag(SVNXMLUtil.DAV_NAMESPACE_PREFIX, DAVElement.PROPSTAT.getName(), SVNXMLUtil.XML_STYLE_NORMAL, null, badRes);
+                    SVNXMLUtil.openXMLTag(SVNXMLUtil.DAV_NAMESPACE_PREFIX, DAVElement.PROP.getName(), SVNXMLUtil.XML_STYLE_NORMAL, null, badRes);
+                }
+
+                prefixInd = outputPropName(childElement.getName(), namespacesToPrefixes, prefixInd, buffer);
             }
-            
-            if (badRes == null) {
-                badRes = new StringBuffer();
-                SVNXMLUtil.openXMLTag(SVNXMLUtil.DAV_NAMESPACE_PREFIX, DAVElement.PROPSTAT.getName(), SVNXMLUtil.XML_STYLE_NORMAL, null, badRes);
-                SVNXMLUtil.openXMLTag(SVNXMLUtil.DAV_NAMESPACE_PREFIX, DAVElement.PROP.getName(), SVNXMLUtil.XML_STYLE_NORMAL, null, badRes);
-            }
-            
-            prefixInd = outputPropName(childElement.getName(), namespacesToPrefixes, prefixInd, buffer);
         }
         
         SVNXMLUtil.closeXMLTag(SVNXMLUtil.DAV_NAMESPACE_PREFIX, DAVElement.PROP.getName(), buffer);
