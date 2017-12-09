@@ -348,7 +348,7 @@ public class SVNStatusEditor17 {
                     (pathKind != null && 
                             info.recordedSize != -1 &&
                             info.recordedModTime != 0 &&
-                            SVNFileUtil.areLastModifiedTimestampsEqualWithPrecision(info.recordedModTime, fileTime) &&
+                            SVNFileUtil.compareFileTimestamps(info.recordedModTime, fileTime) &&
                             info.recordedSize == fileSize)) {
                     text_modified_p = false;
                 } else {

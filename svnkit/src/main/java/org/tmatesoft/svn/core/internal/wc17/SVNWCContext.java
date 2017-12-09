@@ -743,7 +743,7 @@ public class SVNWCContext {
             if (recordedSize != -1 && SVNFileUtil.getFileLength(localAbsPath) != recordedSize) {
                 compare = true;
             }
-            if (!compare && !SVNFileUtil.areLastModifiedTimestampsEqualWithPrecision(nodeInfo.lng(NodeInfo.recordedTime), SVNFileUtil.getFileLastModifiedMicros(localAbsPath))) {
+            if (!compare && !SVNFileUtil.compareFileTimestamps(nodeInfo.lng(NodeInfo.recordedTime), SVNFileUtil.getFileLastModifiedMicros(localAbsPath))) {
                 compare = true;
             }
             if (!compare) {

@@ -2432,9 +2432,9 @@ public class SVNFileUtil {
         return getFileLastModified(file) * 1000;
     }
 
-    public static boolean areLastModifiedTimestampsEqualWithPrecision(long recordedModTime, long fileTime) {
+    public static boolean compareFileTimestamps(long microseconds1, long microseconds2) {
         return lastModifiedHasMicrosecondPrecision ?
-                recordedModTime == fileTime :
-                (recordedModTime / 1000) == (fileTime / 1000);
+                microseconds1 == microseconds2 :
+                (microseconds1 / 1000) == (microseconds2 / 1000);
     }
 }
