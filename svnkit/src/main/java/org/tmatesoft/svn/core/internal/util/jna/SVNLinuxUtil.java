@@ -11,13 +11,13 @@
  */
 package org.tmatesoft.svn.core.internal.util.jna;
 
+import java.io.File;
+
 import com.sun.jna.Memory;
 import org.tmatesoft.svn.core.internal.wc.SVNFileType;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.util.SVNDebugLog;
 import org.tmatesoft.svn.util.SVNLogType;
-
-import java.io.File;
 
 /**
  * @version 1.3
@@ -185,6 +185,10 @@ public class SVNLinuxUtil {
 
 
     public static Long getSymlinkLastModified(File file) {
+        return getLastModifiedMicros(file) / 1000;
+    }
+
+    public static Long getLastModifiedMicros(File file) {
         if (file == null || ourSharedMemory == null) {
             return null;
         }
@@ -218,7 +222,9 @@ public class SVNLinuxUtil {
                     return null;
                 }
 
-                return ourSharedMemory.getLong(getFileLastModifiedOffset()) * 1000;
+                final long timeSeconds = ourSharedMemory.getLong(getFileLastModifiedOffset());
+                final long timeNanoseconds = ourSharedMemory.getLong(getFileLastModifiedOffsetNanos());
+                return timeSeconds * 1000000 + timeNanoseconds / 1000;
             }
         } catch (Throwable th) {
             //
@@ -487,5 +493,8 @@ public class SVNLinuxUtil {
         }
         return 88;
     }
-    
+
+    private static int getFileLastModifiedOffsetNanos() {
+        return getFileLastModifiedOffset() + 8;
+    }
 }
