@@ -760,21 +760,25 @@ public class DAVConnection {
         Collection capValues = header.getHeaderValues(HTTPHeader.DAV_HEADER);
     	if (capValues != null) {
     		for (Iterator valuesIter = capValues.iterator(); valuesIter.hasNext();) {
-                String value = (String) valuesIter.next();
-    			if (DAVElement.DEPTH_OPTION.equalsIgnoreCase(value)) {
-    				myCapabilities.put(SVNCapability.DEPTH, DAV_CAPABILITY_YES);
-    			} else if (DAVElement.MERGE_INFO_OPTION.equalsIgnoreCase(value)) {
-    				myCapabilities.put(SVNCapability.MERGE_INFO, DAV_CAPABILITY_SERVER_YES);
-    			} else if (DAVElement.LOG_REVPROPS_OPTION.equalsIgnoreCase(value)) {
-    				myCapabilities.put(SVNCapability.LOG_REVPROPS, DAV_CAPABILITY_YES);
-    			} else if (DAVElement.PARTIAL_REPLAY_OPTION.equalsIgnoreCase(value)) {
-    				myCapabilities.put(SVNCapability.PARTIAL_REPLAY, DAV_CAPABILITY_YES);
-    			} else if (DAVElement.ATOMIC_REVPROPS_OPTION.equalsIgnoreCase(value)) {
-                    myCapabilities.put(SVNCapability.ATOMIC_REVPROPS, DAV_CAPABILITY_YES);
-                } else if (DAVElement.INHERITED_PROPS_OPTION.equalsIgnoreCase(value)) {
-                    myCapabilities.put(SVNCapability.INHERITED_PROPS, DAV_CAPABILITY_YES);
-                } else if (DAVElement.EPHEMERAL_PROPS_OPTION.equalsIgnoreCase(value)) {
-                    myCapabilities.put(SVNCapability.EPHEMERAL_PROPS, DAV_CAPABILITY_YES);
+                String values = (String) valuesIter.next();
+                final String[] valuesArray = values.split(",");
+                for (String value : valuesArray) {
+                    value = value.trim();
+                    if (DAVElement.DEPTH_OPTION.equalsIgnoreCase(value)) {
+                        myCapabilities.put(SVNCapability.DEPTH, DAV_CAPABILITY_YES);
+                    } else if (DAVElement.MERGE_INFO_OPTION.equalsIgnoreCase(value)) {
+                        myCapabilities.put(SVNCapability.MERGE_INFO, DAV_CAPABILITY_SERVER_YES);
+                    } else if (DAVElement.LOG_REVPROPS_OPTION.equalsIgnoreCase(value)) {
+                        myCapabilities.put(SVNCapability.LOG_REVPROPS, DAV_CAPABILITY_YES);
+                    } else if (DAVElement.PARTIAL_REPLAY_OPTION.equalsIgnoreCase(value)) {
+                        myCapabilities.put(SVNCapability.PARTIAL_REPLAY, DAV_CAPABILITY_YES);
+                    } else if (DAVElement.ATOMIC_REVPROPS_OPTION.equalsIgnoreCase(value)) {
+                        myCapabilities.put(SVNCapability.ATOMIC_REVPROPS, DAV_CAPABILITY_YES);
+                    } else if (DAVElement.INHERITED_PROPS_OPTION.equalsIgnoreCase(value)) {
+                        myCapabilities.put(SVNCapability.INHERITED_PROPS, DAV_CAPABILITY_YES);
+                    } else if (DAVElement.EPHEMERAL_PROPS_OPTION.equalsIgnoreCase(value)) {
+                        myCapabilities.put(SVNCapability.EPHEMERAL_PROPS, DAV_CAPABILITY_YES);
+                    }
                 }
 			}
     	}
@@ -783,8 +787,11 @@ public class DAVConnection {
         for (Map.Entry<String, List<String>> entry : rawHeaders.entrySet()) {
             String headerName = entry.getKey();
             if (headerName.toUpperCase().startsWith("SVN")) {
-                List<String> value = entry.getValue();
-                String firstValue = (value != null && value.size() > 0) ? value.get(0) : null;
+                List<String> values = entry.getValue();
+                if (values == null) {
+                    continue;
+                }
+                String firstValue = (values != null && values.size() > 0) ? values.get(0) : null;
 
                 if (mySupportedPosts == null) {
                     mySupportedPosts = Collections.singletonList("create-txn");
@@ -821,7 +828,13 @@ public class DAVConnection {
                 } else if (DAVElement.SVN_ALLOW_BULK_UPDATES_HEADER.equals(headerName)) {
                     myServerAllowsBulk = firstValue;
                 } else if (DAVElement.SVN_SUPPORTED_POSTS_HEADER.equals(headerName)) {
-                    mySupportedPosts = new ArrayList<String>(value);
+                    mySupportedPosts = new ArrayList<String>();
+                    for (String value : values) {
+                        final String[] supportedPosts = value.split(",");
+                        for (String supportedPost : supportedPosts) {
+                            mySupportedPosts.add(supportedPost.trim());
+                        }
+                    }
                 } else if (DAVElement.SVN_REPOSITORY_MERGEINFO_HEADER.equals(headerName)) {
                     if (DAV_CAPABILITY_YES.equals(firstValue)) {
                         myCapabilities.put(SVNCapability.MERGE_INFO, DAV_CAPABILITY_YES);
