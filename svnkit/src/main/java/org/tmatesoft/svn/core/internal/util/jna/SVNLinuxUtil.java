@@ -222,8 +222,12 @@ public class SVNLinuxUtil {
                     return null;
                 }
 
-                final long timeSeconds = ourSharedMemory.getLong(getFileLastModifiedOffset());
-                final long timeNanoseconds = ourSharedMemory.getLong(getFileLastModifiedOffsetNanos());
+                final long timeSeconds = SVNFileUtil.is32Bit ?
+                        ourSharedMemory.getInt(getFileLastModifiedOffset()) :
+                        ourSharedMemory.getLong(getFileLastModifiedOffset());
+                final long timeNanoseconds = SVNFileUtil.is32Bit ?
+                        ourSharedMemory.getInt(getFileLastModifiedOffsetNanos()) :
+                        ourSharedMemory.getLong(getFileLastModifiedOffsetNanos());
                 return timeSeconds * 1000000 + timeNanoseconds / 1000;
             }
         } catch (Throwable th) {
@@ -495,6 +499,8 @@ public class SVNLinuxUtil {
     }
 
     private static int getFileLastModifiedOffsetNanos() {
-        return getFileLastModifiedOffset() + 8;
+        return SVNFileUtil.is32Bit ?
+                getFileLastModifiedOffset() + 4 :
+                getFileLastModifiedOffset() + 8;
     }
 }
