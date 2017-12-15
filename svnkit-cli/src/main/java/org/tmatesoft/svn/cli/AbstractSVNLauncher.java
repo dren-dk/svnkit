@@ -29,13 +29,13 @@ public abstract class AbstractSVNLauncher {
     private static volatile boolean ourIsCompleted;
     private static volatile Thread ourShutdownHook;
 
-    protected void run(String[] args) {
+    protected int run(String[] args) {
         ourIsCompleted = false;
         
         if (needArgs() && (args == null || args.length < 1)) {
             printBasicUsage();
             failure();
-            return;
+            return 1;
         }
         registerOptions();
         registerCommands();
@@ -47,7 +47,7 @@ public abstract class AbstractSVNLauncher {
             handleError(e);
             printBasicUsage();
             failure();
-            return;
+            return 1;
         }
         AbstractSVNCommandEnvironment env = createCommandEnvironment();
         synchronized(AbstractSVNLauncher.class) {
@@ -67,22 +67,23 @@ public abstract class AbstractSVNLauncher {
                 if (e instanceof SVNCancelException || e instanceof SVNAuthenticationException) {
                     env.dispose();
                     failure();
-                    return;
+                    return 1;
                 }
                 printBasicUsage();
                 env.dispose();
                 failure();
-                return;
+                return 1;
             }
     
             env.initClientManager();
             if (!env.run()) {
                 env.dispose();
                 failure();
-                return;
+                return 1;
             }
             env.dispose();
             success();
+            return 0;
         } catch (Throwable th) {
             SVNDebugLog.getDefaultLog().logSevere(SVNLogType.CLIENT, th);            
             th.printStackTrace();
@@ -90,6 +91,7 @@ public abstract class AbstractSVNLauncher {
                 env.dispose();
             }
             failure();
+            return 1;
         } finally {
             setCompleted();
         }
