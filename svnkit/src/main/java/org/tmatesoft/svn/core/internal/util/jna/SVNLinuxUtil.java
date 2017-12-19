@@ -493,7 +493,7 @@ public class SVNLinuxUtil {
             return 64;
         }
         if (SVNFileUtil.isOSX) {
-            return 48;
+            return 40;
         }
         return 88;
     }
