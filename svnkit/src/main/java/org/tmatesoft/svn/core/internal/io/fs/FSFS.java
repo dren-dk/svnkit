@@ -1012,7 +1012,7 @@ public class FSFS {
 
             if ("PLAIN".equals(repHeader)) {
                 revisionFile.resetDigest();
-                rawEntries = revisionFile.readProperties(false, false);
+                rawEntries = revisionFile.readProperties(false, true);
                 checksum = revisionFile.digest();
             } else if ("DELTA".equals(repHeader)) {
                 StringBuilder outputChecksum = new StringBuilder();

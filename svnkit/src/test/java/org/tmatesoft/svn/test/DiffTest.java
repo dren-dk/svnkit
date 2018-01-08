@@ -1,22 +1,42 @@
 package org.tmatesoft.svn.test;
 
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.tmatesoft.svn.core.*;
-import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
-import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
-import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
-import org.tmatesoft.svn.core.internal.wc2.ng.SvnDiffGenerator;
-import org.tmatesoft.svn.core.wc.*;
-import org.tmatesoft.svn.core.wc2.*;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.tmatesoft.svn.core.SVNCommitInfo;
+import org.tmatesoft.svn.core.SVNDepth;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNProperties;
+import org.tmatesoft.svn.core.SVNProperty;
+import org.tmatesoft.svn.core.SVNPropertyValue;
+import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
+import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
+import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
+import org.tmatesoft.svn.core.internal.wc2.ng.SvnDiffGenerator;
+import org.tmatesoft.svn.core.wc.DefaultSVNDiffGenerator;
+import org.tmatesoft.svn.core.wc.DefaultSVNRepositoryPool;
+import org.tmatesoft.svn.core.wc.ISVNDiffGenerator;
+import org.tmatesoft.svn.core.wc.SVNClientManager;
+import org.tmatesoft.svn.core.wc.SVNDiffClient;
+import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.SVNStatusType;
+import org.tmatesoft.svn.core.wc.SVNWCUtil;
+import org.tmatesoft.svn.core.wc2.ISvnObjectReceiver;
+import org.tmatesoft.svn.core.wc2.SvnCopy;
+import org.tmatesoft.svn.core.wc2.SvnCopySource;
+import org.tmatesoft.svn.core.wc2.SvnDiff;
+import org.tmatesoft.svn.core.wc2.SvnDiffStatus;
+import org.tmatesoft.svn.core.wc2.SvnDiffSummarize;
+import org.tmatesoft.svn.core.wc2.SvnOperationFactory;
+import org.tmatesoft.svn.core.wc2.SvnTarget;
 
 @Ignore
 public class DiffTest {
@@ -967,6 +987,46 @@ public class DiffTest {
             diffSummarize.run();
             Assert.assertEquals(1, count[0]);
 
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
+    @Test
+    public void testDiffSummarizeBinaryPropertyAdded() throws Exception {
+        final TestOptions options = TestOptions.getInstance();
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testDiffSummarizeBinaryPropertyAdded", options);
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final CommitBuilder commitBuilder1 = new CommitBuilder(url);
+            commitBuilder1.addFile("file");
+            commitBuilder1.commit();
+
+            final CommitBuilder commitBuilder2 = new CommitBuilder(url);
+            commitBuilder2.setFileProperty("file", "binaryPropertyName",
+                    SVNPropertyValue.create("binaryPropertyName", new byte[]{-1}));
+            commitBuilder2.commit();
+
+            final List<SvnDiffStatus> statuses = new ArrayList<SvnDiffStatus>();
+            final SvnDiffSummarize diffSummarize = svnOperationFactory.createDiffSummarize();
+            diffSummarize.setSources(
+                    SvnTarget.fromURL(url, SVNRevision.create(1)),
+                    SvnTarget.fromURL(url, SVNRevision.create(2)));
+            diffSummarize.setReceiver(new ISvnObjectReceiver<SvnDiffStatus>() {
+                public void receive(SvnTarget target, SvnDiffStatus status) throws SVNException {
+                    statuses.add(status);
+                }
+            });
+            diffSummarize.run();
+            Assert.assertEquals(1, statuses.size());
+            final SvnDiffStatus status = statuses.get(0);
+            Assert.assertTrue(status.isPropertiesModified());
+            Assert.assertEquals(SVNStatusType.STATUS_NORMAL, status.getModificationType());
+            Assert.assertEquals("file", status.getPath());
         } finally {
             svnOperationFactory.dispose();
             sandbox.dispose();
