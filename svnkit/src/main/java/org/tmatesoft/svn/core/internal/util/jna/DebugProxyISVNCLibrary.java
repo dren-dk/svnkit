@@ -102,9 +102,9 @@ public class DebugProxyISVNCLibrary implements ISVNCLibrary {
         return error;
     }
 
-    public int open(String path, int oflag) {
-        final int fd = myLibrary.open(path, oflag);
-        myDebugLog.log(SVNLogType.NATIVE_CALL, "CALLED ISVNCLibrary#open(" + path + ", " + oflag + ") = " + fd, Level.INFO);
+    public int open(String path, int oflag, int mode) {
+        final int fd = myLibrary.open(path, oflag, mode);
+        myDebugLog.log(SVNLogType.NATIVE_CALL, "CALLED ISVNCLibrary#open(" + path + ", " + oflag + ", " + mode + ") = " + fd, Level.INFO);
         return fd;
     }
 
