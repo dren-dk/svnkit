@@ -95,4 +95,22 @@ public class DebugProxyISVNCLibrary implements ISVNCLibrary {
         myDebugLog.log(SVNLogType.NATIVE_CALL, "CALLED ISVNCLibrary#getgid() = " + getgid, Level.INFO);
         return getgid;
     }
+
+    public int flock(int fd, int operation) {
+        final int error = myLibrary.flock(fd, operation);
+        myDebugLog.log(SVNLogType.NATIVE_CALL, "CALLED ISVNCLibrary#flock(" + fd + ", " + operation + ") = " + error, Level.INFO);
+        return error;
+    }
+
+    public int open(String path, int oflag) {
+        final int fd = myLibrary.open(path, oflag);
+        myDebugLog.log(SVNLogType.NATIVE_CALL, "CALLED ISVNCLibrary#open(" + path + ", " + oflag + ") = " + fd, Level.INFO);
+        return fd;
+    }
+
+    public int close(int fd) {
+        final int error = myLibrary.close(fd);
+        myDebugLog.log(SVNLogType.NATIVE_CALL, "CALLED ISVNCLibrary#close(" + fd + ") = " + error, Level.INFO);
+        return error;
+    }
 }

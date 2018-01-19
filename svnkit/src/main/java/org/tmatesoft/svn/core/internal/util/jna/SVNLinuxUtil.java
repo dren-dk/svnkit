@@ -25,6 +25,12 @@ import org.tmatesoft.svn.util.SVNLogType;
  */
 public class SVNLinuxUtil {
 
+    private static final int O_RDWR = 2;
+
+    private static final int LOCK_SH = 1;
+    private static final int LOCK_EX = 2;
+    private static final int LOCK_UN = 8;
+
     private static Memory ourSharedMemory;
     private static final boolean ourIsDashStat = Boolean.getBoolean("svnkit.jna.dash_stat");
 
@@ -425,6 +431,58 @@ public class SVNLinuxUtil {
                 rc = cLibrary.symlink(linkName, path);
             }
             return rc < 0 ? false : true;
+        } catch (Throwable th) {
+            //
+        }
+        return false;
+    }
+
+    /**
+     * Unlike corresponding C function, it opens the file, locks it with
+     * BSD lock (FLOCK) and returns the descriptor that can be used to unlock
+     * (@see unflock())
+     * @param file file to lock
+     * @param exclusive true for exclusive lock, false for shared lock
+     * @return integer file descriptor that can be used to unlock the file
+     */
+    public static int flock(File file, boolean exclusive) {
+        try {
+            final ISVNCLibrary cLibrary = JNALibraryLoader.getCLibrary();
+            if (cLibrary == null) {
+                return -1;
+            }
+            synchronized (cLibrary) {
+                final int fd = cLibrary.open(file.getAbsolutePath(), O_RDWR);
+                if (fd < 0) {
+                    return -1;
+                }
+                final int rc = cLibrary.flock(fd, exclusive ? LOCK_EX : LOCK_SH);
+                if (rc != 0) {
+                    cLibrary.close(fd);
+                    return -1;
+                }
+                return fd;
+            }
+        } catch (Throwable th) {
+            //
+        }
+        return -1;
+    }
+
+    public static boolean unflock(int fd) {
+        try {
+            final ISVNCLibrary cLibrary = JNALibraryLoader.getCLibrary();
+            if (cLibrary == null) {
+                return false;
+            }
+            synchronized (cLibrary) {
+                final int rc = cLibrary.flock(fd, LOCK_UN);
+                if (rc != 0) {
+                    return false;
+                }
+                cLibrary.close(fd);
+                return true;
+            }
         } catch (Throwable th) {
             //
         }

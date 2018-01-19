@@ -143,6 +143,20 @@ public class SVNJNAUtil {
         }
         return false;
     }
+
+    public static int flock(File file, boolean exclusive) {
+        if (isJNAPresent()) {
+            return SVNLinuxUtil.flock(file, exclusive);
+        }
+        return -1;
+    }
+
+    public static boolean unflock(int fd) {
+        if (isJNAPresent()) {
+            return SVNLinuxUtil.unflock(fd);
+        }
+        return false;
+    }
     
     public static char[] decrypt(char[] encryptedData) {
         if (isJNAPresent()) {

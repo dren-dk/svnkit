@@ -44,5 +44,10 @@ interface ISVNCLibrary extends Library {
     public int getuid();
     
     public int getgid();
-    
+
+    public int flock(int fd, int operation);
+
+    public int open(String path, int oflag);
+
+    public int close(int fd);
 }
