@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 
 import org.tmatesoft.svn.core.SVNErrorCode;
@@ -36,27 +37,14 @@ public class SVNFLock {
 
         //Now try command line
         try {
-            final ProcessBuilder processBuilder = new ProcessBuilder(Arrays.<String>asList(
-                    "perl",
-                    "-MFcntl=:flock",
-                    "-e",
-                    "$|=1;" + //autoflush
-                    "$f=shift;" + //put filename to $f
-                    "open(FH,$f) || die($!);" + // open the file
-                    String.format("flock(FH,%s);", exclusive ? "LOCK_EX" : "LOCK_SH") +
-                    "system(\"echo x && read -N 1\");" +
-                    "flock(FH,LOCK_UN);",
-                    file.getAbsolutePath()));
+            final ProcessBuilder processBuilder = new ProcessBuilder(
+                    shouldUsePerlCommand() ?
+                            getPerlCommand(file, exclusive) :
+                            getFlockCommand(file, exclusive));
 
+            //once the process starts, it writes 'x' to stdout
+            //then it waits for a new line from stdin and exits
 
-//            final ProcessBuilder processBuilder = new ProcessBuilder(Arrays.<String>asList("flock",
-//                    "--no-fork",
-//                    exclusive ? "--exclusive" : "--shared",
-//                    file.getAbsolutePath(),
-//                    "--command",
-//                    "echo x && read -N 1")); /*the command writes 'x' to stdout when the file is locked
-//                    and waits for 1 character in stdin; to unlock the file write any character to stdin
-//                    */
             final Process process = processBuilder.start();
             final InputStream inputStream = process.getInputStream();
             final int read = inputStream.read();
@@ -105,7 +93,8 @@ public class SVNFLock {
         } else if (flockProcess != null) {
             final OutputStream outputStream = flockProcess.getOutputStream();
             try {
-                outputStream.write('x');
+                //the process is waiting for a new line, then exits; let's finish it:
+                outputStream.write('\n');
                 outputStream.close();
                 final int rc = flockProcess.waitFor();
                 if (rc != 0) {
@@ -126,11 +115,40 @@ public class SVNFLock {
                 "file=" + file +
                 ", exclusive=" + exclusive +
                 ", valid=" + isValid() +
-                ", using " + ((isJNALock()) ? "JNA" : "'flock' utility") +
+                ", using " + ((isJNALock()) ? "JNA" :
+                    (shouldUsePerlCommand() ? "'perl' command" : "'flock' utility")) +
                 '}';
     }
 
     private boolean isJNALock() {
         return fd >= 0;
+    }
+
+    private static boolean shouldUsePerlCommand() {
+        return SVNFileUtil.isOSX;
+    }
+
+    private static List<String> getFlockCommand(File file, boolean exclusive) {
+        return Arrays.<String>asList("flock",
+                "--no-fork",
+                exclusive ? "--exclusive" : "--shared",
+                file.getAbsolutePath(),
+                "--command",
+                "echo x && read -N 1");
+    }
+
+    private static List<String> getPerlCommand(File file, boolean exclusive) {
+        return Arrays.<String>asList(
+                "perl",
+                "-MFcntl=:flock",
+                "-e",
+                "$|=1;" + //autoflush
+                "$f=shift;" + //put filename to $f
+                "open(FH, \"+>>\",$f)||die($!);" + // open the file
+                String.format("flock(FH,%s);", exclusive ? "LOCK_EX" : "LOCK_SH") +
+                "print \"x\";" +
+                "readline(STDIN);" +
+                "flock(FH,LOCK_UN);",
+                file.getAbsolutePath());
     }
 }
