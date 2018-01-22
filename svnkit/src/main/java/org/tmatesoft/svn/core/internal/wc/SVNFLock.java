@@ -36,14 +36,27 @@ public class SVNFLock {
 
         //Now try command line
         try {
-            final ProcessBuilder processBuilder = new ProcessBuilder(Arrays.<String>asList("flock",
-                    "--no-fork",
-                    exclusive ? "--exclusive" : "--shared",
-                    file.getAbsolutePath(),
-                    "--command",
-                    "echo x && read -N 1")); /*the command writes 'x' to stdout when the file is locked
-                    and waits for 1 character in stdin; to unlock the file write any character to stdin
-                    */
+            final ProcessBuilder processBuilder = new ProcessBuilder(Arrays.<String>asList(
+                    "perl",
+                    "-MFcntl=:flock",
+                    "-e",
+                    "$|=1;" + //autoflush
+                    "$f=shift;" + //put filename to $f
+                    "open(FH,$f) || die($!);" + // open the file
+                    String.format("flock(FH,%s);", exclusive ? "LOCK_EX" : "LOCK_SH") +
+                    "system(\"echo x && read -N 1\");" +
+                    "flock(FH,LOCK_UN);",
+                    file.getAbsolutePath()));
+
+
+//            final ProcessBuilder processBuilder = new ProcessBuilder(Arrays.<String>asList("flock",
+//                    "--no-fork",
+//                    exclusive ? "--exclusive" : "--shared",
+//                    file.getAbsolutePath(),
+//                    "--command",
+//                    "echo x && read -N 1")); /*the command writes 'x' to stdout when the file is locked
+//                    and waits for 1 character in stdin; to unlock the file write any character to stdin
+//                    */
             final Process process = processBuilder.start();
             final InputStream inputStream = process.getInputStream();
             final int read = inputStream.read();

@@ -12,6 +12,11 @@
 package org.tmatesoft.svn.cli;
 
 
+import java.io.File;
+
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.internal.wc.SVNFLock;
+
 /**
  * @version 1.3
  * @author  TMate Software Ltd.
@@ -19,7 +24,30 @@ package org.tmatesoft.svn.cli;
 public class SVN {
 
     public static void main(String[] args) {
-        org.tmatesoft.svn.cli.svn.SVN.main(args);
+        try {
+            run();
+        } catch (SVNException e) {
+            e.printStackTrace();
+        }
     }
 
+    private static void run() throws SVNException {
+//        SVNJNAUtil.setJNAEnabled(false);
+
+        final File file = new File("/tmp/file");
+
+        System.out.println("Obtaining lock");
+        final SVNFLock lock = SVNFLock.obtain(file, true);
+        System.out.println("lock = " + lock);
+//        lock.unlock();
+        
+
+        while (true) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 }

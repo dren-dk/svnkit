@@ -25,9 +25,6 @@ import org.tmatesoft.svn.util.SVNLogType;
  */
 public class SVNLinuxUtil {
 
-    private static final int O_RDWR = 2;
-    private static final int O_CREAT = 64;
-
     private static final int LOCK_SH = 1;
     private static final int LOCK_EX = 2;
     private static final int LOCK_UN = 8;
@@ -454,6 +451,8 @@ public class SVNLinuxUtil {
             }
             synchronized (cLibrary) {
                 //noinspection OctalInteger
+                final int O_CREAT = getFileCreationConstant();
+                final int O_RDWR = getReadWriteConstant();
                 final int fd = cLibrary.open(file.getAbsolutePath(), O_RDWR | O_CREAT, 0644);
                 if (fd < 0) {
                     return -1;
@@ -562,5 +561,14 @@ public class SVNLinuxUtil {
         return SVNFileUtil.is32Bit ?
                 getFileLastModifiedOffset() + 4 :
                 getFileLastModifiedOffset() + 8;
+    }
+    
+    private static int getReadWriteConstant() {
+        return 2;
+    }
+
+    private static int getFileCreationConstant() {
+        //on Linux it's 64 both in 32bit and 6bit mode
+        return SVNFileUtil.isOSX ? 512 : 64;
     }
 }
