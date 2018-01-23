@@ -87,7 +87,7 @@ public class SVNFLock {
         return fd >= 0 || flockProcess != null;
     }
 
-    public void unlock() {
+    public void release() {
         if (isJNALock()) {
             if (SVNJNAUtil.unflock(fd)) {
                 fd = -1;
