@@ -1,3 +1,16 @@
+== version 1.9.1  ==
+
++ SVNKIT-719: fixed native SVN lock compatibility issue when working with local repositories.
++ SVNKIT-717: using precise file moidification timestamp when possible.
++ SVNKIT-706: fixed diff --summarize to show binary prop changes properly.
++ SVNKIT-713: commit message was not set in SVNRepository API when using svn protocol.
++ SVNKIT-705: exception on revert operation fixed.
++ SVNKTI-717: exception masking another issues fixed.
++ SVNKTI-710: command line SVN.run method now returns proper error code.
++ Fixed issues with moving files to the disk drive root.
++ Fixed issues related to UNC paths.
++ Other minor bugfixes.
+
 == version 1.9.0  ==
 
 + NTML authentication support improved.
