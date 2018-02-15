@@ -15,6 +15,8 @@ test {
 }
 
 javadoc {
+    failOnError = false
+
     excludes = ['**/internal/**']
     options.breakIterator="yes"
     options.stylesheetFile=new File("svnkit/src/javadoc/javadoc.css")
