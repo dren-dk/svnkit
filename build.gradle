@@ -1,5 +1,5 @@
 group = 'org.tmatesoft.svnkit'
-version = '1.9.0'
+version = '1.9.1'
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.14'
@@ -54,11 +54,11 @@ subprojects {
        compatibleSvnVersion = rootProject.compatibleSvnVersion
 
        buildVersion = [
-           baseVersion : '1.9.0',
+           baseVersion : '1.9.1',
            buildNumber : buildNumber,
            major: '1',
            minor: '9',
-           micro: '0'
+           micro: '1'
        ]
        buildNumber = rootProject.buildNumber
     }
@@ -384,7 +384,7 @@ project(':svnkit-distribution') {
 
         osgi project(path: ':svnkit-osgi', configuration: 'archives')
         osgi 'com.trilead:trilead-ssh2-osgi:1.0.0-build221'
-        osgi 'org.tmatesoft.sqljet:sqljet-osgi:1.1.10'
+        osgi 'org.tmatesoft.sqljet:sqljet-osgi:1.1.11'
         osgi 'net.java.dev.jna:jna-osgi:4.1.0'
     }
 }
