@@ -5,7 +5,7 @@ ARG GROUP_NAME=$USER_NAME
 ARG USER_HOME=/home/$USER_NAME
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
-ARG JAVA_VERSION=6
+ARG JAVA_VERSION=8
 
 RUN \
   echo "deb http://httpredir.debian.org/debian jessie main contrib" > /etc/apt/sources.list && \
