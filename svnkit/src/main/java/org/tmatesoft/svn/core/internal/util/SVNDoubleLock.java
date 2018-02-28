@@ -10,14 +10,17 @@ import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.util.SVNDebugLog;
 import org.tmatesoft.svn.util.SVNLogType;
 
 public class SVNDoubleLock {
 
+    private static boolean ourUseDoubleLock = Boolean.valueOf(System.getProperty("svnkit.useDoubleLock", Boolean.valueOf(SVNFileUtil.isLinux).toString()));
+
     public static SVNDoubleLock obtain(File file, boolean exclusive) throws SVNException {
         //FLOCK
-        final SVNFLock flock = SVNFLock.obtain(file, exclusive);
+        final SVNFLock flock = ourUseDoubleLock ? SVNFLock.obtain(file, exclusive) : null;
 
         //POSIX lock
         RandomAccessFile randomAccessFile = null;
@@ -35,7 +38,7 @@ public class SVNDoubleLock {
         return new SVNDoubleLock(flock, randomAccessFile, posixLock, file, exclusive);
     }
 
-    private SVNFLock flock; //null if flocks are not supported on the platform
+    private SVNFLock flock; //null if flocks are not supported or cause problems on the platform
     private RandomAccessFile randomAccessFile;
     private FileLock posixLock;
 
