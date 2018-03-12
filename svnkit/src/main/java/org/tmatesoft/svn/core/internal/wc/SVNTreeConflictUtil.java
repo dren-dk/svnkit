@@ -121,6 +121,9 @@ public class SVNTreeConflictUtil {
     }
 
     private static boolean isValidConflict(SVNSkel skel) throws SVNException {
+        if (skel == null) {
+            return false;
+        }
         if (skel.getListSize() != 8 || !skel.getChild(0).contentEquals("conflict")) {
             return false;
         }

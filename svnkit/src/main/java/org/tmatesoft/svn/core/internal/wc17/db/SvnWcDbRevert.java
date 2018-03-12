@@ -474,6 +474,10 @@ public class SvnWcDbRevert extends SvnWcDbShared {
                     byte[] conflictData = getColumnBlob(stmt, REVERT_LIST__Fields.conflict_data);
                     if (conflictData != null) {
                         SVNSkel conflicts = SVNSkel.parse(conflictData);
+                        if (conflicts == null) {
+                            final SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_MALFORMED_SKEL, "Malformed skeleton data ''{0}''", new String(conflictData));
+                            SVNErrorManager.error(errorMessage, SVNLogType.WC);
+                        }
                         result.set(RevertInfo.markerFiles, SvnWcDbConflicts.readConflictMarkers((SVNWCDb) context.getDb(), root.getAbsPath(), conflicts));
                     }
                     if (!isColumnNull(stmt, REVERT_LIST__Fields.notify)) {

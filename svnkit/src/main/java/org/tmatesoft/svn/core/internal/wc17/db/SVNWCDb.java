@@ -7760,6 +7760,10 @@ public class SVNWCDb implements ISVNWCDb {
                 if (haveRow && !stmt.isColumnNull(ACTUAL_NODE__Fields.conflict_data)) {
                     byte[] conflictData = stmt.getColumnBlob(ACTUAL_NODE__Fields.conflict_data);
                     SVNSkel conflicts = SVNSkel.parse(conflictData);
+                    if (conflicts == null) {
+                        final SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_MALFORMED_SKEL, "Malformed skeleton data ''{0}''", new String(conflictData));
+                        SVNErrorManager.error(errorMessage, SVNLogType.WC);
+                    }
 
                     List<File> markers = SvnWcDbConflicts.readConflictMarkers(wcRoot.getDb(), wcRoot.getAbsPath(), conflicts);
                     if (markers != null) {
@@ -7779,6 +7783,10 @@ public class SVNWCDb implements ISVNWCDb {
                     byte[] conflictData = stmt.getColumnBlob(ACTUAL_NODE__Fields.conflict_data);
                     if (conflictData != null) {
                         SVNSkel conflicts = SVNSkel.parse(conflictData);
+                        if (conflicts == null) {
+                            final SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_MALFORMED_SKEL, "Malformed skeleton data ''{0}''", new String(conflictData));
+                            SVNErrorManager.error(errorMessage, SVNLogType.WC);
+                        }
                         List<File> markers = SvnWcDbConflicts.readConflictMarkers(wcRoot.getDb(), wcRoot.getAbsPath(), conflicts);
                         if (markers != null) {
                             markerFiles.addAll(markers);
