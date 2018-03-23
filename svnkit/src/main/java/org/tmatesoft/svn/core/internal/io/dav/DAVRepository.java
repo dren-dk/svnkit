@@ -677,8 +677,12 @@ public class DAVRepository extends SVNRepository {
                 SVNLock lock = null;
                 SVNErrorMessage error = null;
                 long revisionNumber = revision != null ? revision.longValue() : -1;
+                long timeout = -1;
+                if (handler instanceof ISVNLockTimeoutProvider) {
+                    timeout = ((ISVNLockTimeoutProvider) handler).getLockTimeout(repositoryPath, path, comment, force);
+                }
                 try {
-                     lock = connection.doLock(repositoryPath, path, this, comment, force, revisionNumber);
+                     lock = connection.doLock(repositoryPath, path, this, comment, force, revisionNumber, timeout);
                 } catch (SVNException e) {
                     error = null;
                     if (e.getErrorMessage() != null) {

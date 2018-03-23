@@ -205,13 +205,18 @@ public class DAVConnection {
         return handler.getLocks();
     }
 
-    public SVNLock doLock(String repositoryPath, String path, DAVRepository repos, String comment, boolean force, long revision) throws SVNException {
+    public SVNLock doLock(String repositoryPath, String path, DAVRepository repos, String comment, boolean force, long revision,
+                          long timeout) throws SVNException {
         beforeCall();
 
         StringBuffer body = DAVLockHandler.generateSetLockRequest(null, comment);
         HTTPHeader header = new HTTPHeader();
         header.setHeaderValue(HTTPHeader.DEPTH_HEADER, "0");
-        header.setHeaderValue(HTTPHeader.TIMEOUT_HEADER, "Infinite");
+        if (timeout <= 0) {
+            header.setHeaderValue(HTTPHeader.TIMEOUT_HEADER, "Infinite");
+        } else {
+            header.setHeaderValue(HTTPHeader.TIMEOUT_HEADER, Long.toString(timeout));
+        }
         header.setHeaderValue(HTTPHeader.CONTENT_TYPE_HEADER, "text/xml; charset=\"utf-8\"");
 
         if (revision >= 0) {
