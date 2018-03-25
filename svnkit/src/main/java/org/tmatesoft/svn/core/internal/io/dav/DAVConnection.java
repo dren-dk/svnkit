@@ -215,7 +215,7 @@ public class DAVConnection {
         if (timeout <= 0) {
             header.setHeaderValue(HTTPHeader.TIMEOUT_HEADER, "Infinite");
         } else {
-            header.setHeaderValue(HTTPHeader.TIMEOUT_HEADER, Long.toString(timeout));
+            header.setHeaderValue(HTTPHeader.TIMEOUT_HEADER, "Second-" + Long.toString(timeout));
         }
         header.setHeaderValue(HTTPHeader.CONTENT_TYPE_HEADER, "text/xml; charset=\"utf-8\"");
 
