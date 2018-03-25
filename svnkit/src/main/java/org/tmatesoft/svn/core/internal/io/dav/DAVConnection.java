@@ -240,6 +240,10 @@ public class DAVConnection {
                 SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_OUT_OF_DATE, "Lock request failed: {0} {1}",
                         new Object[] {myLastStatus.getCode(), myLastStatus.getReason()});
                 SVNErrorManager.error(err, SVNLogType.CLIENT);
+            } else if (myLastStatus.getCode() == 403) {
+                SVNErrorManager.error(
+                        SVNErrorMessage.create(SVNErrorCode.RA_DAV_FORBIDDEN, "Lock request failed failed on ''{0}'' (403 Forbidden)", path),
+                        SVNLogType.NETWORK);
             }
             if (myLastStatus.getError() != null) {
                 myLastStatus.getError().setChildErrorMessage(null); //  subversion doesn't have a child message for lock
