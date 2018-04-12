@@ -1,3 +1,9 @@
+== version 1.9.2  ==
+
++ SVNKIT-721: potential deadlock when working with local repositories fixed.
++ SVNKIT-723: NPE fixed.
++ Improved handling of DAV locks
+
 == version 1.9.1  ==
 
 + SVNKIT-719: fixed native SVN lock compatibility issue when working with local repositories.
