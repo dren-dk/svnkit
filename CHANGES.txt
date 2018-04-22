@@ -1,3 +1,10 @@
+== version 1.9.3  ==
+
++ SVNKIT-726: Newly introduced flock locking fallback didn't work properly
+  with older Linux versions, fixed.
++ SVNKIT-712: only some of HTTP headers should be treated as CSV, other should
+  be processed as is.
+
 == version 1.9.2  ==
 
 + SVNKIT-721: potential deadlock when working with local repositories fixed.
