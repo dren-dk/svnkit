@@ -1,5 +1,5 @@
 group = 'org.tmatesoft.svnkit'
-version = '1.9.3'
+version = '1.9.4'
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.14'
