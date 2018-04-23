@@ -132,7 +132,6 @@ public class SVNFLock {
 
     private static List<String> getFlockCommand(File file, boolean exclusive) {
         return Arrays.<String>asList("flock",
-                "--no-fork",
                 exclusive ? "--exclusive" : "--shared",
                 file.getAbsolutePath(),
                 "--command",
