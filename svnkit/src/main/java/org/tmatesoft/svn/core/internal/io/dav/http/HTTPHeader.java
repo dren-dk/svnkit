@@ -14,7 +14,12 @@ package org.tmatesoft.svn.core.internal.io.dav.http;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * @version 1.3
@@ -87,12 +92,7 @@ public class HTTPHeader {
             values = new LinkedList<String>();
             headers.put(name, values);
         }
-        for(StringTokenizer tokens = new StringTokenizer(value, ",", false); tokens.hasMoreTokens();) {
-            final String token = tokens.nextToken().trim();
-            if (token.length() > 0) {
-                values.add(token);
-            }
-        }
+        values.add(value);
     }
     
     public Map<String, List<String>> getRawHeaders() {
