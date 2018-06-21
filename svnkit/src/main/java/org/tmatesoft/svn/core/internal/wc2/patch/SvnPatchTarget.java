@@ -1,26 +1,36 @@
 package org.tmatesoft.svn.core.internal.wc2.patch;
 
-import org.tmatesoft.svn.core.*;
-import org.tmatesoft.svn.core.internal.util.SVNDate;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.tmatesoft.svn.core.ISVNCanceller;
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNNodeKind;
+import org.tmatesoft.svn.core.SVNProperties;
+import org.tmatesoft.svn.core.SVNProperty;
+import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
-import org.tmatesoft.svn.core.internal.wc.*;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.internal.wc.SVNEventFactory;
+import org.tmatesoft.svn.core.internal.wc.SVNFileType;
+import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
+import org.tmatesoft.svn.core.internal.wc.SVNPropertiesManager;
 import org.tmatesoft.svn.core.internal.wc.admin.SVNTranslator;
-import org.tmatesoft.svn.core.internal.wc.patch.*;
-import org.tmatesoft.svn.core.internal.wc17.SVNStatusEditor17;
+import org.tmatesoft.svn.core.internal.wc.patch.SVNPatchFileStream;
+import org.tmatesoft.svn.core.internal.wc.patch.SVNPatchTarget;
 import org.tmatesoft.svn.core.internal.wc17.SVNWCContext;
-import org.tmatesoft.svn.core.internal.wc17.db.ISVNWCDb;
-import org.tmatesoft.svn.core.internal.wc2.ng.*;
+import org.tmatesoft.svn.core.internal.wc2.ng.SvnDiffCallback;
 import org.tmatesoft.svn.core.wc.ISVNEventHandler;
 import org.tmatesoft.svn.core.wc.SVNEvent;
 import org.tmatesoft.svn.core.wc.SVNEventAction;
 import org.tmatesoft.svn.core.wc.SVNStatusType;
 import org.tmatesoft.svn.core.wc2.ISvnPatchHandler;
-import org.tmatesoft.svn.core.wc2.SvnScheduleForAddition;
-import org.tmatesoft.svn.core.wc2.SvnStatus;
 import org.tmatesoft.svn.util.SVNLogType;
-
-import java.io.*;
-import java.util.*;
 
 public class SvnPatchTarget extends SvnTargetContent {
 
@@ -134,8 +144,14 @@ public class SvnPatchTarget extends SvnTargetContent {
         this.rejectStream = rejectStream;
     }
 
+    @Deprecated
     public static SvnPatchTarget applyPatch(SvnPatch patch, File workingCopyDirectory, int stripCount, SVNWCContext context, boolean ignoreWhitespace, boolean removeTempFiles, ISvnPatchHandler patchHandler) throws SVNException, IOException {
-        SvnPatchTarget target = initPatchTarget(patch, workingCopyDirectory, stripCount, removeTempFiles, context);
+        final SvnWcPatchContext patchContext = new SvnWcPatchContext(context);
+        return applyPatch(patch, workingCopyDirectory, stripCount, patchContext, ignoreWhitespace, removeTempFiles, patchHandler);
+    }
+
+    public static SvnPatchTarget applyPatch(SvnPatch patch, File workingCopyDirectory, int stripCount, ISvnPatchContext patchContext, boolean ignoreWhitespace, boolean removeTempFiles, ISvnPatchHandler patchHandler) throws SVNException, IOException {
+        SvnPatchTarget target = initPatchTarget(patch, workingCopyDirectory, stripCount, removeTempFiles, patchContext);
         if (target.isSkipped()) {
             return target;
         }
@@ -438,7 +454,7 @@ public class SvnPatchTarget extends SvnTargetContent {
         }
     }
 
-    private static SvnPatchTarget initPatchTarget(SvnPatch patch, File workingCopyDirectory, int stripCount, boolean removeTempFiles, SVNWCContext context) throws SVNException, IOException {
+    private static SvnPatchTarget initPatchTarget(SvnPatch patch, File workingCopyDirectory, int stripCount, boolean removeTempFiles, ISvnPatchContext patchContext) throws SVNException, IOException {
         boolean hasPropChanges = false;
         boolean propChangesOnly = false;
 
@@ -460,19 +476,19 @@ public class SvnPatchTarget extends SvnTargetContent {
         target.setDbKind(SVNNodeKind.NONE);
         target.setKindOnDisk(SVNNodeKind.NONE);
 
-        target.resolveTargetPath(chooseTargetFilename(patch), workingCopyDirectory, stripCount, propChangesOnly, context);
+        target.resolveTargetPath(chooseTargetFilename(patch), workingCopyDirectory, stripCount, propChangesOnly, patchContext);
         if (!target.isSkipped()) {
             if (target.isSymlink()) {
                 target.setExisted(true);
 
                 target.setReadBaton(new SymlinkReadBaton(target.getAbsPath()));
 
-                final SymlinkCallbacks symlinkCallbacks = new SymlinkCallbacks(workingCopyDirectory, context);
+                final SymlinkCallbacks symlinkCallbacks = new SymlinkCallbacks(workingCopyDirectory, patchContext);
                 target.setReadLineCallback(symlinkCallbacks);
                 target.setTellCallback(symlinkCallbacks);
                 target.setSeekCallback(symlinkCallbacks);
             } else if (target.getKindOnDisk() == SVNNodeKind.FILE) {
-                target.setHasLocalModifications(context.isTextModified(target.getAbsPath(), false));
+                target.setHasLocalModifications(patchContext.isTextModified(target.getAbsPath(), false));
                 target.setExecutable(SVNFileUtil.isExecutable(target.getAbsPath()));
 
                 final Map<String, byte[]> keywords = new HashMap<String, byte[]>();
@@ -484,7 +500,7 @@ public class SvnPatchTarget extends SvnTargetContent {
                 }
                 eolStyle[0] = target.getEolStyle();
                 eolStr[0] = target.getEolStr();
-                obtainEolAndKeywordsForFile(keywords, eolStyle, eolStr, context, target.getAbsPath());
+                obtainEolAndKeywordsForFile(keywords, eolStyle, eolStr, patchContext, target.getAbsPath());
 
                 target.setKeywords(keywords);
                 target.setEolStyle(eolStyle[0]);
@@ -534,7 +550,7 @@ public class SvnPatchTarget extends SvnTargetContent {
                 }
 
                 SVNNodeKind kindOnDisk = SVNFileType.getNodeKind(SVNFileType.getType(target.getMoveTargetAbsPath()));
-                SVNNodeKind wcKind = context.readKind(target.getMoveTargetAbsPath(), false);
+                SVNNodeKind wcKind = patchContext.readKind(target.getMoveTargetAbsPath(), true, false);
 
                 if (kindOnDisk != SVNNodeKind.NONE || wcKind != SVNNodeKind.NONE) {
                     target.setSkipped(true);
@@ -543,19 +559,19 @@ public class SvnPatchTarget extends SvnTargetContent {
                 }
             }
             if (!target.isSymlink()) {
-                File uniqueFile = createTempFile(workingCopyDirectory, context); //TODO: remove temp files
+                File uniqueFile = patchContext.createTempFile(workingCopyDirectory);
                 target.setPatchedAbsPath(uniqueFile);
                 target.setPatchedStream(SVNPatchFileStream.openForWrite(uniqueFile));
                 target.setWriteBaton(target.getPatchedStream());
                 target.setWriteCallback(new RegularWriteCallback());
             } else {
-                File uniqueFile = createTempFile(workingCopyDirectory, context);
+                File uniqueFile = patchContext.createTempFile(workingCopyDirectory);
                 target.setPatchedAbsPath(uniqueFile);
                 target.setWriteBaton(uniqueFile);
-                target.setWriteCallback(new SymlinkCallbacks(workingCopyDirectory, context));
+                target.setWriteCallback(new SymlinkCallbacks(workingCopyDirectory, patchContext));
             }
 
-            target.setRejectAbsPath(createTempFile(workingCopyDirectory, context));
+            target.setRejectAbsPath(patchContext.createTempFile(workingCopyDirectory));
             target.setRejectStream(SVNPatchFileStream.openForWrite(target.getRejectAbsPath()));
 
             String diffHeader = "--- " + target.getCanonPathFromPatchfile() + "\n" + "+++ " + target.getCanonPathFromPatchfile() + "\n";
@@ -569,7 +585,7 @@ public class SvnPatchTarget extends SvnTargetContent {
                     String propName = entry.getKey();
                     SvnPropertiesPatch propPatch = entry.getValue();
 
-                    SvnPropertiesPatchTarget propTarget = SvnPropertiesPatchTarget.initPropTarget(propName, propPatch.getOperation(), context, target.getAbsPath());
+                    SvnPropertiesPatchTarget propTarget = SvnPropertiesPatchTarget.initPropTarget(propName, propPatch.getOperation(), patchContext, target.getAbsPath());
                     target.putPropTarget(propName, propTarget);
                 }
             }
@@ -581,21 +597,12 @@ public class SvnPatchTarget extends SvnTargetContent {
     private static void obtainEolAndKeywordsForFile(Map<String, byte[]> keywords,
                                              SVNWCContext.SVNEolStyle[] eolStyle,
                                              String[] eolStr,
-                                             SVNWCContext context, File localAbsPath) throws SVNException {
-        final SVNProperties actualProps = context.getActualProps(localAbsPath);
+                                             ISvnPatchContext patchContext, File localAbsPath) throws SVNException {
+        final SVNProperties actualProps = patchContext.getActualProps(localAbsPath);
         SVNPropertyValue keywordsVal = actualProps.getSVNPropertyValue(SVNProperty.KEYWORDS);
         if (keywordsVal != null) {
-            ISVNWCDb.WCDbInfo nodeChangedInfo = context.getNodeChangedInfo(localAbsPath);
-            long changedRev = nodeChangedInfo.changedRev;
-            SVNDate changedDate = nodeChangedInfo.changedDate;
-            String changedAuthor = nodeChangedInfo.changedAuthor;
-
-            SVNURL url = context.getNodeUrl(localAbsPath);
-            SVNWCContext.SVNWCNodeReposInfo nodeReposInfo = context.getNodeReposInfo(localAbsPath);
-            SVNURL reposRootUrl = nodeReposInfo.reposRootUrl;
-
             if (keywords != null) {
-                keywords.putAll(SVNTranslator.computeKeywords(SVNPropertyValue.getPropertyAsString(keywordsVal), url == null ? null : url.toString(), reposRootUrl  == null ? null : reposRootUrl.toString(), changedAuthor, changedDate.format(), String.valueOf(changedRev), null));
+                keywords.putAll(patchContext.computeKeywords(localAbsPath, keywordsVal));
             }
         }
         SVNPropertyValue eolStyleVal = actualProps.getSVNPropertyValue(SVNProperty.EOL_STYLE);
@@ -611,7 +618,7 @@ public class SvnPatchTarget extends SvnTargetContent {
         }
     }
 
-    private void resolveTargetPath(File pathFromPatchFile, File workingCopyDirectory, int stripCount, boolean propChangesOnly, SVNWCContext context) throws SVNException, IOException {
+    private void resolveTargetPath(File pathFromPatchFile, File workingCopyDirectory, int stripCount, boolean propChangesOnly, ISvnPatchContext patchContext) throws SVNException, IOException {
         final File canonPathFromPatchfile = pathFromPatchFile;
         setCanonPathFromPatchfile(canonPathFromPatchfile);
 
@@ -651,58 +658,7 @@ public class SvnPatchTarget extends SvnTargetContent {
         } else {
             setAbsPath(SVNFileUtil.createFilePath(workingCopyDirectory, getRelPath()));
         }
-
-
-        SvnStatus status;
-        try {
-            status = SVNStatusEditor17.internalStatus(context, getAbsPath(), true);
-
-            if (status.getNodeStatus() == SVNStatusType.STATUS_IGNORED ||
-                    status.getNodeStatus() == SVNStatusType.STATUS_UNVERSIONED ||
-                    status.getNodeStatus() == SVNStatusType.MISSING ||
-                    status.getNodeStatus() == SVNStatusType.OBSTRUCTED ||
-                    status.isConflicted()) {
-                setSkipped(true);
-                return;
-            } else if (status.getNodeStatus() == SVNStatusType.STATUS_DELETED) {
-                setLocallyDeleted(true);
-            }
-        } catch (SVNException e) {
-            if (e.getErrorMessage().getErrorCode() != SVNErrorCode.WC_PATH_NOT_FOUND) {
-                throw e;
-            }
-            setLocallyDeleted(true);
-            setDbKind(SVNNodeKind.NONE);
-            status = null;
-        }
-
-        if (status != null && status.getKind() != SVNNodeKind.UNKNOWN) {
-            setDbKind(status.getKind());
-        } else {
-            setDbKind(SVNNodeKind.NONE);
-        }
-
-        SVNFileType fileType = SVNFileType.getType(getAbsPath());
-        setSymlink(fileType == SVNFileType.SYMLINK);
-        setKindOnDisk(SVNFileType.getNodeKind(fileType));
-
-        if (isLocallyDeleted()) {
-            SVNWCContext.NodeMovedAway nodeMovedAway = context.nodeWasMovedAway(getAbsPath());
-            if (nodeMovedAway != null && nodeMovedAway.movedToAbsPath != null) {
-                setAbsPath(nodeMovedAway.movedToAbsPath);
-                setRelPath(SVNFileUtil.skipAncestor(workingCopyDirectory, nodeMovedAway.movedToAbsPath));
-
-                assert getRelPath() != null && getRelPath().getPath().length() > 0;
-
-                setLocallyDeleted(false);
-                fileType = SVNFileType.getType(getAbsPath());
-                setSymlink(fileType == SVNFileType.SYMLINK);
-                setKindOnDisk(SVNFileType.getNodeKind(fileType));
-            } else if (getKindOnDisk() != SVNNodeKind.NONE) {
-                setSkipped(true);
-                return;
-            }
-        }
+        patchContext.resolvePatchTargetStatus(this, workingCopyDirectory);
     }
 
     private static boolean isUnderRoot(File workingCopyDirectory, File relPath) throws SVNException {
@@ -747,20 +703,22 @@ public class SvnPatchTarget extends SvnTargetContent {
         propTargets.put(propName, propTarget);
     }
 
-    private static File createTempFile(File workingCopyDirectory, SVNWCContext context) throws SVNException {
-        return SVNFileUtil.createUniqueFile(context.getDb().getWCRootTempDir(workingCopyDirectory), "", "", true);
+    @Deprecated
+    public void installPatchedTarget(File workingCopyDirectory, boolean dryRun, SVNWCContext context) throws SVNException {
+        final SvnWcPatchContext patchContext = new SvnWcPatchContext(context);
+        installPatchedTarget(workingCopyDirectory, dryRun, patchContext);
     }
 
-    public void installPatchedTarget(File workingCopyDirectory, boolean dryRun, SVNWCContext context) throws SVNException {
+    public void installPatchedTarget(File workingCopyDirectory, boolean dryRun, ISvnPatchContext patchContext) throws SVNException {
         if (isDeleted()) {
             if (!dryRun) {
-                SvnNgRemove.delete(context, getAbsPath(), null, false, false, null);
+                patchContext.delete(getAbsPath());
             }
         } else {
             if (isAdded() || isReplaced()) {
                 File parentAbsPath = SVNFileUtil.getParentFile(getAbsPath());
 
-                SVNNodeKind parentDbKind = context.readKind(parentAbsPath, false, false);
+                SVNNodeKind parentDbKind = patchContext.readKind(parentAbsPath, false, false);
 
                 if (parentDbKind == SVNNodeKind.DIR || parentDbKind == SVNNodeKind.FILE) {
                     if (parentDbKind != SVNNodeKind.DIR) {
@@ -771,10 +729,10 @@ public class SvnPatchTarget extends SvnTargetContent {
                         }
                     }
                 } else {
-                    createMissingParents(workingCopyDirectory, context, dryRun);
+                    createMissingParents(workingCopyDirectory, patchContext, dryRun);
                 }
             } else {
-                SVNNodeKind wcKind = context.readKind(getAbsPath(), false, false);
+                SVNNodeKind wcKind = patchContext.readKind(getAbsPath(), false, false);
 
                 if (getKindOnDisk() == SVNNodeKind.NONE || wcKind != getKindOnDisk()) {
                     setSkipped(true);
@@ -808,24 +766,19 @@ public class SvnPatchTarget extends SvnTargetContent {
                 }
 
                 if (isAdded() || isReplaced()) {
-                    SvnNgAdd add = new SvnNgAdd();
-                    add.setWcContext(context);
-                    add.addFromDisk(getAbsPath(), null, false);
+                    patchContext.add(getAbsPath());
                 }
 
                 SVNFileUtil.setExecutable(getMoveTargetAbsPath() != null ? getMoveTargetAbsPath() : getAbsPath(), isExecutable());
 
                 if (getMoveTargetAbsPath() != null) {
-                    SvnNgWcToWcCopy svnNgWcToWcCopy = new SvnNgWcToWcCopy();
-                    svnNgWcToWcCopy.setWcContext(context);
-                    svnNgWcToWcCopy.move(context, getAbsPath(), getMoveTargetAbsPath(), true);
-                    SVNFileUtil.deleteFile(getAbsPath());
+                    patchContext.move(getAbsPath(), getMoveTargetAbsPath());
                 }
             }
         }
     }
 
-    private void createMissingParents(File workingCopyDirectory,  SVNWCContext context, boolean dryRun) throws SVNException {
+    private void createMissingParents(File workingCopyDirectory,  ISvnPatchContext patchContext, boolean dryRun) throws SVNException {
         File localAbsPath = workingCopyDirectory;
         File relPath = getRelPath();
         String relPathString = SVNFileUtil.getFilePath(relPath);
@@ -834,7 +787,7 @@ public class SvnPatchTarget extends SvnTargetContent {
 
         for (String component : components) {
             localAbsPath = SVNFileUtil.createFilePath(localAbsPath, component);
-            SVNNodeKind wcKind = context.readKind(localAbsPath, false, true);
+            SVNNodeKind wcKind = patchContext.readKind(localAbsPath, false, true);
 
             SVNNodeKind diskKind = SVNFileType.getNodeKind(SVNFileType.getType(localAbsPath));
             if (diskKind == SVNNodeKind.FILE || wcKind == SVNNodeKind.FILE) {
@@ -871,47 +824,46 @@ public class SvnPatchTarget extends SvnTargetContent {
                 localAbsPath = SVNFileUtil.createFilePath(localAbsPath, component);
 
                 if (dryRun) {
-                    ISVNEventHandler eventHandler = context.getEventHandler();
+                    ISVNEventHandler eventHandler = patchContext.getEventHandler();
                     if (eventHandler != null) {
                         SVNEvent event = SVNEventFactory.createSVNEvent(localAbsPath, SVNNodeKind.DIR, null, -1, SVNEventAction.ADD, SVNEventAction.ADD, null, null);
                         eventHandler.handleEvent(event, ISVNEventHandler.UNKNOWN);
                     }
                 } else {
-                    ISVNCanceller canceller = context.getEventHandler();
+                    ISVNCanceller canceller = patchContext.getEventHandler();
                     if (canceller != null) {
                         canceller.checkCancelled();
                     }
-                    SvnNgAdd add = new SvnNgAdd();
-                    add.setWcContext(context);
-                    add.addFromDisk(localAbsPath, null, true);
+                    patchContext.add(localAbsPath);
                 }
             }
         }
     }
 
+    @Deprecated
     public void installPatchedPropTarget(boolean dryRun, SVNWCContext context) throws SVNException {
+        final SvnWcPatchContext patchContext = new SvnWcPatchContext(context);
+        installPatchedPropTarget(dryRun, patchContext);
+    }
+    public void installPatchedPropTarget(boolean dryRun, ISvnPatchContext patchContext) throws SVNException {
         final Map<String, SvnPropertiesPatchTarget> propTargets = getPropTargets();
         for (Map.Entry<String, SvnPropertiesPatchTarget> entry : propTargets.entrySet()) {
             SvnPropertiesPatchTarget propTarget = entry.getValue();
-            ISVNCanceller canceller = context.getEventHandler();
+            ISVNCanceller canceller = patchContext.getEventHandler();
             if (canceller != null) {
                 canceller.checkCancelled();
             }
 
             if (propTarget.getOperation() == SvnDiffCallback.OperationKind.Deleted) {
                 if (!dryRun) {
-                    SvnNgPropertiesManager.setProperty(context, getAbsPath(), propTarget.getName(), null, SVNDepth.EMPTY, true, null, null);
+                    patchContext.setProperty(getAbsPath(), propTarget.getName(), null);
                 }
                 continue;
             }
 
             if (!hasTextChanges() && getKindOnDisk() == SVNNodeKind.NONE && !isAdded()) {
                 if (!dryRun) {
-                    SVNFileUtil.createEmptyFile(getAbsPath());
-
-                    SvnNgAdd add = new SvnNgAdd();
-                    add.setWcContext(context);
-                    add.addFromDisk(getAbsPath(), null, false);
+                    patchContext.addEmptyFile(getAbsPath());
                 }
                 setAdded(true);
             }
@@ -928,7 +880,7 @@ public class SvnPatchTarget extends SvnTargetContent {
                 if (dryRun) {
                     SVNPropertyValue canonicalPropertyValue = SVNPropertiesManager.validatePropertyValue(getAbsPath(), getDbKind(), propTarget.getName(), propVal, true, null, null);
                 } else {
-                    SvnNgPropertiesManager.setProperty(context, getAbsPath(), propTarget.getName(), propVal, SVNDepth.EMPTY, true, null, null);
+                    patchContext.setProperty(getAbsPath(), propTarget.getName(), propVal);
                 }
             } catch (SVNException e) {
                 if (e.getErrorMessage().getErrorCode() == SVNErrorCode.ILLEGAL_TARGET ||
@@ -959,8 +911,13 @@ public class SvnPatchTarget extends SvnTargetContent {
         }
     }
 
+    @Deprecated
     public void sendPatchNotification(SVNWCContext context) throws SVNException {
-        ISVNEventHandler eventHandler = context.getEventHandler();
+        sendPatchNotification(new SvnWcPatchContext(context));
+    }
+
+    public void sendPatchNotification(ISvnPatchContext patchContext) throws SVNException {
+        ISVNEventHandler eventHandler = patchContext.getEventHandler();
         if (eventHandler == null) {
             return;
         }
@@ -1014,7 +971,7 @@ public class SvnPatchTarget extends SvnTargetContent {
 
         if (action == SVNEventAction.PATCH) {
             for (SvnHunkInfo hunkInfo : getHunkInfos()) {
-                sendHunkNotification(hunkInfo, null, context);
+                sendHunkNotification(hunkInfo, null, patchContext);
             }
             final Map<String, SvnPropertiesPatchTarget> propTargets = getPropTargets();
             for (Map.Entry<String, SvnPropertiesPatchTarget> entry : propTargets.entrySet()) {
@@ -1024,7 +981,7 @@ public class SvnPatchTarget extends SvnTargetContent {
                 for (SvnHunkInfo hunkInfo : hunks) {
                     if (propTarget.getOperation() != SvnDiffCallback.OperationKind.Added &&
                             propTarget.getOperation() != SvnDiffCallback.OperationKind.Deleted) {
-                        sendHunkNotification(hunkInfo, propTarget.getName(), context);
+                        sendHunkNotification(hunkInfo, propTarget.getName(), patchContext);
                     }
                 }
             }
@@ -1035,7 +992,7 @@ public class SvnPatchTarget extends SvnTargetContent {
         }
     }
 
-    private void sendHunkNotification(SvnHunkInfo hunkInfo, String propName, SVNWCContext context) throws SVNException {
+    private void sendHunkNotification(SvnHunkInfo hunkInfo, String propName, ISvnPatchContext patchContext) throws SVNException {
         SVNEventAction action;
         if (hunkInfo.isAlreadyApplied()) {
             action = SVNEventAction.PATCH_HUNK_ALREADY_APPLIED;
@@ -1049,7 +1006,7 @@ public class SvnPatchTarget extends SvnTargetContent {
         event.setInfo(hunkInfo);
         event.setPropertyName(propName);
 
-        ISVNEventHandler eventHandler = context.getEventHandler();
+        ISVNEventHandler eventHandler = patchContext.getEventHandler();
         if (eventHandler != null) {
             eventHandler.handleEvent(event, ISVNEventHandler.UNKNOWN);
         }
@@ -1218,11 +1175,11 @@ public class SvnPatchTarget extends SvnTargetContent {
     private static class SymlinkCallbacks implements IWriteCallback, IRealLineCallback, ISeekCallback, ITellCallback {
 
         private File workingCopyDirectory;
-        private SVNWCContext context;
+        private ISvnPatchContext patchContext;
 
-        public SymlinkCallbacks(File workingCopyDirectory, SVNWCContext context) {
+        public SymlinkCallbacks(File workingCopyDirectory, ISvnPatchContext patchContext) {
             this.workingCopyDirectory = workingCopyDirectory;
-            this.context = context;
+            this.patchContext = patchContext;
         }
 
         public void write(Object writeBaton, String s) throws SVNException {

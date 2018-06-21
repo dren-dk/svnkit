@@ -1,19 +1,29 @@
 package org.tmatesoft.svn.core.internal.wc2.patch;
 
-import org.tmatesoft.svn.core.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNProperties;
+import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc17.SVNWCContext;
 import org.tmatesoft.svn.core.internal.wc2.ng.SvnDiffCallback;
 import org.tmatesoft.svn.util.SVNLogType;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-
 public class SvnPropertiesPatchTarget extends SvnTargetContent {
 
+    @Deprecated
     public static SvnPropertiesPatchTarget initPropTarget(String propName, SvnDiffCallback.OperationKind operation, SVNWCContext context, File absPath) throws SVNException {
+        final SvnWcPatchContext patchContext = new SvnWcPatchContext(context);
+        return initPropTarget(propName, operation, patchContext, absPath);
+    }
+
+    public static SvnPropertiesPatchTarget initPropTarget(String propName, SvnDiffCallback.OperationKind operation, ISvnPatchContext patchContext, File absPath) throws SVNException {
         SvnPropertiesPatchTarget propPatchTarget = new SvnPropertiesPatchTarget();
         propPatchTarget.setCurrentLine(1);
         propPatchTarget.setEolStyle(SVNWCContext.SVNEolStyle.None);
@@ -22,7 +32,7 @@ public class SvnPropertiesPatchTarget extends SvnTargetContent {
 
         SVNPropertyValue value;
         try {
-            SVNProperties actualProps = context.getActualProps(absPath);
+            SVNProperties actualProps = patchContext.getActualProps(absPath);
             value = actualProps.getSVNPropertyValue(propName);
         } catch (SVNException e) {
             if (e.getErrorMessage().getErrorCode() == SVNErrorCode.WC_PATH_NOT_FOUND) {
