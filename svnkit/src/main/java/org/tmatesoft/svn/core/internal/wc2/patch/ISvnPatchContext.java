@@ -27,11 +27,21 @@ public interface ISvnPatchContext {
 
     void setProperty(File absPath, String propertyName, SVNPropertyValue propertyValue) throws SVNException;
 
-    void addEmptyFile(File absPath) throws SVNException;
-
     void delete(File absPath) throws SVNException;
 
     void add(File absPath) throws SVNException;
 
     void move(File absPath, File moveTargetAbsPath) throws SVNException;
+
+    boolean isExecutable(File absPath) throws SVNException;
+
+    void setExecutable(File absPath, boolean executable);
+
+    void translate(File patchedAbsPath, File dst, String charset, byte[] eol, Map<String, byte[]> keywords, boolean special, boolean expand) throws SVNException;
+
+    void copySymlink(File src, File dst) throws SVNException;
+
+    void writeSymlinkContent(File absPath, String linkName) throws SVNException;
+
+    String readSymlinkContent(File absPath) throws SVNException;
 }

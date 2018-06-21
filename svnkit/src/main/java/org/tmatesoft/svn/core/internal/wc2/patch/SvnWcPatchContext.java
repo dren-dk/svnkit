@@ -132,16 +132,6 @@ public class SvnWcPatchContext implements ISvnPatchContext {
     }
 
     @Override
-    public void addEmptyFile(File absPath) throws SVNException {
-        SVNFileUtil.createEmptyFile(absPath);
-
-        SvnNgAdd add = new SvnNgAdd();
-        add.setWcContext(context);
-        add.addFromDisk(absPath, null, false);
-
-    }
-
-    @Override
     public void delete(File absPath) throws SVNException {
         SvnNgRemove.delete(context, absPath, null, false, false, null);
     }
@@ -159,5 +149,47 @@ public class SvnWcPatchContext implements ISvnPatchContext {
         svnNgWcToWcCopy.setWcContext(context);
         svnNgWcToWcCopy.move(context, absPath, moveTargetAbsPath, true);
         SVNFileUtil.deleteFile(absPath);
+    }
+
+    @Override
+    public boolean isExecutable(File absPath) throws SVNException {
+        return SVNFileUtil.isExecutable(absPath);
+    }
+
+    @Override
+    public void setExecutable(File absPath, boolean executable) {
+        SVNFileUtil.setExecutable(absPath, executable);
+    }
+
+    @Override
+    public void translate(File patchedAbsPath, File dst, String charset, byte[] eol, Map<String, byte[]> keywords, boolean special, boolean expand) throws SVNException {
+        SVNTranslator.translate(patchedAbsPath, dst, charset, eol, keywords, special, expand);
+    }
+
+    @Override
+    public void copySymlink(File src, File dst) throws SVNException {
+        SVNFileUtil.copySymlink(src, dst);
+    }
+
+    @Override
+    public void writeSymlinkContent(File absPath, String linkName) throws SVNException {
+        if (linkName.startsWith("link ")) {
+            linkName = linkName.substring("link ".length());
+        }
+        if (linkName.endsWith("\n")) {
+            linkName = linkName.substring(0, linkName.length() - "\n".length());
+        }
+        if (linkName.endsWith("\r")) {
+            linkName = linkName.substring(0, linkName.length() - "\r".length());
+        }
+        if (SVNFileType.getType(absPath) == SVNFileType.FILE) {
+            SVNFileUtil.deleteFile(absPath);
+        }
+        SVNFileUtil.createSymlink(absPath, linkName);
+    }
+
+    @Override
+    public String readSymlinkContent(File absPath) {
+        return "link " + SVNFileUtil.getSymlinkName(absPath);
     }
 }

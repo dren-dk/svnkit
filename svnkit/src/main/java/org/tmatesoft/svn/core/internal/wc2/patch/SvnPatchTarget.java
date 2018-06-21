@@ -20,7 +20,6 @@ import org.tmatesoft.svn.core.internal.wc.SVNEventFactory;
 import org.tmatesoft.svn.core.internal.wc.SVNFileType;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNPropertiesManager;
-import org.tmatesoft.svn.core.internal.wc.admin.SVNTranslator;
 import org.tmatesoft.svn.core.internal.wc.patch.SVNPatchFileStream;
 import org.tmatesoft.svn.core.internal.wc.patch.SVNPatchTarget;
 import org.tmatesoft.svn.core.internal.wc17.SVNWCContext;
@@ -489,7 +488,7 @@ public class SvnPatchTarget extends SvnTargetContent {
                 target.setSeekCallback(symlinkCallbacks);
             } else if (target.getKindOnDisk() == SVNNodeKind.FILE) {
                 target.setHasLocalModifications(patchContext.isTextModified(target.getAbsPath(), false));
-                target.setExecutable(SVNFileUtil.isExecutable(target.getAbsPath()));
+                target.setExecutable(patchContext.isExecutable(target.getAbsPath()));
 
                 final Map<String, byte[]> keywords = new HashMap<String, byte[]>();
                 SVNWCContext.SVNEolStyle[] eolStyle = (SVNWCContext.SVNEolStyle[]) new SVNWCContext.SVNEolStyle[1];
@@ -743,25 +742,16 @@ public class SvnPatchTarget extends SvnTargetContent {
                 if (isSpecial()) {
                     //setPatchedStream(SVNFileUtil.openFileForReading(getPatchedAbsPath()));
                     String linkName = SVNFileUtil.readFile(getPatchedAbsPath());
-                    if (linkName.startsWith("link ")) {
-                        linkName = linkName.substring("link ".length());
-                    }
-                    if (linkName.endsWith("\n")) {
-                        linkName = linkName.substring(0, linkName.length() - "\n".length());
-                    }
-                    if (linkName.endsWith("\r")) {
-                        linkName = linkName.substring(0, linkName.length() - "\r".length());
-                    }
-                    SVNFileUtil.createSymlink(getAbsPath(), linkName);
+                    patchContext.writeSymlinkContent(getAbsPath(), linkName);
                 } else {
                     //TODO: a special method for special files? atomicity?
                     File dst = getMoveTargetAbsPath() != null ? getMoveTargetAbsPath() : getAbsPath();
                     if (SVNFileType.getType(getPatchedAbsPath()) == SVNFileType.SYMLINK) {
                         SVNFileUtil.deleteFile(dst);
-                        SVNFileUtil.copySymlink(getPatchedAbsPath(), dst);
+                        patchContext.copySymlink(getPatchedAbsPath(), dst);
                     } else {
                         boolean repairEol = getEolStyle() == SVNWCContext.SVNEolStyle.Fixed || getEolStyle() == SVNWCContext.SVNEolStyle.Native;
-                        SVNTranslator.translate(getPatchedAbsPath(), dst, null, getEolStr() == null ? null : getEolStr().getBytes(), getKeywords(), false, true);
+                        patchContext.translate(getPatchedAbsPath(), dst, null, getEolStr() == null ? null : getEolStr().getBytes(), getKeywords(), false, true);
                     }
                 }
 
@@ -769,7 +759,7 @@ public class SvnPatchTarget extends SvnTargetContent {
                     patchContext.add(getAbsPath());
                 }
 
-                SVNFileUtil.setExecutable(getMoveTargetAbsPath() != null ? getMoveTargetAbsPath() : getAbsPath(), isExecutable());
+                patchContext.setExecutable(getMoveTargetAbsPath() != null ? getMoveTargetAbsPath() : getAbsPath(), isExecutable());
 
                 if (getMoveTargetAbsPath() != null) {
                     patchContext.move(getAbsPath(), getMoveTargetAbsPath());
@@ -863,7 +853,8 @@ public class SvnPatchTarget extends SvnTargetContent {
 
             if (!hasTextChanges() && getKindOnDisk() == SVNNodeKind.NONE && !isAdded()) {
                 if (!dryRun) {
-                    patchContext.addEmptyFile(getAbsPath());
+                    SVNFileUtil.createEmptyFile(absPath);
+                    patchContext.add(getAbsPath());
                 }
                 setAdded(true);
             }
@@ -1187,12 +1178,8 @@ public class SvnPatchTarget extends SvnTargetContent {
                 SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.IO_WRITE_ERROR, "Invalid link representation");
                 SVNErrorManager.error(errorMessage, SVNLogType.WC);
             }
-            s = s.substring("link ".length());
             File targetAbsPath = (File) writeBaton;
-            if (SVNFileType.getType(targetAbsPath) == SVNFileType.FILE) {
-                SVNFileUtil.deleteFile(targetAbsPath);
-            }
-            SVNFileUtil.createSymlink(targetAbsPath, s);
+            patchContext.writeSymlinkContent(targetAbsPath, s);
         }
 
         public String readLine(Object baton, String[] eolStr, boolean[] eof) throws SVNException {
@@ -1206,9 +1193,7 @@ public class SvnPatchTarget extends SvnTargetContent {
             if (symlinkReadBaton.isAtEof()) {
                 return null;
             } else {
-                String symlinkName = SVNFileUtil.getSymlinkName(symlinkReadBaton.getAbsPath());
-                String symlinkContent = "link " + symlinkName;
-                return symlinkContent;
+                return patchContext.readSymlinkContent(symlinkReadBaton.getAbsPath());
             }
         }
 
