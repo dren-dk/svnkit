@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNProperties;
+import org.tmatesoft.svn.core.SVNProperty;
 import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.internal.wc.SVNFileType;
@@ -381,6 +382,100 @@ public class PatchTest {
             } finally {
                 svnPatchFile.close();
             }
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
+    @Test
+    public void testApplyGitPatchToDirectorySymlinks() throws Exception {
+        final TestOptions options = TestOptions.getInstance();
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testApplyGitPatchToDirectorySymlinks", options);
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final CommitBuilder commitBuilder1 = new CommitBuilder(url);
+            commitBuilder1.addFile("symlink1", "link symlink/target1".getBytes());
+            commitBuilder1.addFile("symlink2", "link symlink/target2".getBytes());
+            commitBuilder1.setFileProperty("symlink2", SVNProperty.SPECIAL, SVNPropertyValue.create("*"));
+            commitBuilder1.addFile("symlink3", "symlink/target3".getBytes());
+            commitBuilder1.setFileProperty("symlink3", SVNProperty.SPECIAL, SVNPropertyValue.create("*"));
+            commitBuilder1.addFile("symlink4", "random content4".getBytes());
+            commitBuilder1.setFileProperty("symlink4", SVNProperty.SPECIAL, SVNPropertyValue.create("*"));
+            commitBuilder1.addFile("symlink5", "link symlink/target5".getBytes());
+            commitBuilder1.setFileProperty("symlink5", SVNProperty.SPECIAL, SVNPropertyValue.create("*"));
+            commitBuilder1.commit();
+
+            final CommitBuilder commitBuilder2 = new CommitBuilder(url);
+            commitBuilder2.setFileProperty("symlink1", SVNProperty.SPECIAL, SVNPropertyValue.create("*"));
+            commitBuilder2.setFileProperty("symlink2", SVNProperty.SPECIAL, null);
+            commitBuilder2.changeFile("symlink3", "link symlink/target3".getBytes());
+            commitBuilder2.changeFile("symlink4", "link random content4".getBytes());
+            commitBuilder2.changeFile("symlink5", "symlink/target5".getBytes());
+            commitBuilder2.commit();
+
+            final SvnDiffGenerator diffGenerator = new SvnDiffGenerator();
+            diffGenerator.setBasePath(new File("").getAbsoluteFile());
+            diffGenerator.setUseGitFormat(true);
+            diffGenerator.setIgnoreProperties(false);
+            final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+            final SvnDiff diff = svnOperationFactory.createDiff();
+            diff.setSource(SvnTarget.fromURL(url), SVNRevision.create(1), SVNRevision.create(2));
+            diff.setDiffGenerator(diffGenerator);
+            diff.setUseGitDiffFormat(true);
+            diff.setOutput(output);
+            diff.run();
+
+            final String patchString = output.toString();
+
+            final File directory = sandbox.createDirectory("tmp");
+            final File patchFile = new File(directory, "patchFile");
+            SVNFileUtil.writeToFile(patchFile, patchString, "UTF-8");
+
+            final File symlink1 = new File(directory, "symlink1");
+            final File symlink2 = new File(directory, "symlink2");
+            final File symlink3 = new File(directory, "symlink3");
+            final File symlink4 = new File(directory, "symlink4");
+            final File symlink5 = new File(directory, "symlink5");
+
+            TestUtil.writeFileContentsString(symlink1, "link symlink/target1");
+            TestUtil.writeFileContentsString(symlink2, "link symlink/target2");
+            TestUtil.writeFileContentsString(symlink3, "symlink/target3");
+            TestUtil.writeFileContentsString(symlink4, "random content4");
+            TestUtil.writeFileContentsString(symlink5, "link symlink/target5");
+
+            final DirectoryPatchContext patchContext = new DirectoryPatchContext(directory);
+            final SvnPatchFile svnPatchFile = SvnPatchFile.openReadOnly(patchFile);
+            try {
+                org.tmatesoft.svn.core.internal.wc2.patch.SvnPatch patch;
+                do {
+                    patch = org.tmatesoft.svn.core.internal.wc2.patch.SvnPatch.parseNextPatch(svnPatchFile, false, false);
+                    if (patch != null) {
+                        final boolean dryRun = false;
+                        final int stripCount = 0;
+                        final SvnPatchTarget target = SvnPatchTarget.applyPatch(patch, directory, stripCount, patchContext, true, true, null);
+
+                        if (target.hasTextChanges() || target.isAdded() || target.getMoveTargetAbsPath() != null || target.isDeleted()) {
+                            target.installPatchedTarget(directory, dryRun, patchContext);
+                        }
+                        if (target.hasPropChanges() && !target.isDeleted()) {
+                            target.installPatchedPropTarget(dryRun, patchContext);
+                        }
+                    }
+                } while (patch != null);
+            } finally {
+                svnPatchFile.close();
+            }
+
+            Assert.assertEquals("link symlink/target1", TestUtil.readFileContentsString(symlink1));
+            Assert.assertEquals("link symlink/target2", TestUtil.readFileContentsString(symlink2));
+            Assert.assertEquals("link symlink/target3", TestUtil.readFileContentsString(symlink3));
+            Assert.assertEquals("link random content4", TestUtil.readFileContentsString(symlink4));
+            Assert.assertEquals("symlink/target5", TestUtil.readFileContentsString(symlink5));
         } finally {
             svnOperationFactory.dispose();
             sandbox.dispose();
