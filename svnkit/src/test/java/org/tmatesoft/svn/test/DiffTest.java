@@ -1033,6 +1033,55 @@ public class DiffTest {
         }
     }
 
+    @Test
+    public void testDiffBinaryFilesBase85() throws Exception {
+        final TestOptions options = TestOptions.getInstance();
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testDiffBinaryFilesBase85", options);
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+            System.out.println("url = " + url);
+
+            final CommitBuilder commitBuilder1 = new CommitBuilder(url);
+            commitBuilder1.addFile("file", new byte[]{1, 2, 3, 4, 5, 6, 7, 8});
+            commitBuilder1.setFileProperty("file", SVNProperty.MIME_TYPE, SVNPropertyValue.create("application/octet-stream"));
+            commitBuilder1.commit();
+
+            final CommitBuilder commitBuilder2 = new CommitBuilder(url);
+            commitBuilder2.changeFile("file", new byte[]{9, 10, 11, 12, 13, 14, 15});
+            commitBuilder2.commit();
+
+            final SvnDiffGenerator diffGenerator = new SvnDiffGenerator();
+            diffGenerator.setUseGitFormat(true);
+            diffGenerator.setBasePath(new File(""));
+            
+            final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
+            final SvnDiff diff = svnOperationFactory.createDiff();
+            diff.setSources(SvnTarget.fromURL(url, SVNRevision.create(1)), SvnTarget.fromURL(url, SVNRevision.create(2)));
+            diff.setOutput(byteArrayOutputStream);
+            diff.setDiffGenerator(diffGenerator);
+            diff.setUseGitDiffFormat(true);
+            diff.run();
+
+            Assert.assertEquals(
+                    "Index: file\n" +
+                    "===================================================================\n" +
+                    "diff --git a/file b/file\n" +
+                    "GIT binary patch\n" +
+                    "literal 7\n" +
+                    "Oc%0+p;^yJy;|Bl%I{;Mx\n" +
+                    "\n" +
+                    "literal 8\n" +
+                    "Pc${NoVrF4wW9I+>0Du4`\n", byteArrayOutputStream.toString());
+
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
     private void diffFiles(SVNURL url, final SVNRevision fromVersion, final SVNRevision toVersion, final ISVNDiffGenerator diffGenerator) throws SVNException {
         DefaultSVNOptions options = SVNWCUtil.createDefaultOptions(true);
         final DefaultSVNRepositoryPool pool = new DefaultSVNRepositoryPool(SVNWCUtil.createDefaultAuthenticationManager(), options);
