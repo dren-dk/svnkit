@@ -1,5 +1,13 @@
 package org.tmatesoft.svn.core.internal.wc2.patch;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNMergeRangeList;
@@ -11,10 +19,6 @@ import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNPropertiesManager;
 import org.tmatesoft.svn.core.internal.wc.patch.SVNPatchFileStream;
 import org.tmatesoft.svn.core.internal.wc2.ng.SvnDiffCallback;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
 
 public class SvnPatch {
 
@@ -32,8 +36,10 @@ public class SvnPatch {
             new Transition("copy from ", ParserState.GIT_DIFF_SEEN, IParserFunction.GIT_COPY_FROM),
             new Transition("copy to ", ParserState.COPY_FROM_SEEN, IParserFunction.GIT_COPY_TO),
             new Transition("new file ", ParserState.GIT_DIFF_SEEN, IParserFunction.GIT_NEW_FILE),
-            new Transition("deleted file ", ParserState.GIT_DIFF_SEEN, IParserFunction.GIT_DELETED_FILE)
+            new Transition("deleted file ", ParserState.GIT_DIFF_SEEN, IParserFunction.GIT_DELETED_FILE),
+            new Transition("GIT binary patch", ParserState.GIT_DIFF_SEEN, IParserFunction.BINARY_PATCH_START)
     };
+    private BinaryPatch binaryPatch;
 
     public static SvnPatch parseNextPatch(SvnPatchFile patchFile, boolean reverse, boolean ignoreWhitespace) throws IOException, SVNException {
         boolean eof;
@@ -73,7 +79,7 @@ public class SvnPatch {
                 }
             }
 
-            if (state == ParserState.UNIDIFF_FOUND || state == ParserState.GIT_HEADER_FOUND) {
+            if (state == ParserState.UNIDIFF_FOUND || state == ParserState.GIT_HEADER_FOUND || state == ParserState.BINARY_PATCH_FOUND) {
                 break;
             } else if (state == ParserState.GIT_TREE_SEEN && lineAfterTreeHeaderRead) {
                 if (!line.startsWith("index ")) {
@@ -100,6 +106,9 @@ public class SvnPatch {
         if (patch.getOldFileName() == null || patch.getNewFileName() == null) {
             patch = null;
         } else {
+            if (state == ParserState.BINARY_PATCH_FOUND) {
+                patch.parseBinaryPatch(patch, patchFile.getPatchFileStream(), reverse);
+            }
             patch.parseHunks(patchFile.getPatchFileStream(), ignoreWhitespace);
         }
 
@@ -157,6 +166,99 @@ public class SvnPatch {
                 lastPropName = null;
             }
         } while (hunk != null);
+    }
+
+    private void parseBinaryPatch(SvnPatch patch, SVNPatchFileStream patchFileStream, boolean reverse) throws IOException, SVNException {
+        boolean eof = false;
+        boolean inBlob = false;
+        boolean inSrc = false;
+
+        final BinaryPatch binaryPatch = new BinaryPatch();
+        binaryPatch.setPatchFileStream(patchFileStream);
+
+        long lastLine = -1;
+        long pos = patchFileStream.getSeekPosition();
+        while (!eof) {
+            lastLine = pos;
+
+            StringBuffer lineBuffer = new StringBuffer();
+            eof = patchFileStream.readLine(lineBuffer);
+            String line = lineBuffer.toString();
+
+            pos = patchFileStream.getSeekPosition();
+
+            if (inBlob) {
+                char c = line.charAt(0);
+                if (((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
+                        && line.length() <= 66
+                        && !line.contains(":")
+                        && !line.contains(" ")) {
+                    if (inSrc) {
+                        binaryPatch.setSrcEnd(pos);
+                    } else {
+                        binaryPatch.setDstEnd(pos);
+                    }
+                } else if (containsNonSpaceCharacter(line) && !(inSrc && binaryPatch.getSrcStart() < lastLine)) {
+                    //bad patch
+                    break;
+                } else if (inSrc) {
+                    //success
+                    patch.setBinaryPatch(binaryPatch);
+                    break;
+                } else {
+                    inBlob = false;
+                    inSrc = true;
+                }
+            } else if (line.startsWith("literal ")) {
+                try {
+                    long expandedSize = Long.parseLong(line.substring("literal ".length()));
+
+                    if (inSrc) {
+                        binaryPatch.setSrcStart(pos);
+                        binaryPatch.setSrcFileSize(expandedSize);
+                    } else {
+                        binaryPatch.setDstStart(pos);
+                        binaryPatch.setDstFileSize(expandedSize);
+                    }
+                    inBlob = true;
+                } catch (NumberFormatException e) {
+                    break;
+                }
+            } else {
+                //Git deltas are not supported
+                break;
+            }
+        }
+        if (!eof) {
+            patchFileStream.setSeekPosition(lastLine);
+        } else if (inSrc && ((binaryPatch.getSrcEnd() > binaryPatch.getSrcStart()) || (binaryPatch.getSrcFileSize() == 0))) {
+            //success
+            patch.setBinaryPatch(binaryPatch);
+        }
+
+        if (reverse && (patch.getBinaryPatch() != null)) {
+            long tmpStart = binaryPatch.getSrcStart();
+            long tmpEnd = binaryPatch.getSrcEnd();
+            long tmpFileSize = binaryPatch.getSrcFileSize();
+
+            binaryPatch.setSrcStart(binaryPatch.getDstStart());
+            binaryPatch.setSrcEnd(binaryPatch.getDstEnd());
+            binaryPatch.setSrcFileSize(binaryPatch.getDstFileSize());
+
+            binaryPatch.setDstStart(tmpStart);
+            binaryPatch.setDstEnd(tmpEnd);
+            binaryPatch.setDstFileSize(tmpFileSize);
+        }
+    }
+
+    private boolean containsNonSpaceCharacter(String line) {
+        for (int i = 0; i < line.length(); i++) {
+            final char c = line.charAt(i);
+            if (!Character.isSpaceChar(c)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public SvnDiffHunk parseNextHunk(boolean[] isProperty, String[] propName, SvnDiffCallback.OperationKind[] propOperation, SVNPatchFileStream patchStream, boolean ignoreWhitespace) throws IOException, SVNException {
@@ -593,8 +695,16 @@ public class SvnPatch {
         return SVNFileUtil.createFilePath(SVNPathUtil.canonicalizePath(s));
     }
 
+    public void setBinaryPatch(BinaryPatch binaryPatch) {
+        this.binaryPatch = binaryPatch;
+    }
+
+    public BinaryPatch getBinaryPatch() {
+        return binaryPatch;
+    }
+
     private static enum ParserState {
-        START, GIT_DIFF_SEEN, GIT_TREE_SEEN, GIT_MINUS_SEEN, GIT_PLUS_SEEN, MOVE_FROM_SEEN, COPY_FROM_SEEN, MINUS_SEEN, UNIDIFF_FOUND, GIT_HEADER_FOUND
+        START, GIT_DIFF_SEEN, GIT_TREE_SEEN, GIT_MINUS_SEEN, GIT_PLUS_SEEN, MOVE_FROM_SEEN, COPY_FROM_SEEN, MINUS_SEEN, UNIDIFF_FOUND, GIT_HEADER_FOUND, BINARY_PATCH_FOUND
     }
 
     private static interface IParserFunction {
@@ -718,6 +828,12 @@ public class SvnPatch {
                 return ParserState.GIT_TREE_SEEN;
             }
         };
+        IParserFunction BINARY_PATCH_START = new IParserFunction() {
+            @Override
+            public ParserState parse(String line, SvnPatch patch) {
+                return ParserState.BINARY_PATCH_FOUND;
+            }
+        };
         ParserState parse(String line, SvnPatch patch);
     }
 
@@ -743,5 +859,80 @@ public class SvnPatch {
 
     private static enum LineType {
         NOISE_LINE, ORIGINAL_LINE, MODIFIED_LINE, CONTEXT_LINE
+    }
+
+    private static class BinaryPatch {
+        private SvnPatch patch;
+        private SVNPatchFileStream patchFileStream;
+        private long srcStart;
+        private long srcEnd;
+        private long srcFileSize;
+        private long dstStart;
+        private long dstEnd;
+        private long dstFileSize;
+
+        public SvnPatch getPatch() {
+            return patch;
+        }
+
+        public void setPatch(SvnPatch patch) {
+            this.patch = patch;
+        }
+
+        public SVNPatchFileStream getPatchFileStream() {
+            return patchFileStream;
+        }
+
+        public void setPatchFileStream(SVNPatchFileStream patchFileStream) {
+            this.patchFileStream = patchFileStream;
+        }
+
+        public long getSrcStart() {
+            return srcStart;
+        }
+
+        public void setSrcStart(long srcStart) {
+            this.srcStart = srcStart;
+        }
+
+        public long getSrcEnd() {
+            return srcEnd;
+        }
+
+        public void setSrcEnd(long srcEnd) {
+            this.srcEnd = srcEnd;
+        }
+
+        public long getSrcFileSize() {
+            return srcFileSize;
+        }
+
+        public void setSrcFileSize(long srcFileSize) {
+            this.srcFileSize = srcFileSize;
+        }
+
+        public long getDstStart() {
+            return dstStart;
+        }
+
+        public void setDstStart(long dstStart) {
+            this.dstStart = dstStart;
+        }
+
+        public long getDstEnd() {
+            return dstEnd;
+        }
+
+        public void setDstEnd(long dstEnd) {
+            this.dstEnd = dstEnd;
+        }
+
+        public long getDstFileSize() {
+            return dstFileSize;
+        }
+
+        public void setDstFileSize(long dstFileSize) {
+            this.dstFileSize = dstFileSize;
+        }
     }
 }
