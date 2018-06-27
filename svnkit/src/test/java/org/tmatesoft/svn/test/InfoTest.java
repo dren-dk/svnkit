@@ -1,22 +1,37 @@
 package org.tmatesoft.svn.test;
 
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Test;
-import org.tmatesoft.svn.core.*;
-import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
-import org.tmatesoft.svn.core.internal.wc17.db.ISVNWCDb;
-import org.tmatesoft.svn.core.io.SVNRepository;
-import org.tmatesoft.svn.core.wc.SVNConflictAction;
-import org.tmatesoft.svn.core.wc.SVNConflictDescription;
-import org.tmatesoft.svn.core.wc.SVNConflictReason;
-import org.tmatesoft.svn.core.wc.SVNRevision;
-import org.tmatesoft.svn.core.wc2.*;
-
 import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Test;
+import org.tmatesoft.svn.core.SVNDepth;
+import org.tmatesoft.svn.core.SVNDirEntry;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNNodeKind;
+import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.auth.BasicAuthenticationManager;
+import org.tmatesoft.svn.core.auth.SVNAuthentication;
+import org.tmatesoft.svn.core.auth.SVNUserNameAuthentication;
+import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
+import org.tmatesoft.svn.core.internal.wc17.db.ISVNWCDb;
+import org.tmatesoft.svn.core.io.SVNRepository;
+import org.tmatesoft.svn.core.wc.DefaultSVNRepositoryPool;
+import org.tmatesoft.svn.core.wc.ISVNRepositoryPool;
+import org.tmatesoft.svn.core.wc.SVNConflictAction;
+import org.tmatesoft.svn.core.wc.SVNConflictDescription;
+import org.tmatesoft.svn.core.wc.SVNConflictReason;
+import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc2.ISvnObjectReceiver;
+import org.tmatesoft.svn.core.wc2.SvnCheckout;
+import org.tmatesoft.svn.core.wc2.SvnGetInfo;
+import org.tmatesoft.svn.core.wc2.SvnInfo;
+import org.tmatesoft.svn.core.wc2.SvnOperationFactory;
+import org.tmatesoft.svn.core.wc2.SvnTarget;
+import org.tmatesoft.svn.core.wc2.SvnUpdate;
 
 public class InfoTest {
     @Test
@@ -39,6 +54,44 @@ public class InfoTest {
             Assert.assertEquals("", dirEntry.getName());
             Assert.assertEquals("", dirEntry.getRelativePath());
             Assert.assertEquals(1, dirEntry.getRevision());
+
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
+    @Test
+    public void testLowLevelLatestRevision() throws Exception {
+        final TestOptions options = TestOptions.getInstance();
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testLowLevelLatestRevision", options);
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final String commitAuthor = "author";
+
+            final CommitBuilder commitBuilder = new CommitBuilder(url);
+            commitBuilder.setAuthenticationManager(new BasicAuthenticationManager(
+                    new SVNAuthentication[]{SVNUserNameAuthentication.newInstance(
+                            commitAuthor, false, url, false)}));
+            commitBuilder.addFile("directory/file");
+            commitBuilder.commit();
+
+            ISVNRepositoryPool repositoryPool = new DefaultSVNRepositoryPool(null, null);
+            try {
+                final SVNRepository svnRepository = repositoryPool.createRepository(url, true);
+                final SVNDirEntry dirEntry = svnRepository.info("directory/file",
+                        SVNRevision.HEAD.getNumber());
+
+                Assert.assertEquals(SVNNodeKind.FILE, dirEntry.getKind());
+                Assert.assertEquals("file", dirEntry.getName());
+                Assert.assertEquals(1, dirEntry.getRevision());
+                Assert.assertEquals(commitAuthor, dirEntry.getAuthor());
+            } finally {
+                repositoryPool.dispose();
+            }
 
         } finally {
             svnOperationFactory.dispose();
