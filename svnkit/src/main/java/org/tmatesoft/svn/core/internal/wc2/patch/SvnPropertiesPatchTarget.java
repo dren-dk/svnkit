@@ -60,6 +60,8 @@ public class SvnPropertiesPatchTarget extends SvnTargetContent {
     private SVNPropertyValue value;
     private SVNPropertyValue patchedValue;
     private SvnDiffCallback.OperationKind operation;
+    private boolean skipped;
+
 
     public String getName() {
         return name;
@@ -91,6 +93,14 @@ public class SvnPropertiesPatchTarget extends SvnTargetContent {
 
     public void setOperation(SvnDiffCallback.OperationKind operation) {
         this.operation = operation;
+    }
+
+    public void setSkipped(boolean skipped) {
+        this.skipped = skipped;
+    }
+
+    public boolean isSkipped() {
+        return skipped;
     }
 
     private static class PropReadCallbacks implements ITellCallback, IRealLineCallback, ISeekCallback, IWriteCallback {

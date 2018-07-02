@@ -1,6 +1,7 @@
 package org.tmatesoft.svn.core.internal.wc2.patch;
 
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 
 import org.tmatesoft.svn.core.SVNDepth;
@@ -8,12 +9,14 @@ import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNProperties;
+import org.tmatesoft.svn.core.SVNProperty;
 import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.internal.util.SVNDate;
 import org.tmatesoft.svn.core.internal.wc.SVNFileType;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc.admin.SVNTranslator;
+import org.tmatesoft.svn.core.internal.wc.patch.SVNPatchTargetInfo;
 import org.tmatesoft.svn.core.internal.wc17.SVNStatusEditor17;
 import org.tmatesoft.svn.core.internal.wc17.SVNWCContext;
 import org.tmatesoft.svn.core.internal.wc17.db.ISVNWCDb;
@@ -34,7 +37,10 @@ public class SvnWcPatchContext implements ISvnPatchContext {
     }
 
     @Override
-    public void resolvePatchTargetStatus(SvnPatchTarget patchTarget, File workingCopyDirectory) throws SVNException {
+    public void resolvePatchTargetStatus(SvnPatchTarget patchTarget,
+                                         File workingCopyDirectory,
+                                         boolean followMoves,
+                                         List<SVNPatchTargetInfo> targetsInfo) throws SVNException {
         SvnStatus status;
         try {
             status = SVNStatusEditor17.internalStatus(context, patchTarget.getAbsPath(), true);
@@ -69,7 +75,11 @@ public class SvnWcPatchContext implements ISvnPatchContext {
         patchTarget.setKindOnDisk(SVNFileType.getNodeKind(fileType));
 
         if (patchTarget.isLocallyDeleted()) {
-            SVNWCContext.NodeMovedAway nodeMovedAway = context.nodeWasMovedAway(patchTarget.getAbsPath());
+            SVNWCContext.NodeMovedAway nodeMovedAway = null;
+            if (followMoves &&
+                    !SvnPatchTarget.targetIsAdded(targetsInfo, patchTarget.getAbsPath())) {
+                nodeMovedAway = context.nodeWasMovedAway(patchTarget.getAbsPath());
+            }
             if (nodeMovedAway != null && nodeMovedAway.movedToAbsPath != null) {
                 patchTarget.setAbsPath(nodeMovedAway.movedToAbsPath);
                 patchTarget.setRelPath(SVNFileUtil.skipAncestor(workingCopyDirectory, nodeMovedAway.movedToAbsPath));
@@ -83,6 +93,19 @@ public class SvnWcPatchContext implements ISvnPatchContext {
             } else if (patchTarget.getKindOnDisk() != SVNNodeKind.NONE) {
                 patchTarget.setSkipped(true);
                 return;
+            }
+        }
+
+        if (SVNFileUtil.symlinksSupported()) {
+            if (patchTarget.getKindOnDisk() == SVNNodeKind.FILE &&
+                    !patchTarget.isSymlink() &&
+                    !patchTarget.isLocallyDeleted() &&
+                    status != null &&
+                    status.getPropertiesStatus() != SVNStatusType.STATUS_NONE) {
+                final String value = context.getProperty(patchTarget.getAbsPath(), SVNProperty.SPECIAL);
+                if (value != null) {
+                    patchTarget.setSymlink(true);
+                }
             }
         }
     }
@@ -191,5 +214,26 @@ public class SvnWcPatchContext implements ISvnPatchContext {
     @Override
     public String readSymlinkContent(File absPath) {
         return "link " + SVNFileUtil.getSymlinkName(absPath);
+    }
+
+    @Override
+    public SVNFileType getKindOnDisk(File file) {
+        return SVNFileType.getType(file);
+    }
+
+    @Override
+    public File wasNodeMovedHere(File localAbsPath) throws SVNException {
+        try {
+            final ISVNWCDb.Moved moved = context.getDb().scanMoved(localAbsPath);
+            final File movedFromAbsPath = moved.movedFromAbsPath;
+            final File deleteOpRootAbsPath = moved.movedFromDeleteAbsPath;
+
+            return movedFromAbsPath;
+        } catch (SVNException e) {
+            if (e.getErrorMessage().getErrorCode() != SVNErrorCode.WC_PATH_UNEXPECTED_STATUS) {
+                throw e;
+            }
+        }
+        return null;
     }
 }

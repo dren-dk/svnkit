@@ -2,11 +2,13 @@ package org.tmatesoft.svn.core.internal.wc2.patch;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.InflaterInputStream;
 
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNException;
@@ -19,6 +21,7 @@ import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc.SVNPropertiesManager;
 import org.tmatesoft.svn.core.internal.wc.patch.SVNPatchFileStream;
 import org.tmatesoft.svn.core.internal.wc2.ng.SvnDiffCallback;
+import org.tmatesoft.svn.core.internal.wc2.ng.SvnDiffGenerator;
 
 public class SvnPatch {
 
@@ -27,19 +30,29 @@ public class SvnPatch {
             new Transition("+++ ", ParserState.MINUS_SEEN, IParserFunction.DIFF_PLUS),
             new Transition("diff --git", ParserState.START, IParserFunction.GIT_START),
             new Transition("--- a/", ParserState.GIT_DIFF_SEEN, IParserFunction.GIT_MINUS),
+            new Transition("--- a/", ParserState.GIT_MODE_SEEN, IParserFunction.GIT_MINUS),
             new Transition("--- a/", ParserState.GIT_TREE_SEEN, IParserFunction.GIT_MINUS),
+            new Transition("--- /dev/null", ParserState.GIT_MODE_SEEN, IParserFunction.GIT_MINUS),
             new Transition("--- /dev/null", ParserState.GIT_TREE_SEEN, IParserFunction.GIT_MINUS),
             new Transition("+++ b/", ParserState.GIT_MINUS_SEEN, IParserFunction.GIT_PLUS),
             new Transition("+++ /dev/null", ParserState.GIT_MINUS_SEEN, IParserFunction.GIT_PLUS),
+            new Transition("old mode ", ParserState.GIT_DIFF_SEEN, IParserFunction.GIT_OLD_MODE),
+            new Transition("new mode ", ParserState.OLD_MODE_SEEN, IParserFunction.GIT_NEW_MODE),
             new Transition("rename from ", ParserState.GIT_DIFF_SEEN, IParserFunction.GIT_MOVE_FROM),
+            new Transition("rename from ", ParserState.GIT_MODE_SEEN, IParserFunction.GIT_MOVE_FROM),
             new Transition("rename to ", ParserState.MOVE_FROM_SEEN, IParserFunction.GIT_MOVE_TO),
             new Transition("copy from ", ParserState.GIT_DIFF_SEEN, IParserFunction.GIT_COPY_FROM),
+            new Transition("copy from ", ParserState.GIT_MODE_SEEN, IParserFunction.GIT_COPY_FROM),
             new Transition("copy to ", ParserState.COPY_FROM_SEEN, IParserFunction.GIT_COPY_TO),
             new Transition("new file ", ParserState.GIT_DIFF_SEEN, IParserFunction.GIT_NEW_FILE),
             new Transition("deleted file ", ParserState.GIT_DIFF_SEEN, IParserFunction.GIT_DELETED_FILE),
-            new Transition("GIT binary patch", ParserState.GIT_DIFF_SEEN, IParserFunction.BINARY_PATCH_START)
+            new Transition("index ", ParserState.GIT_DIFF_SEEN, IParserFunction.GIT_INDEX),
+            new Transition("index ", ParserState.GIT_TREE_SEEN, IParserFunction.GIT_INDEX),
+            new Transition("index ", ParserState.GIT_MODE_SEEN, IParserFunction.GIT_INDEX),
+            new Transition("GIT binary patch", ParserState.GIT_DIFF_SEEN, IParserFunction.BINARY_PATCH_START),
+            new Transition("GIT binary patch", ParserState.GIT_TREE_SEEN, IParserFunction.BINARY_PATCH_START),
+            new Transition("GIT binary patch", ParserState.GIT_MODE_SEEN, IParserFunction.BINARY_PATCH_START)
     };
-    private BinaryPatch binaryPatch;
 
     public static SvnPatch parseNextPatch(SvnPatchFile patchFile, boolean reverse, boolean ignoreWhitespace) throws IOException, SVNException {
         boolean eof;
@@ -54,6 +67,7 @@ public class SvnPatch {
         boolean lineAfterTreeHeaderRead = false;
 
         SvnPatch patch = new SvnPatch();
+        patch.setOperation(SvnDiffCallback.OperationKind.Unchanged);
 
         long pos = patchFile.getNextPatchOffset();
         patchFile.getPatchFileStream().setSeekPosition(pos);
@@ -73,7 +87,7 @@ public class SvnPatch {
             for (int i = 0; i < TRANSITIONS.length; i++) {
                 final Transition transition = TRANSITIONS[i];
                 if (transition.matches(line, state)) {
-                    state = transition.getParserFunction().parse(line, patch);
+                    state = transition.getParserFunction().parse(line, patch, state);
                     validHeaderLine = true;
                     break;
                 }
@@ -136,6 +150,13 @@ public class SvnPatch {
 
     private File path;
     private SVNPatchFileStream patchFileStream;
+    private BinaryPatch binaryPatch;
+
+    private Boolean newExecutableBit; //tristate: true/false/unknown
+    private Boolean oldExecutableBit; //tristate: true/false/unknown
+
+    private Boolean newSymlinkBit; //tristate: true/false/unknown
+    private Boolean oldSymlinkBit; //tristate: true/false/unknown
 
     private void parseHunks(SVNPatchFileStream patchFileStream, boolean ignoreWhitespace) throws IOException, SVNException {
         String lastPropName = null;
@@ -188,7 +209,7 @@ public class SvnPatch {
             pos = patchFileStream.getSeekPosition();
 
             if (inBlob) {
-                char c = line.charAt(0);
+                char c = line.length() == 0 ? '\0' : line.charAt(0);
                 if (((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
                         && line.length() <= 66
                         && !line.contains(":")
@@ -266,6 +287,10 @@ public class SvnPatch {
         final String textAtat = "@@";
         final String propAtat = "##";
 
+        boolean originalNoFinalEol = false;
+        boolean modifiedNoFinalEol = false;
+
+
         propOperation[0] = SvnDiffCallback.OperationKind.Unchanged;
         propName[0] = null;
         isProperty[0] = false;
@@ -335,6 +360,12 @@ public class SvnPatch {
                         }
                     }
                     patchStream.setSeekPosition(pos);
+                    if (lastLineType != LineType.MODIFIED_LINE) {
+                        originalNoFinalEol = true;
+                    }
+                    if (lastLineType != LineType.ORIGINAL_LINE) {
+                        modifiedNoFinalEol = true;
+                    }
                 }
                 continue;
             }
@@ -365,7 +396,7 @@ public class SvnPatch {
                         leadingContext++;
                     }
                     lastLineType = LineType.CONTEXT_LINE;
-                } else if (originalLines > 0 && c == del) {
+                } else if (c == del && (originalLines > 0 || line.charAt(1) != del)) {
                     hunkSeen = true;
                     changedLineSeen = true;
 
@@ -373,16 +404,26 @@ public class SvnPatch {
                         trailingContext = 0;
                     }
 
-                    originalLines--;
-                    lastLineType = LineType.MODIFIED_LINE;
-                } else if (modifiedLines > 0 && c == add) {
+                    if (originalLines > 0) {
+                        originalLines--;
+                    } else {
+                        hunk.setOriginalLength(hunk.getOriginalLength() + 1);
+                        hunk.setOriginalFuzz(hunk.getOriginalFuzz() + 1);
+                    }
+                    lastLineType = LineType.ORIGINAL_LINE;
+                } else if (c == add && (modifiedLines > 0 || line.charAt(1) != add)) {
                     hunkSeen = true;
                     changedLineSeen = true;
 
                     if (trailingContext > 0) {
                         trailingContext = 0;
                     }
-                    modifiedLines--;
+                    if (modifiedLines > 0) {
+                        modifiedLines--;
+                    } else {
+                        hunk.setModifiedLength(hunk.getModifiedLength() + 1);
+                        hunk.setModifiedFuzz(hunk.getModifiedFuzz() + 1);
+                    }
                     lastLineType = LineType.MODIFIED_LINE;
                 } else {
                     if (eof) {
@@ -440,6 +481,15 @@ public class SvnPatch {
         }
 
         if (hunkSeen && start < end) {
+            if (originalLines != 0) {
+                hunk.setOriginalLength(hunk.getOriginalLength() - originalLines);
+                hunk.setOriginalFuzz(hunk.getOriginalFuzz() + originalLines);
+            }
+            if (modifiedLines != 0) {
+                hunk.setModifiedLength(hunk.getModifiedLength() - modifiedLines);
+                hunk.setModifiedFuzz(hunk.getModifiedFuzz() + modifiedLines);
+            }
+
             hunk.setPatch(this);
             hunk.setPatchFileStream(patchStream);
             hunk.setLeadingContext(leadingContext);
@@ -447,6 +497,8 @@ public class SvnPatch {
             hunk.setDiffTextRange(new SvnDiffHunk.Range(start, end, start));
             hunk.setOriginalTextRange(new SvnDiffHunk.Range(start, originalEnd, start));
             hunk.setModifiedTextRange(new SvnDiffHunk.Range(start, modifiedEnd, start));
+            hunk.setOriginalNoFinalEol(originalNoFinalEol);
+            hunk.setModifiedNoFinalEol(modifiedNoFinalEol);
             return hunk;
         } else {
             hunk = null;
@@ -703,27 +755,59 @@ public class SvnPatch {
         return binaryPatch;
     }
 
+    public Boolean getNewExecutableBit() {
+        return newExecutableBit;
+    }
+
+    public void setNewExecutableBit(Boolean newExecutableBit) {
+        this.newExecutableBit = newExecutableBit;
+    }
+
+    public Boolean getOldExecutableBit() {
+        return oldExecutableBit;
+    }
+
+    public void setOldExecutableBit(Boolean oldExecutableBit) {
+        this.oldExecutableBit = oldExecutableBit;
+    }
+
+    public Boolean getNewSymlinkBit() {
+        return newSymlinkBit;
+    }
+
+    public void setNewSymlinkBit(Boolean newSymlinkBit) {
+        this.newSymlinkBit = newSymlinkBit;
+    }
+
+    public Boolean getOldSymlinkBit() {
+        return oldSymlinkBit;
+    }
+
+    public void setOldSymlinkBit(Boolean oldSymlinkBit) {
+        this.oldSymlinkBit = oldSymlinkBit;
+    }
+
     private static enum ParserState {
-        START, GIT_DIFF_SEEN, GIT_TREE_SEEN, GIT_MINUS_SEEN, GIT_PLUS_SEEN, MOVE_FROM_SEEN, COPY_FROM_SEEN, MINUS_SEEN, UNIDIFF_FOUND, GIT_HEADER_FOUND, BINARY_PATCH_FOUND
+        START, GIT_DIFF_SEEN, GIT_TREE_SEEN, GIT_MINUS_SEEN, GIT_PLUS_SEEN, OLD_MODE_SEEN, GIT_MODE_SEEN, MOVE_FROM_SEEN, COPY_FROM_SEEN, MINUS_SEEN, UNIDIFF_FOUND, GIT_HEADER_FOUND, BINARY_PATCH_FOUND
     }
 
     private static interface IParserFunction {
         IParserFunction DIFF_MINUS = new IParserFunction() {
-            public ParserState parse(String line, SvnPatch patch) {
+            public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 String s = line.split("\t")[0].substring("--- ".length());
                 patch.setOldFileName(grabFileName(s));
                 return ParserState.MINUS_SEEN;
             }
         };
         IParserFunction DIFF_PLUS = new IParserFunction() {
-            public ParserState parse(String line, SvnPatch patch) {
+            public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 String s = line.split("\t")[0].substring("+++ ".length());
                 patch.setNewFileName(grabFileName(s));
                 return ParserState.UNIDIFF_FOUND;
             }
         };
         IParserFunction GIT_START = new IParserFunction() {
-            public ParserState parse(String line, SvnPatch patch) {
+            public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 int oldPathMarkerPos = line.indexOf(" a/");
                 if (oldPathMarkerPos < 0) {
                     return ParserState.START;
@@ -769,7 +853,7 @@ public class SvnPatch {
             }
         };
         IParserFunction GIT_MINUS = new IParserFunction() {
-            public ParserState parse(String line, SvnPatch patch) {
+            public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 String s = line.split("\t")[0];
                 if (s.startsWith("--- /dev/null")) {
                     patch.setOldFileName(grabFileName("/dev/null"));
@@ -780,7 +864,7 @@ public class SvnPatch {
             }
         };
         IParserFunction GIT_PLUS = new IParserFunction() {
-            public ParserState parse(String line, SvnPatch patch) {
+            public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 String s = line.split("\t")[0];
                 if (s.startsWith("+++ /dev/null")) {
                     patch.setNewFileName(grabFileName("/dev/null"));
@@ -790,51 +874,118 @@ public class SvnPatch {
                 return ParserState.GIT_HEADER_FOUND;
             }
         };
+        IParserFunction GIT_OLD_MODE = new IParserFunction() {
+            public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
+                final Boolean[] modeBits = patch.parseGitModeBits(line.substring("old mode ".length()));
+                patch.setOldExecutableBit(modeBits[0]);
+                patch.setOldSymlinkBit(modeBits[1]);
+                return ParserState.OLD_MODE_SEEN;
+            }
+        };
+        IParserFunction GIT_NEW_MODE = new IParserFunction() {
+            @Override
+            public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
+                final Boolean[] modeBits = patch.parseGitModeBits(line.substring("new mode ".length()));
+                patch.setNewExecutableBit(modeBits[0]);
+                patch.setNewSymlinkBit(modeBits[1]);
+                return ParserState.GIT_MODE_SEEN;
+            }
+        };
         IParserFunction GIT_MOVE_FROM = new IParserFunction() {
-            public ParserState parse(String line, SvnPatch patch) {
+            public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 patch.setOldFileName(grabFileName(line.substring("rename from ".length())));
                 return ParserState.MOVE_FROM_SEEN;
             }
         };
         IParserFunction GIT_MOVE_TO = new IParserFunction() {
-            public ParserState parse(String line, SvnPatch patch) {
+            public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 patch.setNewFileName(grabFileName(line.substring("rename to ".length())));
                 patch.setOperation(SvnDiffCallback.OperationKind.Moved);
                 return ParserState.GIT_TREE_SEEN;
             }
         };
         IParserFunction GIT_COPY_FROM = new IParserFunction() {
-            public ParserState parse(String line, SvnPatch patch) {
+            public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 patch.setOldFileName(grabFileName(line.substring("copy from ".length())));
                 return ParserState.COPY_FROM_SEEN;
             }
         };
         IParserFunction GIT_COPY_TO = new IParserFunction() {
-            public ParserState parse(String line, SvnPatch patch) {
+            public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 patch.setNewFileName(grabFileName(line.substring("copy to ".length())));
                 patch.setOperation(SvnDiffCallback.OperationKind.Copied);
                 return ParserState.GIT_TREE_SEEN;
             }
         };
         IParserFunction GIT_NEW_FILE = new IParserFunction() {
-            public ParserState parse(String line, SvnPatch patch) {
+            public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 patch.setOperation(SvnDiffCallback.OperationKind.Added);
                 return ParserState.GIT_TREE_SEEN;
             }
         };
         IParserFunction GIT_DELETED_FILE = new IParserFunction() {
-            public ParserState parse(String line, SvnPatch patch) {
+            public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 patch.setOperation(SvnDiffCallback.OperationKind.Deleted);
                 return ParserState.GIT_TREE_SEEN;
             }
         };
+        IParserFunction GIT_INDEX = new IParserFunction() {
+            @Override
+            public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
+                final int pos = line.substring("index ".length()).indexOf(' ');
+                if (pos >= 0 &&
+                        patch.getNewExecutableBit() == null &&
+                        patch.getNewSymlinkBit() == null &&
+                        patch.getOperation() != SvnDiffCallback.OperationKind.Added &&
+                        patch.getOperation() != SvnDiffCallback.OperationKind.Deleted) {
+                    final Boolean[] modeBits = patch.parseGitModeBits(line.substring(" ".length()));
+                    patch.setNewExecutableBit(modeBits[0]);
+                    patch.setNewSymlinkBit(modeBits[1]);
+                    patch.setOldExecutableBit(patch.getNewExecutableBit());
+                    patch.setOldSymlinkBit(patch.getNewSymlinkBit());
+                }
+                return currentState;
+            }
+        };
         IParserFunction BINARY_PATCH_START = new IParserFunction() {
             @Override
-            public ParserState parse(String line, SvnPatch patch) {
+            public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 return ParserState.BINARY_PATCH_FOUND;
             }
         };
-        ParserState parse(String line, SvnPatch patch);
+        ParserState parse(String line, SvnPatch patch, ParserState currentState);
+    }
+
+    @SuppressWarnings("OctalInteger")
+    private Boolean[] parseGitModeBits(String modeString) {
+        Boolean executableBit;
+        Boolean symlinkBit;
+        //this method should assign newExecutableBit and newSymlinkBit
+        final int mode = Integer.parseInt(modeString, 8);
+        switch (mode  & 0777) {
+            case 0644:
+                executableBit = Boolean.FALSE;
+                break;
+            case 0755:
+                executableBit = Boolean.TRUE;
+                break;
+            default:
+                executableBit = null;
+                break;
+        }
+        switch (mode & 0170000) {
+            case 0120000:
+                symlinkBit = Boolean.TRUE;
+                break;
+            case 0100000:
+            case 0040000:
+                symlinkBit = Boolean.FALSE;
+                break;
+            default:
+                symlinkBit = null;
+                break;
+        }
+        return new Boolean[] {executableBit, symlinkBit};
     }
 
     private static class Transition {
@@ -861,7 +1012,7 @@ public class SvnPatch {
         NOISE_LINE, ORIGINAL_LINE, MODIFIED_LINE, CONTEXT_LINE
     }
 
-    private static class BinaryPatch {
+    public static class BinaryPatch {
         private SvnPatch patch;
         private SVNPatchFileStream patchFileStream;
         private long srcStart;
@@ -934,5 +1085,249 @@ public class SvnPatch {
         public void setDstFileSize(long dstFileSize) {
             this.dstFileSize = dstFileSize;
         }
+
+        public InputStream getBinaryDiffOriginalStream() {
+            InputStream inputStream = new Base85DataStream(patchFileStream, srcStart, srcEnd);
+            inputStream = new InflaterInputStream(inputStream);
+
+            return new CheckBase85LengthInputStream(inputStream, srcFileSize);
+        }
+
+        public InputStream getBinaryDiffResultStream() {
+            InputStream inputStream = new Base85DataStream(patchFileStream, dstStart, dstEnd);
+            inputStream = new InflaterInputStream(inputStream);
+
+            return new CheckBase85LengthInputStream(inputStream, dstFileSize);
+        }
+    }
+
+    private static class Base85DataStream extends InputStream {
+
+        private final SVNPatchFileStream patchFileStream;
+        private long start;
+        private final long end;
+
+        private boolean done;
+        private byte[] buffer;
+        private int bufSize;
+        private int bufPos;
+        private byte[] singleByteBuffer;
+
+        public Base85DataStream(SVNPatchFileStream patchFileStream, long start, long end) {
+            this.patchFileStream = patchFileStream;
+            this.start = start;
+            this.end = end;
+            this.done = false;
+            this.buffer = new byte[52];
+            this.bufSize = 0;
+            this.bufPos = 0;
+            this.singleByteBuffer = new byte[1];
+        }
+
+        @Override
+        public int read() throws IOException {
+            final int bytesRead = read(singleByteBuffer, 0, 1);
+            if (bytesRead < 0) {
+                return bytesRead;
+            } else {
+                return singleByteBuffer[0] & 0xff;
+            }
+        }
+
+        @Override
+        public int read(byte[] b) throws IOException {
+            return read(b, 0, b.length);
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            try {
+                int remaining = len;
+                int destOff = off;
+                if (done) {
+                    return -1;
+                }
+
+                while (remaining != 0 && (bufSize > bufPos || start < end)) {
+                    boolean atEof;
+
+                    int available = bufSize - bufPos;
+                    if (available != 0) {
+                        int n = (remaining < available) ? remaining : available;
+
+                        System.arraycopy(buffer, bufPos, b, destOff, n);
+                        destOff += n;
+                        remaining -= n;
+                        bufPos += n;
+
+                        if (remaining == 0) {
+                            return len;
+                        }
+                    }
+
+                    if (start >= end) {
+                        break;
+                    }
+                    patchFileStream.setSeekPosition(start);
+                    final StringBuffer lineBuf = new StringBuffer();
+                    atEof = patchFileStream.readLine(lineBuf);
+                    final String line = lineBuf.toString();
+
+                    if (atEof) {
+                        start = end;
+                    } else {
+                        start = patchFileStream.getSeekPosition();
+                    }
+                    if (line.length() > 0 && line.charAt(0) >= 'A' && line.charAt(0) <= 'Z') {
+                        bufSize = line.charAt(0) - 'A' + 1;
+                    } else if (line.length() > 0 && line.charAt(0) >= 'a' && line.charAt(0) <= 'z') {
+                        bufSize = line.charAt(0) - 'a' + 26 + 1;
+                    } else {
+                        throw new IOException("Unexpected data in base85 section");
+                    }
+                    if (bufSize < 52) {
+                        start = end;
+                    }
+                    base85DecodeLine(buffer, bufSize, line.substring(1));
+                    bufPos = 0;
+                }
+
+                len -= remaining;
+                done = true;
+
+                return len;
+            } catch (SVNException e) {
+                throw new IOException(e);
+            }
+        }
+
+        private static void base85DecodeLine(byte[] outputBuffer, int outputBufferSize, String line) throws IOException {
+            int expectedData = (outputBufferSize + 3) / 4 * 5;
+            if (line.length() != expectedData) {
+                throw new IOException("Unexpected base85 line length");
+            }
+            int base85Offet = 0;
+            int base85Length = line.length();
+            int outputBufferOffset = 0;
+            while (base85Length != 0) {
+                long info = 0;
+
+                for (int i = 0; i < 5; i++) {
+                    int value = base85Value(line.charAt(base85Offet + i));
+                    info *= 85;
+                    info += value;
+                }
+                for (int i = 0, n = 24; i < 4; i++, n -= 8) {
+                    if (i < outputBufferSize) {
+                        outputBuffer[outputBufferOffset + i] = (byte) ((info >> n) & 0xFF);
+                    }
+                }
+                base85Offet += 5;
+                base85Length -= 5;
+                outputBufferOffset += 4;
+                outputBufferSize -= 4;
+            }
+        }
+
+        private static int base85Value(char c) throws IOException {
+            final int index = SvnDiffGenerator.B85_TABLE.indexOf(String.valueOf(c));
+            if (index < 0) {
+                throw new IOException("Invalid base85 value");
+            }
+            return index;
+        }
+    }
+    private static class CheckBase85LengthInputStream extends InputStream {
+
+        private final InputStream inputStream;
+        private final byte[] singleByteBuffer;
+
+        private long remaining;
+
+        private CheckBase85LengthInputStream(InputStream inputStream, long remaining) {
+            this.inputStream = inputStream;
+            this.remaining = remaining;
+            this.singleByteBuffer = new byte[1];
+        }
+
+        @Override
+        public int read() throws IOException {
+            final int read = inputStream.read(singleByteBuffer, 0, 1);
+            if (read < 0) {
+                return read;
+            } else {
+                return singleByteBuffer[0] & 0xff;
+            }
+        }
+
+        @Override
+        public int read(byte[] b) throws IOException {
+            return read(b, 0, b.length);
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            int requestedLength = len;
+            len = readFully(inputStream, b, off, len);
+            if (len < 0) {
+                // <0 means stream finished, so we've read 0 bytes
+                len = 0;
+            }
+
+            if (len > remaining) {
+                throw new IOException("Base85 data expands to longer than declared filesize");
+            } else if (requestedLength > len && len != remaining) {
+                throw new IOException("Base85 data expands to smaller than declared filesize");
+            }
+            remaining -= len;
+            return len == 0 ? -1 : len;
+        }
+
+        @Override
+        public long skip(long n) throws IOException {
+            return inputStream.skip(n);
+        }
+
+        @Override
+        public int available() throws IOException {
+            return inputStream.available();
+        }
+
+        @Override
+        public void close() throws IOException {
+            inputStream.close();
+        }
+
+        @Override
+        public void mark(int readlimit) {
+            inputStream.mark(readlimit);
+        }
+
+        @Override
+        public void reset() throws IOException {
+            inputStream.reset();
+        }
+
+        @Override
+        public boolean markSupported() {
+            return inputStream.markSupported();
+        }
+    }
+
+    protected static int readFully(InputStream inputStream, byte[] b, int off, int len) throws IOException {
+        int totalBytesRead = 0;
+        while (true) {
+            final int bytesRead = inputStream.read(b, off, len);
+            if (bytesRead < 0) {
+                break;
+            }
+            totalBytesRead += bytesRead;
+            off += bytesRead;
+            len -= bytesRead;
+        }
+        if (totalBytesRead == 0) {
+            return -1;
+        }
+        return totalBytesRead;
     }
 }

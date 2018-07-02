@@ -92,18 +92,21 @@ public class SvnNgPatch extends SvnNgOperationRunner<Void, SvnPatch> {
                 checkCancelled();
                 patch = org.tmatesoft.svn.core.internal.wc2.patch.SvnPatch.parseNextPatch(svnPatchFile, reverse, ignoreWhitespace);
                 if (patch != null) {
-                    SvnPatchTarget target = SvnPatchTarget.applyPatch(patch, workingCopyDirectory, stripCount, patchContext, ignoreWhitespace, removeTempFiles, getOperation().getPatchHandler());
+                    SvnPatchTarget target = SvnPatchTarget.applyPatch(patch, workingCopyDirectory, stripCount, targetInfos, patchContext, ignoreWhitespace, removeTempFiles, getOperation().getPatchHandler());
+                    //here we could check "filtered = patchHandler.singlePatch(target.getCanonPathFromPatchfile(), target.getPatchedAbsPath(), target.getRejectAbsPath());"
+                    //but this is already done in SvnPatchTarget.applyPatch()
                     if (!target.isFiltered()) {
-                        SVNPatchTargetInfo targetInfo = new SVNPatchTargetInfo(target.getAbsPath(), target.isDeleted());
+                        SVNPatchTargetInfo targetInfo = new SVNPatchTargetInfo(
+                                target.getAbsPath(), target.isAdded(), target.isDeleted());
                         if (!target.isSkipped()) {
-                            targetInfos.add(targetInfo);
                             if (target.hasTextChanges() || target.isAdded() || target.getMoveTargetAbsPath() != null || target.isDeleted()) {
-                                target.installPatchedTarget(workingCopyDirectory, dryRun, patchContext);
+                                target.installPatchedTarget(workingCopyDirectory, dryRun, patchContext, targetInfos);
                             }
                             if (target.hasPropChanges() && !target.isDeleted()) {
                                 target.installPatchedPropTarget(dryRun, patchContext);
                             }
                             target.writeOutRejectedHunks(dryRun);
+                            targetInfos.add(targetInfo);
                         }
                         target.sendPatchNotification(patchContext);
                         if (target.isDeleted() && !target.isSkipped()) {
@@ -147,7 +150,7 @@ public class SvnNgPatch extends SvnNgOperationRunner<Void, SvnPatch> {
             if (!dryRun) {
                 SvnNgRemove.delete(context, dirAbsPath, null, false, false, null);
             }
-            SVNPatchTargetInfo targetInfo = new SVNPatchTargetInfo(dirAbsPath, true);
+            SVNPatchTargetInfo targetInfo = new SVNPatchTargetInfo(dirAbsPath, false, true);
             targetsInfo.add(targetInfo);
 
             final ISVNEventHandler eventHandler = context.getEventHandler();

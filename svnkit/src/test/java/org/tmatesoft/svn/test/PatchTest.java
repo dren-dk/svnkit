@@ -2,6 +2,9 @@ package org.tmatesoft.svn.test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +19,7 @@ import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.internal.wc.SVNFileType;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
+import org.tmatesoft.svn.core.internal.wc.patch.SVNPatchTargetInfo;
 import org.tmatesoft.svn.core.internal.wc2.ng.SvnDiffGenerator;
 import org.tmatesoft.svn.core.internal.wc2.patch.ISvnPatchContext;
 import org.tmatesoft.svn.core.internal.wc2.patch.SvnPatchFile;
@@ -357,6 +361,7 @@ public class PatchTest {
             final File file = new File(directory, "file");
             SVNFileUtil.writeToFile(file, oldContent, "UTF-8");
 
+            final ArrayList<SVNPatchTargetInfo> targetInfos = new ArrayList<SVNPatchTargetInfo>();
             final ISvnPatchContext patchContext = new DirectoryPatchContext(directory);
             final SvnPatchFile svnPatchFile = SvnPatchFile.openReadOnly(patchFile);
             try {
@@ -366,10 +371,10 @@ public class PatchTest {
                     if (patch != null) {
                         final boolean dryRun = false;
                         final int stripCount = 0;
-                        final SvnPatchTarget target = SvnPatchTarget.applyPatch(patch, directory, stripCount, patchContext, true, true, null);
+                        final SvnPatchTarget target = SvnPatchTarget.applyPatch(patch, directory, stripCount, targetInfos, patchContext, true, true, null);
 
                         if (target.hasTextChanges() || target.isAdded() || target.getMoveTargetAbsPath() != null || target.isDeleted()) {
-                            target.installPatchedTarget(directory, dryRun, patchContext);
+                            target.installPatchedTarget(directory, dryRun, patchContext, targetInfos);
                         }
                         if (target.hasPropChanges() && !target.isDeleted()) {
                             target.installPatchedPropTarget(dryRun, patchContext);
@@ -450,26 +455,7 @@ public class PatchTest {
 
             final DirectoryPatchContext patchContext = new DirectoryPatchContext(directory);
             final SvnPatchFile svnPatchFile = SvnPatchFile.openReadOnly(patchFile);
-            try {
-                org.tmatesoft.svn.core.internal.wc2.patch.SvnPatch patch;
-                do {
-                    patch = org.tmatesoft.svn.core.internal.wc2.patch.SvnPatch.parseNextPatch(svnPatchFile, false, false);
-                    if (patch != null) {
-                        final boolean dryRun = false;
-                        final int stripCount = 0;
-                        final SvnPatchTarget target = SvnPatchTarget.applyPatch(patch, directory, stripCount, patchContext, true, true, null);
-
-                        if (target.hasTextChanges() || target.isAdded() || target.getMoveTargetAbsPath() != null || target.isDeleted()) {
-                            target.installPatchedTarget(directory, dryRun, patchContext);
-                        }
-                        if (target.hasPropChanges() && !target.isDeleted()) {
-                            target.installPatchedPropTarget(dryRun, patchContext);
-                        }
-                    }
-                } while (patch != null);
-            } finally {
-                svnPatchFile.close();
-            }
+            applyPatch(patchContext, svnPatchFile, directory);
 
             Assert.assertEquals("link symlink/target1", TestUtil.readFileContentsString(symlink1));
             Assert.assertEquals("link symlink/target2", TestUtil.readFileContentsString(symlink2));
@@ -479,6 +465,91 @@ public class PatchTest {
         } finally {
             svnOperationFactory.dispose();
             sandbox.dispose();
+        }
+    }
+
+    @Test
+    public void testApplyBinaryPatchToDirectory() throws Exception {
+        final TestOptions options = TestOptions.getInstance();
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testApplyBinaryPatchToDirectory", options);
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final byte[] oldContent = {8, 7, 6, 5, 4, 3, 2, 1};
+            final byte[] newContent = {15, 14, 13, 12, 12, 11, 10};
+
+            final CommitBuilder commitBuilder1 = new CommitBuilder(url);
+            commitBuilder1.addFile("file", oldContent);
+            commitBuilder1.setFileProperty("file", SVNProperty.MIME_TYPE, SVNPropertyValue.create("application/octet-stream"));
+            commitBuilder1.commit();
+
+            final CommitBuilder commitBuilder2 = new CommitBuilder(url);
+            commitBuilder2.changeFile("file", newContent);
+            commitBuilder2.commit();
+
+            final SvnDiffGenerator diffGenerator = new SvnDiffGenerator();
+            diffGenerator.setBasePath(new File("").getAbsoluteFile());
+            diffGenerator.setUseGitFormat(true);
+            diffGenerator.setIgnoreProperties(false);
+            final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+            final SvnDiff diff = svnOperationFactory.createDiff();
+            diff.setSource(SvnTarget.fromURL(url), SVNRevision.create(1), SVNRevision.create(2));
+            diff.setDiffGenerator(diffGenerator);
+            diff.setUseGitDiffFormat(true);
+            diff.setOutput(output);
+            diff.run();
+
+            final String patchString = output.toString();
+
+            final File directory = sandbox.createDirectory("tmp");
+            final File patchFile = new File(directory, "patchFile");
+            SVNFileUtil.writeToFile(patchFile, patchString, "UTF-8");
+
+            final File file = new File(directory, "file");
+            final FileOutputStream fileOutputStream = new FileOutputStream(file);
+            try {
+                fileOutputStream.write(oldContent);
+                fileOutputStream.flush();
+            } finally {
+                SVNFileUtil.closeFile(fileOutputStream);
+            }
+
+            final DirectoryPatchContext patchContext = new DirectoryPatchContext(directory);
+            final SvnPatchFile svnPatchFile = SvnPatchFile.openReadOnly(patchFile);
+            applyPatch(patchContext, svnPatchFile, directory);
+
+            final byte[] actualContent = SVNFileUtil.readFully(file);
+            Assert.assertArrayEquals(newContent, actualContent);
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
+    private void applyPatch(DirectoryPatchContext patchContext, SvnPatchFile svnPatchFile, File directory) throws IOException, SVNException {
+        final ArrayList<SVNPatchTargetInfo> targetInfos = new ArrayList<SVNPatchTargetInfo>();
+        try {
+            org.tmatesoft.svn.core.internal.wc2.patch.SvnPatch patch;
+            do {
+                patch = org.tmatesoft.svn.core.internal.wc2.patch.SvnPatch.parseNextPatch(svnPatchFile, false, false);
+                if (patch != null) {
+                    final boolean dryRun = false;
+                    final int stripCount = 0;
+                    final SvnPatchTarget target = SvnPatchTarget.applyPatch(patch, directory, stripCount, targetInfos, patchContext, true, true, null);
+
+                    if (target.hasTextChanges() || target.isAdded() || target.getMoveTargetAbsPath() != null || target.isDeleted()) {
+                        target.installPatchedTarget(directory, dryRun, patchContext, targetInfos);
+                    }
+                    if (target.hasPropChanges() && !target.isDeleted()) {
+                        target.installPatchedPropTarget(dryRun, patchContext);
+                    }
+                }
+            } while (patch != null);
+        } finally {
+            svnPatchFile.close();
         }
     }
 
@@ -495,7 +566,7 @@ public class PatchTest {
         }
 
         @Override
-        public void resolvePatchTargetStatus(SvnPatchTarget patchTarget, File workingCopyDirectory) throws SVNException {
+        public void resolvePatchTargetStatus(SvnPatchTarget patchTarget, File workingCopyDirectory, boolean followMoves, List<SVNPatchTargetInfo> targetsInfo) throws SVNException {
             final File path = patchTarget.getAbsPath();
             final SVNNodeKind nodeKind = SVNFileType.getNodeKind(SVNFileType.getType(path));
 
@@ -589,6 +660,17 @@ public class PatchTest {
         @Override
         public String readSymlinkContent(File absPath) throws SVNException {
             return SVNFileUtil.readFile(absPath);
+        }
+
+        @Override
+        public SVNFileType getKindOnDisk(File file) {
+            final SVNFileType fileType = SVNFileType.getType(file);
+            return fileType == SVNFileType.SYMLINK ? SVNFileType.FILE : fileType;
+        }
+
+        @Override
+        public File wasNodeMovedHere(File localAbsPath) throws SVNException {
+            return null;
         }
     }
 }

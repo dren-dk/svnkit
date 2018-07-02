@@ -50,7 +50,7 @@ public class SvnDiffGenerator implements ISvnDiffGenerator {
 
     private static final String B85_LENGTHS_TABLE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
                     "abcdefghijklmnopqrstuvwxyz";
-    private static final String B85_TABLE = "0123456789" +
+    public static final String B85_TABLE = "0123456789" +
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
             "abcdefghijklmnopqrstuvwxyz" +
             "!#$%&()*+-;<=>?@^_`{|}~";
