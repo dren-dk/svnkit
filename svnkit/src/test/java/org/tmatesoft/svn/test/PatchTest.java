@@ -28,9 +28,12 @@ import org.tmatesoft.svn.core.wc.ISVNEventHandler;
 import org.tmatesoft.svn.core.wc.SVNEvent;
 import org.tmatesoft.svn.core.wc.SVNEventAction;
 import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.SVNStatusType;
 import org.tmatesoft.svn.core.wc2.SvnDiff;
+import org.tmatesoft.svn.core.wc2.SvnGetProperties;
 import org.tmatesoft.svn.core.wc2.SvnOperationFactory;
 import org.tmatesoft.svn.core.wc2.SvnPatch;
+import org.tmatesoft.svn.core.wc2.SvnStatus;
 import org.tmatesoft.svn.core.wc2.SvnTarget;
 
 public class PatchTest {
@@ -523,6 +526,132 @@ public class PatchTest {
 
             final byte[] actualContent = SVNFileUtil.readFully(file);
             Assert.assertArrayEquals(newContent, actualContent);
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
+    @Test
+    public void testApplyGitExecutableModeChange() throws Exception {
+        final TestOptions options = TestOptions.getInstance();
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testApplyGitExecutableModeChange", options);
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final CommitBuilder commitBuilder1 = new CommitBuilder(url);
+            commitBuilder1.addFile("file", "content".getBytes());
+            commitBuilder1.commit();
+
+            final WorkingCopy workingCopy = sandbox.checkoutNewWorkingCopy(url, 1);
+            final File workingCopyDirectory = workingCopy.getWorkingCopyDirectory();
+
+            final String patchString =
+                    "diff --git a/file b/file\n" +
+                    "old mode 100644\n" +
+                            "new mode 100755";
+
+            final File directory = sandbox.createDirectory("tmp");
+            final File patchFile = new File(directory, "patchFile");
+            SVNFileUtil.writeToFile(patchFile, patchString, "UTF-8");
+
+            final SvnPatch patch = svnOperationFactory.createPatch();
+            patch.setPatchFile(patchFile);
+            patch.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
+            patch.run();
+
+            final File file = workingCopy.getFile("file");
+            final Map<File, SvnStatus> statuses = TestUtil.getStatuses(svnOperationFactory, workingCopyDirectory);
+            Assert.assertEquals(2, statuses.size());
+            
+            final SvnStatus workingCopyDirectoryStatus = statuses.get(workingCopyDirectory);
+            Assert.assertEquals(SVNStatusType.STATUS_NORMAL, workingCopyDirectoryStatus.getTextStatus());
+            Assert.assertEquals(SVNStatusType.STATUS_NORMAL, workingCopyDirectoryStatus.getNodeStatus());
+            Assert.assertEquals(SVNStatusType.STATUS_NONE, workingCopyDirectoryStatus.getPropertiesStatus());
+
+            final SvnStatus fileStatus = statuses.get(file);
+            Assert.assertEquals(SVNStatusType.STATUS_NORMAL, fileStatus.getTextStatus());
+            Assert.assertEquals(SVNStatusType.STATUS_MODIFIED, fileStatus.getNodeStatus());
+            Assert.assertEquals(SVNStatusType.STATUS_MODIFIED, fileStatus.getPropertiesStatus());
+
+            final SvnGetProperties getProperties = svnOperationFactory.createGetProperties();
+            getProperties.setSingleTarget(SvnTarget.fromFile(file));
+            final SVNProperties properties = getProperties.run();
+
+            Assert.assertEquals(1, properties.size());
+            Assert.assertEquals("*", SVNPropertyValue.getPropertyAsString(properties.getSVNPropertyValue(SVNProperty.EXECUTABLE)));
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
+    @Test
+    public void testApplyGitSymlinkModeChange() throws Exception {
+        final TestOptions options = TestOptions.getInstance();
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testApplyGitSymlinkModeChange", options);
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final CommitBuilder commitBuilder1 = new CommitBuilder(url);
+            commitBuilder1.addFile("file", "content".getBytes());
+            commitBuilder1.commit();
+
+            final WorkingCopy workingCopy = sandbox.checkoutNewWorkingCopy(url, 1);
+            final File workingCopyDirectory = workingCopy.getWorkingCopyDirectory();
+
+            final String patchString =
+                    "diff --git a/file b/file\n" +
+                            "deleted file mode 100644\n" +
+                            "index d95f3ad..0000000\n" +
+                            "--- a/file\n" +
+                            "+++ /dev/null\n" +
+                            "@@ -1 +0,0 @@\n" +
+                            "-content\n" +
+                            "diff --git a/file b/file\n" +
+                            "new file mode 120000\n" +
+                            "index 0000000..1a010b1\n" +
+                            "--- /dev/null\n" +
+                            "+++ b/file\n" +
+                            "@@ -0,0 +1 @@\n" +
+                            "+target\n" +
+                            "\\ No newline at end of file";
+
+            final File directory = sandbox.createDirectory("tmp");
+            final File patchFile = new File(directory, "patchFile");
+            SVNFileUtil.writeToFile(patchFile, patchString, "UTF-8");
+
+            final SvnPatch patch = svnOperationFactory.createPatch();
+            patch.setPatchFile(patchFile);
+            patch.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
+            patch.run();
+
+            final File file = workingCopy.getFile("file");
+
+            final Map<File, SvnStatus> statuses = TestUtil.getStatuses(svnOperationFactory, workingCopyDirectory);
+            final SvnStatus workingCopyDirectoryStatus = statuses.get(workingCopyDirectory);
+            Assert.assertEquals(SVNStatusType.STATUS_NORMAL, workingCopyDirectoryStatus.getTextStatus());
+            Assert.assertEquals(SVNStatusType.STATUS_NORMAL, workingCopyDirectoryStatus.getNodeStatus());
+            Assert.assertEquals(SVNStatusType.STATUS_NONE, workingCopyDirectoryStatus.getPropertiesStatus());
+
+            final SvnStatus fileStatus = statuses.get(file);
+            Assert.assertEquals(SVNStatusType.STATUS_MODIFIED, fileStatus.getTextStatus());
+            Assert.assertEquals(SVNStatusType.STATUS_REPLACED, fileStatus.getNodeStatus());
+            Assert.assertEquals(SVNStatusType.STATUS_MODIFIED, fileStatus.getPropertiesStatus());
+
+            final SvnGetProperties getProperties = svnOperationFactory.createGetProperties();
+            getProperties.setSingleTarget(SvnTarget.fromFile(file));
+            final SVNProperties properties = getProperties.run();
+
+            Assert.assertEquals(1, properties.size());
+            Assert.assertEquals("*", SVNPropertyValue.getPropertyAsString(properties.getSVNPropertyValue(SVNProperty.SPECIAL)));
+
+            Assert.assertEquals(SVNFileType.SYMLINK, SVNFileType.getType(file));
+            Assert.assertEquals("target", SVNFileUtil.getSymlinkName(file));
         } finally {
             svnOperationFactory.dispose();
             sandbox.dispose();

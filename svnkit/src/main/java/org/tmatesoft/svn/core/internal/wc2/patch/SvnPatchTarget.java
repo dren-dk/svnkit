@@ -61,6 +61,7 @@ public class SvnPatchTarget extends SvnTargetContent {
     private boolean symlink;
     private boolean replaced;
     private boolean locallyDeleted;
+    private boolean obstructed;
     private SVNNodeKind kindOnDisk;
     private SVNNodeKind dbKind;
     private SvnDiffCallback.OperationKind operation;
@@ -312,9 +313,13 @@ public class SvnPatchTarget extends SvnTargetContent {
             final SvnPropertiesPatchTarget propTarget = target.getPropTargets().get(SVNProperty.EXECUTABLE);
             final SvnDiffHunk hunk;
             if (patch.getNewExecutableBit() == Boolean.TRUE) {
-                hunk = createAddsSingleLine(patch, SVNProperty.EXECUTABLE, patchContext, workingCopyDirectory);
+                hunk = createAddsSingleLine(patch,
+                        SVNPropertyValue.getPropertyAsString(SVNProperty.getValueOfBooleanProperty(SVNProperty.EXECUTABLE)),
+                        patchContext, workingCopyDirectory);
             } else {
-                hunk = createDeletesSingleLine(patch, SVNProperty.EXECUTABLE, patchContext, workingCopyDirectory);
+                hunk = createDeletesSingleLine(patch,
+                        SVNPropertyValue.getPropertyAsString(SVNProperty.getValueOfBooleanProperty(SVNProperty.EXECUTABLE)),
+                        patchContext, workingCopyDirectory);
             }
             final SvnHunkInfo hunkInfo = target.getHunkInfo(hunk, propTarget, 0, ignoreWhitespace, true);
             propTarget.addHunkInfo(hunkInfo);
@@ -327,10 +332,14 @@ public class SvnPatchTarget extends SvnTargetContent {
             final SvnPropertiesPatchTarget propTarget = target.getPropTargets().get(SVNProperty.SPECIAL);
             final SvnDiffHunk hunk;
             if (patch.getNewSymlinkBit() == Boolean.TRUE) {
-                hunk = createAddsSingleLine(patch, SVNProperty.SPECIAL, patchContext, workingCopyDirectory);
+                hunk = createAddsSingleLine(patch,
+                        SVNPropertyValue.getPropertyAsString(SVNProperty.getValueOfBooleanProperty(SVNProperty.SPECIAL)),
+                        patchContext, workingCopyDirectory);
                 target.setSpecial(true);
             } else {
-                hunk = createDeletesSingleLine(patch, SVNProperty.SPECIAL, patchContext, workingCopyDirectory);
+                hunk = createDeletesSingleLine(patch,
+                        SVNPropertyValue.getPropertyAsString(SVNProperty.getValueOfBooleanProperty(SVNProperty.SPECIAL)),
+                        patchContext, workingCopyDirectory);
                 target.setSpecial(false);
             }
             final SvnHunkInfo hunkInfo = target.getHunkInfo(hunk, propTarget, 0, ignoreWhitespace, true);
@@ -1086,7 +1095,7 @@ public class SvnPatchTarget extends SvnTargetContent {
                 patchContext.delete(getAbsPath());
             }
         } else {
-            if (isAdded() || isReplaced()) {
+            if (isAdded()) {
                 File parentAbsPath = SVNFileUtil.getParentFile(getAbsPath());
 
                 SVNNodeKind parentDbKind = patchContext.readKind(parentAbsPath, false, false);
@@ -1095,7 +1104,7 @@ public class SvnPatchTarget extends SvnTargetContent {
                     if (parentDbKind != SVNNodeKind.DIR) {
                         setSkipped(true);
                     } else {
-                        if (SVNFileType.getType(parentAbsPath) != SVNFileType.DIRECTORY) {
+                        if (patchContext.getKindOnDisk(parentAbsPath) != SVNFileType.DIRECTORY) {
                             setSkipped(true);
                         }
                     }
@@ -1107,6 +1116,9 @@ public class SvnPatchTarget extends SvnTargetContent {
 
                 if (getKindOnDisk() == SVNNodeKind.NONE || wcKind != getKindOnDisk()) {
                     setSkipped(true);
+                    if (wcKind != getKindOnDisk()) {
+                        setObstructed(true);
+                    }
                 }
             }
 
@@ -1127,7 +1139,7 @@ public class SvnPatchTarget extends SvnTargetContent {
                     }
                 }
 
-                if (isAdded() || isReplaced()) {
+                if (isAdded()) {
                     patchContext.add(getAbsPath());
                 }
 
@@ -1135,6 +1147,7 @@ public class SvnPatchTarget extends SvnTargetContent {
 
                 if (getMoveTargetAbsPath() != null) {
                     patchContext.move(getAbsPath(), getMoveTargetAbsPath());
+                    patchContext.delete(getAbsPath());
                 }
             }
         }
@@ -1316,10 +1329,10 @@ public class SvnPatchTarget extends SvnTargetContent {
         SVNStatusType propState = SVNStatusType.UNKNOWN;
 
         if (action == SVNEventAction.SKIP) {
-            if (getDbKind() == SVNNodeKind.NONE || getDbKind() == SVNNodeKind.UNKNOWN) {
-                contentState = SVNStatusType.MISSING;
-            } else if (getDbKind() == SVNNodeKind.DIR) {
+            if (isObstructed()) {
                 contentState = SVNStatusType.OBSTRUCTED;
+            } else if (getDbKind() == SVNNodeKind.NONE || getDbKind() == SVNNodeKind.UNKNOWN) {
+                contentState = SVNStatusType.MISSING;
             } else {
                 contentState = SVNStatusType.UNKNOWN;
             }
@@ -1433,6 +1446,14 @@ public class SvnPatchTarget extends SvnTargetContent {
 
     public boolean isLocallyDeleted() {
         return locallyDeleted;
+    }
+
+    public boolean isObstructed() {
+        return obstructed;
+    }
+
+    public void setObstructed(boolean obstructed) {
+        this.obstructed = obstructed;
     }
 
     public SVNNodeKind getKindOnDisk() {

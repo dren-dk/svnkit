@@ -51,6 +51,7 @@ public class SvnWcPatchContext implements ISvnPatchContext {
                     status.getNodeStatus() == SVNStatusType.OBSTRUCTED ||
                     status.isConflicted()) {
                 patchTarget.setSkipped(true);
+                patchTarget.setObstructed(true);
                 return;
             } else if (status.getNodeStatus() == SVNStatusType.STATUS_DELETED) {
                 patchTarget.setLocallyDeleted(true);

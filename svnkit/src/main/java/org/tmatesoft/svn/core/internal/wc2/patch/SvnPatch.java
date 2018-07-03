@@ -95,16 +95,13 @@ public class SvnPatch {
 
             if (state == ParserState.UNIDIFF_FOUND || state == ParserState.GIT_HEADER_FOUND || state == ParserState.BINARY_PATCH_FOUND) {
                 break;
-            } else if (state == ParserState.GIT_TREE_SEEN && lineAfterTreeHeaderRead) {
-                if (!line.startsWith("index ")) {
-                    patchFile.getPatchFileStream().setSeekPosition(lastLine);
-                    break;
-                }
-            } else if (state == ParserState.GIT_TREE_SEEN) {
+            } else if ((state == ParserState.GIT_TREE_SEEN || state == ParserState.GIT_MODE_SEEN) && lineAfterTreeHeaderRead && !validHeaderLine) {
+                patchFile.getPatchFileStream().setSeekPosition(lastLine);
+                break;
+            } else if (state == ParserState.GIT_TREE_SEEN || state == ParserState.GIT_MODE_SEEN) {
                 lineAfterTreeHeaderRead = true;
             } else if (!validHeaderLine && state != ParserState.START
-                    && state != ParserState.GIT_DIFF_SEEN
-                    && !line.startsWith("index ")) {
+                    && state != ParserState.GIT_DIFF_SEEN) {
                 patchFile.getPatchFileStream().setSeekPosition(lastLine);
                 state = ParserState.START;
             }
@@ -115,6 +112,30 @@ public class SvnPatch {
             File tmp = patch.getOldFileName();
             patch.setOldFileName(patch.getNewFileName());
             patch.setNewFileName(tmp);
+
+            switch (patch.getOperation()) {
+                case Added:
+                    patch.setOperation(SvnDiffCallback.OperationKind.Deleted);
+                    break;
+                case Deleted:
+                    patch.setOperation(SvnDiffCallback.OperationKind.Added);
+                    break;
+                case Modified:
+                    break;
+                case Copied:
+                case Moved:
+                    break;
+                case Unchanged:
+                    break;
+            }
+
+            Boolean tmpBit = patch.getOldExecutableBit();
+            patch.setOldExecutableBit(patch.getNewExecutableBit());
+            patch.setNewExecutableBit(tmpBit);
+
+            tmpBit = patch.getOldSymlinkBit();
+            patch.setOldSymlinkBit(patch.getNewSymlinkBit());
+            patch.setNewSymlinkBit(tmpBit);
         }
 
         if (patch.getOldFileName() == null || patch.getNewFileName() == null) {
@@ -919,6 +940,10 @@ public class SvnPatch {
         };
         IParserFunction GIT_NEW_FILE = new IParserFunction() {
             public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
+                final Boolean[] modeBits = patch.parseGitModeBits(line.substring("new file mode ".length()));
+                patch.setNewExecutableBit(modeBits[0]);
+                patch.setNewSymlinkBit(modeBits[1]);
+
                 patch.setOperation(SvnDiffCallback.OperationKind.Added);
                 return ParserState.GIT_TREE_SEEN;
             }
