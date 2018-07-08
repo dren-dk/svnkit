@@ -618,7 +618,9 @@ public class SvnPatchTarget extends SvnTargetContent {
         while ((target.getCurrentLine() < line || line == 0) && !target.isEof()) {
             String targetLine = target.readLine();
             if (!target.isEof()) {
-                targetLine = targetLine + target.getEolStr();
+                if (target.getEolStr() != null) {
+                    targetLine = targetLine + target.getEolStr();
+                }
             }
             target.getWriteCallback().write(target.getWriteBaton(), targetLine);
         }

@@ -804,6 +804,81 @@ public class PatchTest {
         }
     }
 
+    @Test
+    public void testAlreadyApplied() throws Exception {
+        final TestOptions options = TestOptions.getInstance();
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testAlreadyApplied", options);
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final CommitBuilder commitBuilder1 = new CommitBuilder(url);
+            commitBuilder1.addFile("file", "content".getBytes());
+            commitBuilder1.commit();
+
+            final CommitBuilder commitBuilder2 = new CommitBuilder(url);
+            commitBuilder2.changeFile("file", "changed".getBytes());
+            commitBuilder2.commit();
+
+            final WorkingCopy workingCopy = sandbox.checkoutNewWorkingCopy(url, 1);
+            final File workingCopyDirectory = workingCopy.getWorkingCopyDirectory();
+
+            final SvnDiffGenerator diffGenerator = new SvnDiffGenerator();
+            diffGenerator.setBasePath(new File("").getAbsoluteFile());
+            diffGenerator.setUseGitFormat(true);
+            diffGenerator.setIgnoreProperties(false);
+            final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+            final SvnDiff diff = svnOperationFactory.createDiff();
+            diff.setSource(SvnTarget.fromURL(url), SVNRevision.create(2), SVNRevision.create(1));
+            diff.setDiffGenerator(diffGenerator);
+            diff.setUseGitDiffFormat(true);
+            diff.setOutput(output);
+            diff.run();
+
+            final String patchString = output.toString();
+
+            final File directory = sandbox.createDirectory("tmp");
+            final File patchFile = new File(directory, "patchFile");
+            SVNFileUtil.writeToFile(patchFile, patchString, "UTF-8");
+
+            final File file = workingCopy.getFile("file");
+
+            final SvnPatch patch = svnOperationFactory.createPatch();
+            patch.setPatchFile(patchFile);
+            patch.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
+            patch.run();
+
+            final Map<File, SvnStatus> statuses = TestUtil.getStatuses(svnOperationFactory, workingCopyDirectory);
+            Assert.assertEquals(2, statuses.size());
+
+            final SvnStatus workingCopyDirectoryStatus = statuses.get(workingCopyDirectory);
+            Assert.assertEquals(SVNStatusType.STATUS_NORMAL, workingCopyDirectoryStatus.getTextStatus());
+            Assert.assertEquals(SVNStatusType.STATUS_NORMAL, workingCopyDirectoryStatus.getNodeStatus());
+            Assert.assertEquals(SVNStatusType.STATUS_NONE, workingCopyDirectoryStatus.getPropertiesStatus());
+
+            final SvnStatus fileStatus = statuses.get(file);
+            Assert.assertEquals(SVNStatusType.STATUS_NORMAL, fileStatus.getTextStatus());
+            Assert.assertEquals(SVNStatusType.STATUS_NORMAL, fileStatus.getNodeStatus());
+            Assert.assertEquals(SVNStatusType.STATUS_NONE, fileStatus.getPropertiesStatus());
+
+            Assert.assertEquals("content", TestUtil.readFileContentsString(file));
+
+            final SvnGetProperties getProperties = svnOperationFactory.createGetProperties();
+            getProperties.setSingleTarget(SvnTarget.fromFile(file));
+            final SVNProperties svnProperties = getProperties.run();
+
+            if (svnProperties != null) {
+                //properties list must be null or empty
+                Assert.assertEquals(0, svnProperties.size());
+            }
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
     private void applyPatch(DirectoryPatchContext patchContext, SvnPatchFile svnPatchFile, File directory) throws IOException, SVNException {
         final ArrayList<SVNPatchTargetInfo> targetInfos = new ArrayList<SVNPatchTargetInfo>();
         try {
