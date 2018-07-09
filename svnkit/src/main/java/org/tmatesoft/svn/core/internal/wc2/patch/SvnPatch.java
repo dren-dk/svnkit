@@ -840,10 +840,7 @@ public class SvnPatch {
                 if (newPathMarkerPos < 0) {
                     return ParserState.START;
                 }
-                if (newPathMarkerPos + 3 == line.length()) {
-                    return ParserState.START;
-                }
-
+                
                 int oldPathEndPos;
                 int oldPathStartPos = "diff --git a/".length();
                 int newPathEndPos = line.length();
@@ -857,9 +854,6 @@ public class SvnPatch {
                     oldPathEndPos = newPathMarkerPos;
                     newPathStartPos = newPathMarkerPos + " b/".length();
 
-                    if (newPathStartPos == line.length()) {
-                        break;
-                    }
                     int lenOld = oldPathEndPos - oldPathStartPos;
                     int lenNew = newPathEndPos - newPathStartPos;
 
