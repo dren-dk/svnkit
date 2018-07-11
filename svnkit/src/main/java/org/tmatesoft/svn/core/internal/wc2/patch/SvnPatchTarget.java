@@ -1406,7 +1406,7 @@ public class SvnPatchTarget extends SvnTargetContent {
         return hasLocalModifications;
     }
 
-    private boolean hadRejects() {
+    public boolean hadRejects() {
         return hadRejects;
     }
 
@@ -1414,7 +1414,7 @@ public class SvnPatchTarget extends SvnTargetContent {
         this.hadRejects = hadRejects;
     }
 
-    private boolean hadAlreadyApplied() {
+    public boolean hadAlreadyApplied() {
         return hadAlreadyApplied;
     }
 
@@ -1422,7 +1422,7 @@ public class SvnPatchTarget extends SvnTargetContent {
         this.hadAlreadyApplied = hadAlreadyApplied;
     }
 
-    private boolean hadPropRejects() {
+    public boolean hadPropRejects() {
         return hadPropRejects;
     }
 
