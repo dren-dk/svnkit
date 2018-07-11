@@ -1127,7 +1127,7 @@ public class SvnPatchTarget extends SvnTargetContent {
             if (!dryRun && !isSkipped()) {
                 if (isSpecial()) {
                     //setPatchedStream(SVNFileUtil.openFileForReading(getPatchedAbsPath()));
-                    String linkName = SVNFileUtil.readFile(getPatchedAbsPath());
+                    String linkName = SVNFileUtil.getSymlinkName(getPatchedAbsPath());
                     patchContext.writeSymlinkContent(getAbsPath(), linkName);
                 } else {
                     //TODO: a special method for special files? atomicity?
@@ -1674,7 +1674,7 @@ public class SvnPatchTarget extends SvnTargetContent {
                 SVNErrorManager.error(errorMessage, SVNLogType.WC);
             }
             File targetAbsPath = (File) writeBaton;
-            patchContext.writeSymlinkContent(targetAbsPath, s);
+            patchContext.writeSymlinkContent(targetAbsPath, s.substring("link ".length()));
         }
 
         public String readLine(Object baton, String[] eolStr, boolean[] eof) throws SVNException {

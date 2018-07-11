@@ -197,16 +197,13 @@ public class SvnWcPatchContext implements ISvnPatchContext {
 
     @Override
     public void writeSymlinkContent(File absPath, String linkName) throws SVNException {
-        if (linkName.startsWith("link ")) {
-            linkName = linkName.substring("link ".length());
-        }
         if (linkName.endsWith("\n")) {
             linkName = linkName.substring(0, linkName.length() - "\n".length());
         }
         if (linkName.endsWith("\r")) {
             linkName = linkName.substring(0, linkName.length() - "\r".length());
         }
-        if (SVNFileType.getType(absPath) == SVNFileType.FILE) {
+        if (SVNFileType.getType(absPath) != SVNFileType.NONE) {
             SVNFileUtil.deleteFile(absPath);
         }
         SVNFileUtil.createSymlink(absPath, linkName);

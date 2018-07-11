@@ -11,6 +11,7 @@ import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNProperties;
@@ -29,10 +30,12 @@ import org.tmatesoft.svn.core.wc.SVNEvent;
 import org.tmatesoft.svn.core.wc.SVNEventAction;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNStatusType;
+import org.tmatesoft.svn.core.wc2.SvnCheckout;
 import org.tmatesoft.svn.core.wc2.SvnDiff;
 import org.tmatesoft.svn.core.wc2.SvnGetProperties;
 import org.tmatesoft.svn.core.wc2.SvnOperationFactory;
 import org.tmatesoft.svn.core.wc2.SvnPatch;
+import org.tmatesoft.svn.core.wc2.SvnRevert;
 import org.tmatesoft.svn.core.wc2.SvnStatus;
 import org.tmatesoft.svn.core.wc2.SvnTarget;
 
@@ -939,6 +942,70 @@ public class PatchTest {
             //svn:ignore is a special property: a newline is enforced after each line
             Assert.assertEquals("*.class\n", SVNPropertyValue.getPropertyAsString(svnProperties.getSVNPropertyValue(SVNProperty.IGNORE)));
             Assert.assertEquals("propValue", SVNPropertyValue.getPropertyAsString(svnProperties.getSVNPropertyValue("propName")));
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
+    @Test
+    public void testChangeSymlink() throws Exception {
+        final TestOptions testOptions = TestOptions.getInstance();
+
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testChangeSymlink", testOptions);
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final CommitBuilder commitBuilder = new CommitBuilder(url);
+            commitBuilder.addFile("trunk/symlink", "link some/path".getBytes());
+            commitBuilder.setFileProperty("trunk/symlink", SVNProperty.SPECIAL, SVNPropertyValue.create("*"));
+            commitBuilder.commit();
+
+            final SVNURL trunkUrl = url.appendPath("trunk", false);
+
+            final File workingCopyDirectory = sandbox.createDirectory("wc");
+            final SvnCheckout checkout = svnOperationFactory.createCheckout();
+            checkout.setSource(SvnTarget.fromURL(trunkUrl));
+            checkout.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
+            checkout.run();
+
+            final File symlink = new File(workingCopyDirectory, "symlink");
+            SVNFileUtil.deleteFile(symlink);
+            SVNFileUtil.createSymlink(symlink, "changed/path");
+
+            final SvnDiffGenerator diffGenerator = new SvnDiffGenerator();
+            diffGenerator.setBasePath(new File("").getAbsoluteFile());
+            diffGenerator.setUseGitFormat(true);
+            diffGenerator.setIgnoreProperties(false);
+            final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+            final SvnDiff diff = svnOperationFactory.createDiff();
+            diff.setSources(SvnTarget.fromURL(trunkUrl, SVNRevision.HEAD),
+                    SvnTarget.fromFile(workingCopyDirectory, SVNRevision.WORKING));
+            diff.setDiffGenerator(diffGenerator);
+            diff.setUseGitDiffFormat(true);
+            diff.setOutput(output);
+            diff.run();
+
+            final String patchString = output.toString();
+
+            final File tmpDirectory = sandbox.createDirectory("tmp");
+            final File patchFile = new File(tmpDirectory, "patchFile");
+            SVNFileUtil.writeToFile(patchFile, patchString, "UTF-8");
+
+            final SvnRevert revert = svnOperationFactory.createRevert();
+            revert.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
+            revert.setDepth(SVNDepth.INFINITY);
+            revert.run();
+
+            final SvnPatch patch = svnOperationFactory.createPatch();
+            patch.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
+            patch.setPatchFile(patchFile);
+            patch.run();
+
+            Assert.assertEquals(SVNFileType.SYMLINK, SVNFileType.getType(symlink));
+            Assert.assertEquals("changed/path", SVNFileUtil.getSymlinkName(symlink));
         } finally {
             svnOperationFactory.dispose();
             sandbox.dispose();
