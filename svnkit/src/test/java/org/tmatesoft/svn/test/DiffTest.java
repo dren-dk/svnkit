@@ -30,6 +30,7 @@ import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNStatusType;
 import org.tmatesoft.svn.core.wc.SVNWCUtil;
 import org.tmatesoft.svn.core.wc2.ISvnObjectReceiver;
+import org.tmatesoft.svn.core.wc2.SvnCheckout;
 import org.tmatesoft.svn.core.wc2.SvnCopy;
 import org.tmatesoft.svn.core.wc2.SvnCopySource;
 import org.tmatesoft.svn.core.wc2.SvnDiff;
@@ -1076,6 +1077,55 @@ public class DiffTest {
                     "literal 8\n" +
                     "Pc${NoVrF4wW9I+>0Du4`\n", byteArrayOutputStream.toString());
 
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
+    @Test
+    public void testChangeFileToSymlink() throws Exception {
+        Assume.assumeTrue(SVNFileUtil.symlinksSupported());
+        final TestOptions options = TestOptions.getInstance();
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testChangeFileToSymlink", options);
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final CommitBuilder commitBuilder = new CommitBuilder(url);
+            commitBuilder.addFile("trunk/symlink", "link some/path".getBytes());
+            commitBuilder.commit();
+
+            final SVNURL trunkUrl = url.appendPath("trunk", false);
+
+            final File workingCopyDirectory = sandbox.createDirectory("wc");
+            final SvnCheckout checkout = svnOperationFactory.createCheckout();
+            checkout.setSource(SvnTarget.fromURL(trunkUrl));
+            checkout.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
+            checkout.run();
+
+            final File symlink = new File(workingCopyDirectory, "symlink");
+            SVNFileUtil.deleteFile(symlink);
+            SVNFileUtil.createSymlink(symlink, "changed/path");
+
+            final SvnDiffGenerator diffGenerator = new SvnDiffGenerator();
+            diffGenerator.setBasePath(new File("").getAbsoluteFile());
+            diffGenerator.setUseGitFormat(true);
+            diffGenerator.setIgnoreProperties(false);
+            final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+            final SvnDiff diff = svnOperationFactory.createDiff();
+            diff.setSources(SvnTarget.fromURL(trunkUrl, SVNRevision.HEAD),
+                    SvnTarget.fromFile(workingCopyDirectory, SVNRevision.WORKING));
+            diff.setDiffGenerator(diffGenerator);
+            diff.setUseGitDiffFormat(true);
+            diff.setOutput(output);
+            diff.run();
+
+            final String patchString = output.toString();
+
+            Assert.fail("TODO: complete the test");
         } finally {
             svnOperationFactory.dispose();
             sandbox.dispose();
