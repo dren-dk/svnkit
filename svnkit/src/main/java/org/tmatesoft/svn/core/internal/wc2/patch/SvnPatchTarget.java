@@ -1127,8 +1127,8 @@ public class SvnPatchTarget extends SvnTargetContent {
             if (!dryRun && !isSkipped()) {
                 if (isSpecial()) {
                     //setPatchedStream(SVNFileUtil.openFileForReading(getPatchedAbsPath()));
-                    String linkName = SVNFileUtil.getSymlinkName(getPatchedAbsPath());
-                    patchContext.writeSymlinkContent(getAbsPath(), linkName);
+                    SVNFileUtil.deleteFile(getAbsPath());
+                    patchContext.copySymlink(getPatchedAbsPath(), getAbsPath());
                 } else {
                     //TODO: a special method for special files? atomicity?
                     File dst = getMoveTargetAbsPath() != null ? getMoveTargetAbsPath() : getAbsPath();
