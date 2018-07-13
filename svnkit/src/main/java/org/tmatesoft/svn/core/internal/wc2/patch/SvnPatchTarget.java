@@ -1127,8 +1127,20 @@ public class SvnPatchTarget extends SvnTargetContent {
             if (!dryRun && !isSkipped()) {
                 if (isSpecial()) {
                     //setPatchedStream(SVNFileUtil.openFileForReading(getPatchedAbsPath()));
-                    SVNFileUtil.deleteFile(getAbsPath());
-                    patchContext.copySymlink(getPatchedAbsPath(), getAbsPath());
+                    String symlinkTarget;
+                    if (patchContext.getKindOnDisk(getPatchedAbsPath()) == SVNFileType.FILE) {
+                        symlinkTarget = SVNFileUtil.readFile(getPatchedAbsPath());
+
+                        assert symlinkTarget != null;
+                        if (!gitSymlinkFormat) {
+                            assert symlinkTarget.startsWith("link ");
+                            symlinkTarget = symlinkTarget.substring("link ".length());
+                        }
+                        patchContext.writeSymlinkContent(getAbsPath(), symlinkTarget);
+                    } else {
+                        assert patchContext.getKindOnDisk(getPatchedAbsPath()) == SVNFileType.SYMLINK;
+                        patchContext.copySymlink(getPatchedAbsPath(), getAbsPath());
+                    }
                 } else {
                     //TODO: a special method for special files? atomicity?
                     File dst = getMoveTargetAbsPath() != null ? getMoveTargetAbsPath() : getAbsPath();

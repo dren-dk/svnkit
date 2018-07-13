@@ -36,6 +36,7 @@ import org.tmatesoft.svn.core.wc2.SvnGetProperties;
 import org.tmatesoft.svn.core.wc2.SvnOperationFactory;
 import org.tmatesoft.svn.core.wc2.SvnPatch;
 import org.tmatesoft.svn.core.wc2.SvnRevert;
+import org.tmatesoft.svn.core.wc2.SvnScheduleForAddition;
 import org.tmatesoft.svn.core.wc2.SvnStatus;
 import org.tmatesoft.svn.core.wc2.SvnTarget;
 
@@ -999,6 +1000,8 @@ public class PatchTest {
             revert.setDepth(SVNDepth.INFINITY);
             revert.run();
 
+            Assert.assertEquals("some/path", SVNFileUtil.getSymlinkName(symlink));
+
             final SvnPatch patch = svnOperationFactory.createPatch();
             patch.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
             patch.setPatchFile(patchFile);
@@ -1006,6 +1009,68 @@ public class PatchTest {
 
             Assert.assertEquals(SVNFileType.SYMLINK, SVNFileType.getType(symlink));
             Assert.assertEquals("changed/path", SVNFileUtil.getSymlinkName(symlink));
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
+    @Test
+    public void testAddSymlink() throws Exception {
+        final TestOptions testOptions = TestOptions.getInstance();
+
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testAddSymlink", testOptions);
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final File workingCopyDirectory = sandbox.createDirectory("wc");
+            final SvnCheckout checkout = svnOperationFactory.createCheckout();
+            checkout.setSource(SvnTarget.fromURL(url));
+            checkout.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
+            checkout.run();
+
+            final File symlink = new File(workingCopyDirectory, "symlink");
+            SVNFileUtil.createSymlink(symlink, "target/path");
+
+            final SvnScheduleForAddition scheduleForAddition = svnOperationFactory.createScheduleForAddition();
+            scheduleForAddition.setSingleTarget(SvnTarget.fromFile(symlink));
+            scheduleForAddition.run();
+
+            final SvnDiffGenerator diffGenerator = new SvnDiffGenerator();
+            diffGenerator.setBasePath(new File("").getAbsoluteFile());
+            diffGenerator.setUseGitFormat(true);
+            diffGenerator.setIgnoreProperties(false);
+            final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+            final SvnDiff diff = svnOperationFactory.createDiff();
+            diff.setSources(SvnTarget.fromURL(url, SVNRevision.HEAD),
+                    SvnTarget.fromFile(workingCopyDirectory, SVNRevision.WORKING));
+            diff.setDiffGenerator(diffGenerator);
+            diff.setUseGitDiffFormat(true);
+            diff.setOutput(output);
+            diff.run();
+
+            final String patchString = output.toString();
+
+            final File tmpDirectory = sandbox.createDirectory("tmp");
+            final File patchFile = new File(tmpDirectory, "patchFile");
+            SVNFileUtil.writeToFile(patchFile, patchString, "UTF-8");
+
+            final SvnRevert revert = svnOperationFactory.createRevert();
+            revert.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
+            revert.setDepth(SVNDepth.INFINITY);
+            revert.run();
+
+            SVNFileUtil.deleteFile(symlink);
+
+            final SvnPatch patch = svnOperationFactory.createPatch();
+            patch.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
+            patch.setPatchFile(patchFile);
+            patch.run();
+
+            Assert.assertEquals(SVNFileType.SYMLINK, SVNFileType.getType(symlink));
+            Assert.assertEquals("target/path", SVNFileUtil.getSymlinkName(symlink));
         } finally {
             svnOperationFactory.dispose();
             sandbox.dispose();

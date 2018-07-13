@@ -192,6 +192,7 @@ public class SvnWcPatchContext implements ISvnPatchContext {
 
     @Override
     public void copySymlink(File src, File dst) throws SVNException {
+        SVNFileUtil.deleteFile(dst);
         SVNFileUtil.copySymlink(src, dst);
     }
 
