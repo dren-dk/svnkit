@@ -13,6 +13,7 @@ import java.util.zip.InflaterInputStream;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNMergeRangeList;
+import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNProperty;
 import org.tmatesoft.svn.core.internal.util.SVNFormatUtil;
 import org.tmatesoft.svn.core.internal.util.SVNMergeInfoUtil;
@@ -67,6 +68,7 @@ public class SvnPatch {
         boolean lineAfterTreeHeaderRead = false;
 
         SvnPatch patch = new SvnPatch();
+        patch.setNodeKind(SVNNodeKind.UNKNOWN);
         patch.setOperation(SvnDiffCallback.OperationKind.Unchanged);
 
         long pos = patchFile.getNextPatchOffset();
@@ -178,6 +180,8 @@ public class SvnPatch {
 
     private Boolean newSymlinkBit; //tristate: true/false/unknown
     private Boolean oldSymlinkBit; //tristate: true/false/unknown
+
+    private SVNNodeKind nodeKind;
 
     private void parseHunks(SVNPatchFileStream patchFileStream, boolean ignoreWhitespace) throws IOException, SVNException {
         String lastPropName = null;
@@ -808,6 +812,14 @@ public class SvnPatch {
         this.oldSymlinkBit = oldSymlinkBit;
     }
 
+    public SVNNodeKind getNodeKind() {
+        return nodeKind;
+    }
+
+    public void setNodeKind(SVNNodeKind nodeKind) {
+        this.nodeKind = nodeKind;
+    }
+
     private static enum ParserState {
         START, GIT_DIFF_SEEN, GIT_TREE_SEEN, GIT_MINUS_SEEN, GIT_PLUS_SEEN, OLD_MODE_SEEN, GIT_MODE_SEEN, MOVE_FROM_SEEN, COPY_FROM_SEEN, MINUS_SEEN, UNIDIFF_FOUND, GIT_HEADER_FOUND, BINARY_PATCH_FOUND
     }
@@ -939,6 +951,7 @@ public class SvnPatch {
                 patch.setNewSymlinkBit(modeBits[1]);
 
                 patch.setOperation(SvnDiffCallback.OperationKind.Added);
+                patch.setNodeKind(SVNNodeKind.FILE);
                 return ParserState.GIT_TREE_SEEN;
             }
         };
