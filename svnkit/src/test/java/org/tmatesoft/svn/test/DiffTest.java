@@ -37,6 +37,7 @@ import org.tmatesoft.svn.core.wc2.SvnDiff;
 import org.tmatesoft.svn.core.wc2.SvnDiffStatus;
 import org.tmatesoft.svn.core.wc2.SvnDiffSummarize;
 import org.tmatesoft.svn.core.wc2.SvnOperationFactory;
+import org.tmatesoft.svn.core.wc2.SvnScheduleForRemoval;
 import org.tmatesoft.svn.core.wc2.SvnTarget;
 
 @Ignore
@@ -1126,6 +1127,62 @@ public class DiffTest {
             final String patchString = output.toString();
 
             Assert.fail("TODO: complete the test");
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
+    @Ignore("Currently fails")
+    @Test
+    public void testDiffDeletedDirectoryAndFile() throws Exception {
+        final TestOptions options = TestOptions.getInstance();
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testDiffDeletedDirectoryAndFile", options);
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final CommitBuilder commitBuilder = new CommitBuilder(url);
+            commitBuilder.addDirectory("deletedDirectory");
+            commitBuilder.addFile("deletedFile");
+            commitBuilder.setDirectoryProperty("deletedDirectory", SVNProperty.IGNORE, SVNPropertyValue.create("*"));
+            commitBuilder.setFileProperty("deletedFile", "propName", SVNPropertyValue.create("propValue"));
+            commitBuilder.commit();
+
+            final File workingCopyDirectory = sandbox.createDirectory("wc");
+            final File deletedDirectory = new File(workingCopyDirectory, "deletedDirectory");
+            final File deletedFile = new File(workingCopyDirectory, "deletedFile");
+
+            final SvnCheckout checkout = svnOperationFactory.createCheckout();
+            checkout.setSource(SvnTarget.fromURL(url));
+            checkout.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
+            checkout.run();
+
+            final SvnScheduleForRemoval scheduleForRemoval = svnOperationFactory.createScheduleForRemoval();
+            scheduleForRemoval.addTarget(SvnTarget.fromFile(deletedDirectory));
+            scheduleForRemoval.addTarget(SvnTarget.fromFile(deletedFile));
+            scheduleForRemoval.run();
+
+            final SvnDiffGenerator diffGenerator = new SvnDiffGenerator();
+            diffGenerator.setBasePath(new File("").getAbsoluteFile());
+            diffGenerator.setUseGitFormat(true);
+            diffGenerator.setIgnoreProperties(false);
+            final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+            final SvnDiff diff = svnOperationFactory.createDiff();
+            diff.setSources(SvnTarget.fromURL(url, SVNRevision.HEAD),
+                    SvnTarget.fromFile(workingCopyDirectory, SVNRevision.WORKING));
+            diff.setDiffGenerator(diffGenerator);
+            diff.setUseGitDiffFormat(true);
+            diff.setOutput(output);
+            diff.run();
+
+            final String patchString = output.toString();
+
+//            System.out.println("patchString = " + patchString);
+
+            throw new UnsupportedOperationException("TODO: complete the test");
         } finally {
             svnOperationFactory.dispose();
             sandbox.dispose();
