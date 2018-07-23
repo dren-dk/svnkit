@@ -228,7 +228,7 @@ public class SvnDiffHunk implements Comparable<SvnDiffHunk> {
             } else {
                 result = str;
             }
-            if (!filtered && eof[0] && eolStr[0] == null && str != null) {
+            if (!filtered && eof[0] && eolStr[0] == null && str.length() > 0) {
                 if (!noFinalEol && eolStr != eolp) {
                     patchFileStream.setSeekPosition(0);
                     str = readLine(patchFileStream, eolStr, eof);

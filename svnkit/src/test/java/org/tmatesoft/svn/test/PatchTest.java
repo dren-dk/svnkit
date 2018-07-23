@@ -1077,6 +1077,82 @@ public class PatchTest {
         }
     }
 
+    @Test
+    public void testAddAnotherLine() throws Exception {
+        final TestOptions testOptions = TestOptions.getInstance();
+
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testAddAnotherLine", testOptions);
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final CommitBuilder commitBuilder = new CommitBuilder(url);
+            commitBuilder.addFile("file", "This is a line.\n".getBytes());
+            commitBuilder.commit();
+
+            final File workingCopyDirectory = sandbox.createDirectory("wc");
+            final SvnCheckout checkout = svnOperationFactory.createCheckout();
+            checkout.setSource(SvnTarget.fromURL(url));
+            checkout.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
+            checkout.run();
+
+            final File file = new File(workingCopyDirectory, "file");
+            final String expectedContent = "This is a line.\n" +
+                    "This is another line.\n";
+            TestUtil.writeFileContentsString(file, expectedContent);
+
+            final SvnDiffGenerator diffGenerator = new SvnDiffGenerator();
+            diffGenerator.setBasePath(new File("").getAbsoluteFile());
+            diffGenerator.setUseGitFormat(true);
+            diffGenerator.setIgnoreProperties(false);
+            final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+            final SvnDiff diff = svnOperationFactory.createDiff();
+            diff.setSources(SvnTarget.fromURL(url, SVNRevision.HEAD),
+                    SvnTarget.fromFile(workingCopyDirectory, SVNRevision.WORKING));
+            diff.setDiffGenerator(diffGenerator);
+            diff.setUseGitDiffFormat(true);
+            diff.setOutput(output);
+            diff.run();
+
+            final String patchString = output.toString();
+
+            final File tmpDirectory = sandbox.createDirectory("tmp");
+            final File patchFile = new File(tmpDirectory, "patchFile");
+            SVNFileUtil.writeToFile(patchFile, patchString, "UTF-8");
+
+            final SvnRevert revert = svnOperationFactory.createRevert();
+            revert.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
+            revert.setDepth(SVNDepth.INFINITY);
+            revert.run();
+
+            final SvnPatch patch = svnOperationFactory.createPatch();
+            patch.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
+            patch.setPatchFile(patchFile);
+            patch.run();
+
+            final String actualContent = TestUtil.readFileContentsString(file);
+            Assert.assertEquals(expectedContent, actualContent);
+
+            final Map<File, SvnStatus> statuses = TestUtil.getStatuses(svnOperationFactory, workingCopyDirectory);
+            Assert.assertEquals(2, statuses.size());
+
+            final SvnStatus workingCopyDirectoryStatus = statuses.get(workingCopyDirectory);
+            Assert.assertEquals(SVNStatusType.STATUS_NORMAL, workingCopyDirectoryStatus.getTextStatus());
+            Assert.assertEquals(SVNStatusType.STATUS_NORMAL, workingCopyDirectoryStatus.getNodeStatus());
+            Assert.assertEquals(SVNStatusType.STATUS_NONE, workingCopyDirectoryStatus.getPropertiesStatus());
+
+            final SvnStatus fileStatus = statuses.get(file);
+            Assert.assertEquals(SVNStatusType.STATUS_MODIFIED, fileStatus.getTextStatus());
+            Assert.assertEquals(SVNStatusType.STATUS_MODIFIED, fileStatus.getNodeStatus());
+            Assert.assertEquals(SVNStatusType.STATUS_NONE, fileStatus.getPropertiesStatus());
+
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
     private void applyPatch(DirectoryPatchContext patchContext, SvnPatchFile svnPatchFile, File directory) throws IOException, SVNException {
         final ArrayList<SVNPatchTargetInfo> targetInfos = new ArrayList<SVNPatchTargetInfo>();
         try {
