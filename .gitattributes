@@ -15,6 +15,7 @@ svnkit-distribution/src/main/licenses/LICENSE-JSCH.txt eol=lf
 svnkit-distribution/src/main/licenses/LICENSE-SEQUENCE.txt eol=lf
 svnkit-distribution/src/main/licenses/LICENSE-SQLJET.txt eol=lf
 svnkit-distribution/src/main/licenses/LICENSE-TRILEAD.txt eol=lf
+svnkit-distribution/src/main/licenses/LICENSE-LZ4.txt eol=lf
 svnkit-test/configurations/shared/apache/python.template.conf eol=lf
 svnkit-test/configurations/shared/apache/users eol=lf
 svnkit-test/configurations/shared/daemon/snapshot eol=lf

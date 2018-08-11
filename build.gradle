@@ -137,6 +137,7 @@ project(':svnkit') {
             exclude group: 'net.java.dev.jna'
         }
         compile 'com.jcraft:jsch.agentproxy.svnkit-trilead-ssh2:0.0.7'
+        compile 'org.lz4:lz4-java:1.4.1'
 
         testCompile 'junit:junit:4.8'
     }
