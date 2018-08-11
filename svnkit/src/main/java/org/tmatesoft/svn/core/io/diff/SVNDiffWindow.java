@@ -55,7 +55,13 @@ public class SVNDiffWindow {
      * @since 1.1, new in Subversion 1.4 
      */
     public static final byte[] SVN1_HEADER = new byte[] {'S', 'V', 'N', '\1'};
-    
+
+    /**
+     * Bytes of the delta header of an LZ4 compressed diff window.
+     * @since 1.10, new in Subversion 1.10
+     */
+    public static final byte[] SVN2_HEADER = new byte[] {'S', 'V', 'N', '\2'};
+
     /**
      * An empty window (in particular, its instructions length = 0). Corresponds 
      * to the case of an empty delta, so, it's passed to a delta consumer to 
