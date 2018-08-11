@@ -40,7 +40,9 @@ import org.tmatesoft.svn.util.SVNLogType;
 public class FSRepresentationCacheManager implements IFSRepresentationCacheManager {
     
     public static final String REP_CACHE_TABLE = "rep_cache";
-    private static final int REP_CACHE_DB_FORMAT =  1;
+    // TODO!!
+    private static final int REP_CACHE_DB_FORMAT =  2;
+//    private static final int REP_CACHE_DB_FORMAT =  1;
     private static final String REP_CACHE_DB_SQL =  "create table rep_cache (hash text not null primary key, " +
                                                     "                        revision integer not null, " + 
                                                     "                        offset integer not null, " + 

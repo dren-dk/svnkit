@@ -93,6 +93,8 @@ public class FSFS {
     public static final String PACKED_REVPROPS_SECTION = "packed-revprops";
     public static final String COMPRESS_PACKED_REVPROPS_OPTION = "compress-packed-revprops";
     public static final String REVPROP_PACK_SIZE_OPTION = "revprop-pack-size";
+    public static final String DELTIFICATION_SECTION = "deltification";
+    public static final String COMPRESSION_OPTION = "compression";
 
     public static final String IO_SECTION = "io";
     public static final String BLOCK_SIZE_OPTION = "block-size";
@@ -124,7 +126,7 @@ public class FSFS {
     public static final int REPOSITORY_FORMAT = 5;
     public static final int REPOSITORY_FORMAT_LEGACY = 3;
     public static final int DB_FORMAT_PRE_17 = 4;
-    public static final int DB_FORMAT = 7;
+    public static final int DB_FORMAT = 8;
     public static final int DB_FORMAT_LOW = 1;
     public static final int MIN_SVNDIFF1_FORMAT = 2;
     public static final int LAYOUT_FORMAT_OPTION_MINIMAL_FORMAT = 3;
@@ -139,6 +141,7 @@ public class FSFS {
     public static final int MIN_PACKED_REVPROP_FORMAT = 6;
     public static final int MIN_LOG_ADDRESSING_MINIMAL_FORMAT = 7;
     public static final int MIN_MERGEINFO_IN_CHANGED_FORMAT = 7;
+    public static final int MIN_COMPRESSION_FORMAT = 8;
 
     //TODO: we should be able to change this via some option
     private static long DEFAULT_MAX_FILES_PER_DIRECTORY = 1000;
@@ -189,6 +192,7 @@ public class FSFS {
     private long myBlockSize;
     private long myL2PPageSize;
     private long myP2LPageSize;
+    private String myDeltificationCompressionAlgorithm;
 
     public FSFS(File repositoryRoot) {
         myRepositoryRoot = repositoryRoot;
@@ -218,6 +222,10 @@ public class FSFS {
 
     public boolean isUseLogAddressing() {
         return myUseLogAddressing;
+    }
+
+    public String getDeltificationCompressionAlgorithm() {
+        return myDeltificationCompressionAlgorithm;
     }
 
     public void open() throws SVNException {
@@ -297,6 +305,22 @@ public class FSFS {
         if (config != null) {
             String optionValue = config.getPropertyValue(REP_SHARING_SECTION, ENABLE_REP_SHARING_OPTION);
             isRepSharingAllowed = DefaultSVNOptions.getBooleanValue(optionValue, true);
+
+            if (myDBFormat >= MIN_COMPRESSION_FORMAT) {
+                myDeltificationCompressionAlgorithm = myConfig.getPropertyValue(DELTIFICATION_SECTION, COMPRESSION_OPTION);
+                if (myDeltificationCompressionAlgorithm == null) {
+                    myDeltificationCompressionAlgorithm = "lz4";
+                }
+            }
+            if (myDeltificationCompressionAlgorithm == null) {
+                myDeltificationCompressionAlgorithm = "none";
+            }
+        } else {
+            if (myDBFormat >= MIN_COMPRESSION_FORMAT) {
+                myDeltificationCompressionAlgorithm = "lz4";
+            } else {
+                myDeltificationCompressionAlgorithm = "zlib";
+            }
         }
         myIsRepSharingAllowed = isRepSharingAllowed;
 
