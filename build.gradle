@@ -1,5 +1,5 @@
 group = 'org.tmatesoft.svnkit'
-version = '1.9.4'
+version = '1.10.0'
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.14'
@@ -12,7 +12,7 @@ def javaProjects() {
 ext {
    release = false
    target = '1.6'
-   compatibleSvnVersion = '1.9.0'
+   compatibleSvnVersion = '1.10.0'
 
    if (!release) {
        rootProject.version = rootProject.version + '-SNAPSHOT'
