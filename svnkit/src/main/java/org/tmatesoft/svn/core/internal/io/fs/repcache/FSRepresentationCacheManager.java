@@ -47,7 +47,7 @@ public class FSRepresentationCacheManager implements IFSRepresentationCacheManag
                                                     "                        revision integer not null, " + 
                                                     "                        offset integer not null, " + 
                                                     "                        size integer not null, " +
-                                                    "                        expanded_size integer not null); ";
+                                                    "                        expanded_size integer not null) without rowid;";
 
     private SqlJetDb myRepCacheDB;
     private ISqlJetTable myTable;

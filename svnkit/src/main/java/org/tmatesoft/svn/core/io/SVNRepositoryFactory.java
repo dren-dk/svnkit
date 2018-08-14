@@ -525,22 +525,6 @@ public abstract class SVNRepositoryFactory {
                     SVNFileUtil.setExecutable(hookFile, true);
                 }
             }
-            // generate and write UUID.
-            File uuidFile = new File(path, "db/uuid");
-            if (uuid == null || uuid.length() != 36) {
-                byte[] uuidBytes = SVNUUIDGenerator.generateUUID();
-                uuid = SVNUUIDGenerator.formatUUID(uuidBytes);
-            }
-            uuid += '\n';
-            try {
-                uuidOS = SVNFileUtil.openFileForWriting(uuidFile);
-                uuidOS.write(uuid.getBytes("US-ASCII"));
-            } catch (IOException e) {
-                SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.IO_ERROR, "Error writing repository UUID to ''{0}''", uuidFile);
-                err.setChildErrorMessage(SVNErrorMessage.create(SVNErrorCode.IO_ERROR, e.getLocalizedMessage()));
-                SVNErrorManager.error(err, SVNLogType.FSFS);
-            }
-
             int fsFormat = FSFS.DB_FORMAT;
             if( FSFS.DB_FORMAT_PRE_17_USE_AS_DEFAULT && !with17Compatible ) {
                 fsFormat = FSFS.DB_FORMAT_PRE_17;
@@ -590,6 +574,30 @@ public abstract class SVNRepositoryFactory {
                 SVNFileUtil.createEmptyFile(currentTxnLockFile);
             }
 
+            // generate and write UUID.
+            File uuidFile = new File(path, "db/uuid");
+            if (uuid == null || uuid.length() != 36) {
+                uuid = SVNUUIDGenerator.generateUUIDString();
+            }
+            if (fsFormat >= FSFS.MIN_INSTANCE_UUID_FORMAT) {
+                String instanceUuid;
+                do {
+                    instanceUuid = SVNUUIDGenerator.generateUUIDString();
+                } while(instanceUuid.equals(uuid));
+                uuid += '\n' + instanceUuid + '\n';
+            } else {
+                uuid += '\n';
+            }
+
+            try {
+                uuidOS = SVNFileUtil.openFileForWriting(uuidFile);
+                uuidOS.write(uuid.getBytes("US-ASCII"));
+            } catch (IOException e) {
+                SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.IO_ERROR, "Error writing repository UUID to ''{0}''", uuidFile);
+                err.setChildErrorMessage(SVNErrorMessage.create(SVNErrorCode.IO_ERROR, e.getLocalizedMessage()));
+                SVNErrorManager.error(err, SVNLogType.FSFS);
+            }
+
             long maxFilesPerDir = 0;
             if (fsFormat >= FSFS.LAYOUT_FORMAT_OPTION_MINIMAL_FORMAT) {
                 maxFilesPerDir = FSFS.getDefaultMaxFilesPerDirectory();
@@ -617,6 +625,9 @@ public abstract class SVNRepositoryFactory {
                         format += "layout sharded " + String.valueOf(maxFilesPerDir) + "\n";
                     } else {
                         format += "layout linear\n";
+                    }
+                    if (fsFormat >= FSFS.MIN_LOG_ADDRESSING_MINIMAL_FORMAT) {
+                        format += "addressing logical\n";
                     }
                     fsFormatOS.write(format.getBytes("US-ASCII"));
                 } catch (IOException e) {

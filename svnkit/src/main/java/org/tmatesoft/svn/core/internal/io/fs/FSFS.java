@@ -141,6 +141,12 @@ public class FSFS {
     public static final int MIN_PACKED_REVPROP_FORMAT = 6;
     public static final int MIN_LOG_ADDRESSING_MINIMAL_FORMAT = 7;
     public static final int MIN_MERGEINFO_IN_CHANGED_FORMAT = 7;
+    public static final int MIN_INSTANCE_UUID_FORMAT = 7;
+
+    public static final int MIN_SVNDIFF2_FORMAT = 8;
+    public static final int MIN_REP_STRING_OPTIONAL_VALUES_FORMAT = 8;
+    public static final int MIN_REP_CACHE_SCHEMA_V2_FORMAT = 8;
+
     public static final int MIN_COMPRESSION_FORMAT = 8;
 
     //TODO: we should be able to change this via some option
