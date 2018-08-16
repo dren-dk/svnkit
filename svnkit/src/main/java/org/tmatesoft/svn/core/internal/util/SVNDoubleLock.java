@@ -20,7 +20,7 @@ public class SVNDoubleLock {
 
     public static SVNDoubleLock obtain(File file, boolean exclusive) throws SVNException {
         //FLOCK
-        final SVNFLock flock = ourUseDoubleLock ? SVNFLock.obtain(file, exclusive) : null;
+        final SVNFLock flock = ourUseDoubleLock ? obtainFlockIfNeeded(file, exclusive) : null;
 
         //POSIX lock
         RandomAccessFile randomAccessFile = null;
@@ -74,6 +74,50 @@ public class SVNDoubleLock {
             valid = false;
         } catch (IOException e) {
             SVNDebugLog.getDefaultLog().log(SVNLogType.DEFAULT, e, Level.INFO);
+        }
+    }
+
+    private static SVNFLock obtainFlockIfNeeded(File file, boolean exclusive) throws SVNException {
+        //create a test file in the same directory to check filesystem locking capabilities
+        final File uniqueFile = SVNFileUtil.createUniqueFile(file.getParentFile(),
+                file.getName(), ".trylock", true);
+        try {
+            final boolean doubleLockingNeeded = isDoubleLockingNeeded(uniqueFile, exclusive);
+
+            //if FLOCK blocks POSIX lock, double locking is not needed
+            return doubleLockingNeeded ? SVNFLock.obtain(file, exclusive) : null;
+        } finally {
+            SVNFileUtil.deleteFile(uniqueFile);
+        }
+    }
+
+    private static boolean isDoubleLockingNeeded(File file, boolean exclusive) throws SVNException {
+        final SVNFLock flock = SVNFLock.obtain(file, exclusive);
+        if (flock == null) {
+            //can't obtain FLOCK at all, FLOCKs are probably not supported,
+            //double locking is not needed
+            return false;
+        }
+        RandomAccessFile randomAccessFile = null;
+        try {
+            randomAccessFile = new RandomAccessFile(file, "rw");
+            FileLock posixLock = randomAccessFile.getChannel().tryLock(0, Long.MAX_VALUE, !exclusive);
+            //if FLOCK and POSIX lock can be obtained at the same time
+            //double locking is needed
+            final boolean doubleLockingNeeded = (posixLock != null);
+            if (posixLock != null) {
+                posixLock.release();
+            }
+            return doubleLockingNeeded;
+        } catch (IOException e) {
+            final SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.IO_ERROR, e);
+            SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
+            return false;
+        } finally {
+            if (randomAccessFile != null) {
+                SVNFileUtil.closeFile(randomAccessFile);
+            }
+            flock.release();
         }
     }
 
