@@ -199,20 +199,28 @@ public class DAVRepository extends SVNRepository {
     }
 
     public SVNNodeKind checkPath(String path, long revision) throws SVNException {
-        DAVBaselineInfo info = null;
-        SVNNodeKind kind = SVNNodeKind.NONE;
         try {
             openConnection();
             path = doGetFullPath(path);
             path = SVNEncodingUtil.uriEncode(path);
             DAVConnection connection = getConnection();
-            info = DAVUtil.getBaselineInfo(connection, this, path, revision, true, false, info);
-            kind = info.isDirectory ? SVNNodeKind.DIR : SVNNodeKind.FILE;
+            if (isValidRevision(revision)) {
+                final DAVBaselineInfo blInfo = DAVUtil.getStableURL(connection, this, path, revision, true, false, null);
+                path = SVNPathUtil.append(blInfo.baselineBase, blInfo.baselinePath);
+            }
+            final DAVProperties props = DAVUtil.getResourceProperties(connection, path,
+                    isValidRevision(revision) ? Long.toString(revision) : null , new DAVElement[] {DAVElement.RESOURCE_TYPE});
+
+            if (props != null && props.isCollection()) {
+                return SVNNodeKind.DIR;
+            } else {
+                return SVNNodeKind.FILE;
+            }
         } catch (SVNException e) {
             SVNErrorMessage error = e.getErrorMessage();
             while (error != null) {
                 if (error.getErrorCode() == SVNErrorCode.FS_NOT_FOUND) {
-                    return kind;
+                    return SVNNodeKind.NONE;
                 }
                 error = error.getChildErrorMessage();
             }
@@ -220,7 +228,6 @@ public class DAVRepository extends SVNRepository {
         } finally {
             closeConnection();
         }
-        return kind;
     }
 
     public SVNProperties getRevisionProperties(long revision, SVNProperties properties) throws SVNException {
