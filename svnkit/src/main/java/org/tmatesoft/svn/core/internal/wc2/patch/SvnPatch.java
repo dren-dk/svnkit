@@ -165,6 +165,7 @@ public class SvnPatch {
     private SvnDiffCallback.OperationKind operation;
 
     private boolean reverse;
+    private boolean gitPatchFormat;
 
     Map<String, SVNMergeRangeList> mergeInfo;
     private Map reverseMergeInfo;
@@ -736,6 +737,14 @@ public class SvnPatch {
         return reverse;
     }
 
+    public boolean isGitPatchFormat() {
+        return gitPatchFormat;
+    }
+
+    public void setGitPatchFormat(boolean gitPatchFormat) {
+        this.gitPatchFormat = gitPatchFormat;
+    }
+
     public Map getMergeInfo() {
         return mergeInfo;
     }
@@ -876,6 +885,7 @@ public class SvnPatch {
                     }
                 }
                 patch.setOperation(SvnDiffCallback.OperationKind.Modified);
+                patch.setGitPatchFormat(true);
                 return ParserState.GIT_DIFF_SEEN;
             }
         };
@@ -887,6 +897,7 @@ public class SvnPatch {
                 } else {
                     patch.setOldFileName(grabFileName(s.substring("--- a/".length())));
                 }
+                patch.setGitPatchFormat(true);
                 return ParserState.GIT_MINUS_SEEN;
             }
         };
@@ -898,6 +909,7 @@ public class SvnPatch {
                 } else {
                     patch.setNewFileName(grabFileName(s.substring("+++ b/".length())));
                 }
+                patch.setGitPatchFormat(true);
                 return ParserState.GIT_HEADER_FOUND;
             }
         };
@@ -906,6 +918,7 @@ public class SvnPatch {
                 final Boolean[] modeBits = patch.parseGitModeBits(line.substring("old mode ".length()));
                 patch.setOldExecutableBit(modeBits[0]);
                 patch.setOldSymlinkBit(modeBits[1]);
+                patch.setGitPatchFormat(true);
                 return ParserState.OLD_MODE_SEEN;
             }
         };
@@ -915,12 +928,14 @@ public class SvnPatch {
                 final Boolean[] modeBits = patch.parseGitModeBits(line.substring("new mode ".length()));
                 patch.setNewExecutableBit(modeBits[0]);
                 patch.setNewSymlinkBit(modeBits[1]);
+                patch.setGitPatchFormat(true);
                 return ParserState.GIT_MODE_SEEN;
             }
         };
         IParserFunction GIT_MOVE_FROM = new IParserFunction() {
             public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 patch.setOldFileName(grabFileName(line.substring("rename from ".length())));
+                patch.setGitPatchFormat(true);
                 return ParserState.MOVE_FROM_SEEN;
             }
         };
@@ -928,12 +943,14 @@ public class SvnPatch {
             public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 patch.setNewFileName(grabFileName(line.substring("rename to ".length())));
                 patch.setOperation(SvnDiffCallback.OperationKind.Moved);
+                patch.setGitPatchFormat(true);
                 return ParserState.GIT_TREE_SEEN;
             }
         };
         IParserFunction GIT_COPY_FROM = new IParserFunction() {
             public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 patch.setOldFileName(grabFileName(line.substring("copy from ".length())));
+                patch.setGitPatchFormat(true);
                 return ParserState.COPY_FROM_SEEN;
             }
         };
@@ -941,6 +958,7 @@ public class SvnPatch {
             public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 patch.setNewFileName(grabFileName(line.substring("copy to ".length())));
                 patch.setOperation(SvnDiffCallback.OperationKind.Copied);
+                patch.setGitPatchFormat(true);
                 return ParserState.GIT_TREE_SEEN;
             }
         };
@@ -952,12 +970,14 @@ public class SvnPatch {
 
                 patch.setOperation(SvnDiffCallback.OperationKind.Added);
                 patch.setNodeKind(SVNNodeKind.FILE);
+                patch.setGitPatchFormat(true);
                 return ParserState.GIT_TREE_SEEN;
             }
         };
         IParserFunction GIT_DELETED_FILE = new IParserFunction() {
             public ParserState parse(String line, SvnPatch patch, ParserState currentState) {
                 patch.setOperation(SvnDiffCallback.OperationKind.Deleted);
+                patch.setGitPatchFormat(true);
                 return ParserState.GIT_TREE_SEEN;
             }
         };
@@ -976,6 +996,7 @@ public class SvnPatch {
                     patch.setOldExecutableBit(patch.getNewExecutableBit());
                     patch.setOldSymlinkBit(patch.getNewSymlinkBit());
                 }
+                patch.setGitPatchFormat(true);
                 return currentState;
             }
         };
