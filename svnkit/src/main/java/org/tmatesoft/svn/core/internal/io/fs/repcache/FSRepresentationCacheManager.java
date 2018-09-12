@@ -40,9 +40,6 @@ import org.tmatesoft.svn.util.SVNLogType;
 public class FSRepresentationCacheManager implements IFSRepresentationCacheManager {
     
     public static final String REP_CACHE_TABLE = "rep_cache";
-    // TODO!!
-    private static final int REP_CACHE_DB_FORMAT =  2;
-//    private static final int REP_CACHE_DB_FORMAT =  1;
     private static final String REP_CACHE_DB_SQL =  "create table rep_cache (hash text not null primary key, " +
                                                     "                        revision integer not null, " + 
                                                     "                        offset integer not null, " + 
@@ -59,7 +56,7 @@ public class FSRepresentationCacheManager implements IFSRepresentationCacheManag
             cacheObj.myRepCacheDB = SqlJetDb.open(fsfs.getRepositoryCacheFile(), true);
             cacheObj.myRepCacheDB.setSafetyLevel(SqlJetSafetyLevel.OFF);
             
-            checkFormat(cacheObj.myRepCacheDB);
+            checkFormat(fsfs.getDBFormat(), cacheObj.myRepCacheDB);
             cacheObj.myTable = cacheObj.myRepCacheDB.getTable(REP_CACHE_TABLE);
         } catch (SqlJetException e) {
             SVNDebugLog.getDefaultLog().logError(SVNLogType.FSFS, e);
@@ -69,11 +66,11 @@ public class FSRepresentationCacheManager implements IFSRepresentationCacheManag
         return cacheObj;
     }
     
-    public static void createRepresentationCache(File path) throws SVNException {
+    public static void createRepresentationCache(int format, File path) throws SVNException {
         SqlJetDb db = null;
         try {
             db = SqlJetDb.open(path, true);
-            checkFormat(db);
+            checkFormat(format, db);
         } catch (SqlJetException e) {
             SVNDebugLog.getDefaultLog().logError(SVNLogType.FSFS, e);
         } finally {
@@ -87,20 +84,21 @@ public class FSRepresentationCacheManager implements IFSRepresentationCacheManag
         }
     }
 
-    private static void checkFormat(final SqlJetDb db) throws SqlJetException {
+    private static void checkFormat(final int fsFormat, final SqlJetDb db) throws SqlJetException {
+        final int schemaVersion = FSFS.getRepCacheSchemaFormat(fsFormat);
         db.runWithLock(new ISqlJetRunnableWithLock() {
             public Object runWithLock(SqlJetDb db) throws SqlJetException {
                 int version = db.getOptions().getUserVersion();
-                if (version < REP_CACHE_DB_FORMAT) {
+                if (version < schemaVersion) {
                     db.getOptions().setAutovacuum(true);
                     db.runWriteTransaction(new ISqlJetTransaction() {
                         public Object run(SqlJetDb db) throws SqlJetException {
-                            db.getOptions().setUserVersion(REP_CACHE_DB_FORMAT);
+                            db.getOptions().setUserVersion(schemaVersion);
                             db.createTable(FSRepresentationCacheManager.REP_CACHE_DB_SQL);
                             return null;
                         }
                     });
-                } else if (version > REP_CACHE_DB_FORMAT) {
+                } else if (version > schemaVersion) {
                     throw new SqlJetException("Schema format " + version + " not recognized");   
                 }
                 return null;

@@ -693,7 +693,7 @@ public abstract class SVNRepositoryFactory {
 
             if (fsFormat >= FSFS.MIN_REP_SHARING_FORMAT) {
                 File repCacheFile = new File(path, FSFS.DB_DIR + "/" + FSFS.REP_CACHE_DB);
-                FSRepresentationCacheUtil.create(repCacheFile);
+                FSRepresentationCacheUtil.create(fsFormat, repCacheFile);
             }
 
             /* Create the revprops directory. */

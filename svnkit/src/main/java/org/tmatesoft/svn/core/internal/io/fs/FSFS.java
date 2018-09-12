@@ -149,6 +149,10 @@ public class FSFS {
 
     public static final int MIN_COMPRESSION_FORMAT = 8;
 
+    public static int getRepCacheSchemaFormat(int fsfsFormat) {
+        return fsfsFormat < MIN_REP_CACHE_SCHEMA_V2_FORMAT ? 1 : 2;
+    }
+
     //TODO: we should be able to change this via some option
     private static long DEFAULT_MAX_FILES_PER_DIRECTORY = 1000;
     private static final String DB_TYPE = "fsfs";
