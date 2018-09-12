@@ -126,6 +126,7 @@ public class FSFS {
     public static final int REPOSITORY_FORMAT = 5;
     public static final int REPOSITORY_FORMAT_LEGACY = 3;
     public static final int DB_FORMAT_PRE_17 = 4;
+    public static final int DB_FORMAT_PRE_10 = 7;
     public static final int DB_FORMAT = 8;
     public static final int DB_FORMAT_LOW = 1;
     public static final int MIN_SVNDIFF1_FORMAT = 2;

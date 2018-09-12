@@ -436,10 +436,16 @@ public abstract class SVNRepositoryFactory {
          return createLocalRepository(path, uuid, enableRevisionProperties,
                  force, pre14Compatible, pre15Compatible, pre16Compatible, false, false);
      }
+    public static SVNURL createLocalRepository(File path, String uuid, boolean enableRevisionProperties,
+                                               boolean force, boolean pre14Compatible, boolean pre15Compatible, boolean pre16Compatible,
+                                               boolean pre17Compatible, boolean with17Compatible) throws SVNException {
+        return createLocalRepository(path, uuid, enableRevisionProperties, force, pre14Compatible, pre15Compatible, pre16Compatible,
+                pre17Compatible, with17Compatible, true);
+    }
 
      public static SVNURL createLocalRepository(File path, String uuid, boolean enableRevisionProperties,
             boolean force, boolean pre14Compatible, boolean pre15Compatible, boolean pre16Compatible,
-            boolean pre17Compatible, boolean with17Compatible) throws SVNException {
+            boolean pre17Compatible, boolean with17Compatible, boolean pre10Compatible) throws SVNException {
         SVNFileType fType = SVNFileType.getType(path);
         if (fType != SVNFileType.NONE) {
             if (fType == SVNFileType.DIRECTORY) {
@@ -526,6 +532,9 @@ public abstract class SVNRepositoryFactory {
                 }
             }
             int fsFormat = FSFS.DB_FORMAT;
+            if (pre10Compatible) {
+                fsFormat = FSFS.DB_FORMAT_PRE_10;
+            }
             if( FSFS.DB_FORMAT_PRE_17_USE_AS_DEFAULT && !with17Compatible ) {
                 fsFormat = FSFS.DB_FORMAT_PRE_17;
             }
