@@ -210,7 +210,7 @@ public class SVNStatusCommand extends SVNXMLCommand implements ISVNStatusHandler
             xmlMap.put("file-external", "true");
         }
         if (status.isVersioned() && !status.isCopied()) {
-            xmlMap.put("revision", status.getRevision().toString());
+            xmlMap.put("revision", String.valueOf(status.getRevision().getNumber()));
         }
         if (status.getTreeConflict() != null) {
             xmlMap.put("tree-conflicted", "true");
