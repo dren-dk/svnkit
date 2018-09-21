@@ -323,7 +323,7 @@ public class SVNConnection {
         write("(w(", buffer);
         for (; error != null; error = error.getChildErrorMessage()) {
             String message = error.getMessage() == null ? "" : error.getMessage();
-            buffer = new Object[]{new Long(error.getErrorCode().getCode()), message, "", new Integer(0)};
+            buffer = new Object[]{(long) error.getErrorCode().getCode(), message, "", 0};
             write("(nssn)", buffer);
         }
         write(")", null);

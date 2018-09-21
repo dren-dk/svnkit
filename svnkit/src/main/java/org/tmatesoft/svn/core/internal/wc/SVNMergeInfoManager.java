@@ -47,8 +47,8 @@ public class SVNMergeInfoManager {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.UNSUPPORTED_FEATURE, 
                     "Querying mergeinfo requires version {0} of the FSFS filesystem schema;" +
                     " filesystem ''{1}'' uses only version {2}", 
-                    new Object[] { new Integer(FSFS.MIN_MERGE_INFO_FORMAT), root.getOwner().getDBRoot(), 
-                    new Integer(root.getOwner().getDBFormat()) });
+                    new Object[] {FSFS.MIN_MERGE_INFO_FORMAT, root.getOwner().getDBRoot(),
+                            root.getOwner().getDBFormat()});
             SVNErrorManager.error(err, SVNLogType.FSFS);
         }
         Map mergeInfoAsHashes = getMergeInfoForPaths(root, paths, inherit, includeDescendants);

@@ -383,7 +383,7 @@ public class FSRepositoryUtil {
         if (nextKeyLength >= MAX_KEY_SIZE) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.UNKNOWN, 
                     "FATAL error: new key length is greater than the threshold {0}", 
-                    new Integer(MAX_KEY_SIZE));
+                    new Object[]{MAX_KEY_SIZE});
             SVNErrorManager.error(err, SVNLogType.FSFS);
         }
         if (carry) {
@@ -400,14 +400,14 @@ public class FSRepositoryUtil {
                     "unreleased dev builds; see " +
                     "http://subversion.apache.org" +
                     "/docs/release-notes/1.7#revprop-packing",  
-                    new Integer(FSFS.MIN_PACKED_REVPROP_SQLITE_DEV_FORMAT));
+                    new Object[]{FSFS.MIN_PACKED_REVPROP_SQLITE_DEV_FORMAT});
             SVNErrorManager.error(err, SVNLogType.FSFS);
         }
         if (format < FSFS.DB_FORMAT_LOW || format > FSFS.DB_FORMAT) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_UNSUPPORTED_FORMAT, 
                     "Expected FS format between ''{0}'' and ''{1}''; found format ''{2}''", 
-                    new Object[] {new Integer(FSFS.DB_FORMAT_LOW), new Integer(FSFS.DB_FORMAT), 
-                    new Integer(format)});
+                    new Object[] {FSFS.DB_FORMAT_LOW, FSFS.DB_FORMAT,
+                            format});
             SVNErrorManager.error(err, SVNLogType.FSFS);
         }
     }

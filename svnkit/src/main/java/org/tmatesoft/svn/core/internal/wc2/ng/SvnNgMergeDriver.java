@@ -2634,7 +2634,7 @@ public class SvnNgMergeDriver {
         repository.log(new String[] { "" }, youngestRev, oldestRev, false, false, 0, false, new String[0], 
                 new ISVNLogEntryHandler() {
             public void handleLogEntry(SVNLogEntry logEntry) throws SVNException {
-                changedRevs.add(new Long(logEntry.getRevision()));
+                changedRevs.add(logEntry.getRevision());
             }
         });
         

@@ -206,12 +206,12 @@ public abstract class SvnRepositoryAccess {
                 
         Map<?,?> locations = repository.getLocations("", (Map<?,?>) null, pegRevisionNumber, revisionsRange);
         
-        SVNLocationEntry startPath = (SVNLocationEntry) locations.get(new Long(startRevisionNumber));
-        SVNLocationEntry endPath = (SVNLocationEntry) locations.get(new Long(endRevisionNumber));
+        SVNLocationEntry startPath = (SVNLocationEntry) locations.get(startRevisionNumber);
+        SVNLocationEntry endPath = (SVNLocationEntry) locations.get(endRevisionNumber);
         if (startPath == null) {
             Object source = path != null ? (Object) path : (Object) url;
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.CLIENT_UNRELATED_RESOURCES, "Unable to find repository location for ''{0}'' in revision ''{1}''", new Object[] {
-                    source, new Long(startRevisionNumber)
+                    source, startRevisionNumber
             });
             SVNErrorManager.error(err, SVNLogType.WC);
         }
@@ -219,7 +219,7 @@ public abstract class SvnRepositoryAccess {
             Object source = path != null ? (Object) path : (Object) url;
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.CLIENT_UNRELATED_RESOURCES, "The location for ''{0}'' for revision {1} does not exist in the "
                     + "repository or refers to an unrelated object", new Object[] {
-                    source, new Long(endRevisionNumber)
+                    source, endRevisionNumber
             });
             SVNErrorManager.error(err, SVNLogType.WC);
         }

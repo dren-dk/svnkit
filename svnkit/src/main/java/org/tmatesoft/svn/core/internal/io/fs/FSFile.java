@@ -15,7 +15,6 @@ import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.internal.util.SVNHashMap;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
-import org.tmatesoft.svn.core.internal.wc.SVNMergeInfoManager;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.util.SVNDebugLog;
 import org.tmatesoft.svn.util.SVNLogType;
@@ -511,7 +510,7 @@ public class FSFile {
                     depth = SVNDepth.IMMEDIATES;
                     break;
                 default: {
-                    SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.REPOS_BAD_REVISION_REPORT, "Invalid depth ({0}) for path ''{1}''", new Object[]{new Integer(id), path});
+                    SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.REPOS_BAD_REVISION_REPORT, "Invalid depth ({0}) for path ''{1}''", new Object[]{id, path});
                     SVNErrorManager.error(err, SVNLogType.WC);
                 }
             }

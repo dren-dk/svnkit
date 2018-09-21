@@ -289,9 +289,9 @@ public class FSFS {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.REPOS_UNSUPPORTED_VERSION,
                                   "Expected repository format ''{0}'' or " +
                                   "''{1}''; found format ''{2}''",
-                                  new Object[] {new Integer(REPOSITORY_FORMAT_LEGACY),
-                                                new Integer(REPOSITORY_FORMAT),
-                                                new Integer(format)});
+                                  new Object[] {REPOSITORY_FORMAT_LEGACY,
+                                          REPOSITORY_FORMAT,
+                                          format});
             SVNErrorManager.error(err, SVNLogType.FSFS);
         }
         myReposFormat = format;
@@ -1789,11 +1789,11 @@ public class FSFS {
 
     public long getDeletedRevision(String path, long startRev, long endRev) throws SVNException {
         if (FSRepository.isInvalidRevision(startRev)) {
-            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_NO_SUCH_REVISION, "Invalid start revision {0}", new Long(startRev));
+            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_NO_SUCH_REVISION, "Invalid start revision {0}", startRev);
             SVNErrorManager.error(err, SVNLogType.FSFS);
         }
         if (FSRepository.isInvalidRevision(endRev)) {
-            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_NO_SUCH_REVISION, "Invalid end revision {0}", new Long(endRev));
+            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_NO_SUCH_REVISION, "Invalid end revision {0}", endRev);
             SVNErrorManager.error(err, SVNLogType.FSFS);
         }
         if (startRev > endRev) {
@@ -2236,7 +2236,7 @@ public class FSFS {
     private void ensureRevisionsExists(long revision) throws SVNException {
         if (FSRepository.isInvalidRevision(revision)) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_NO_SUCH_REVISION,
-                    "Invalid revision number ''{0}''", new Long(revision));
+                    "Invalid revision number ''{0}''", revision);
             SVNErrorManager.error(err, SVNLogType.FSFS);
         }
 
@@ -2295,7 +2295,7 @@ public class FSFS {
             for (int i = 0; i < token.length(); i++) {
                 if (token.charAt(i) > 255) {
                     SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_BAD_LOCK_TOKEN, 
-                            "Lock token ''{0}'' is not ASCII at byte ''{1}''", new Object[] {token, new Integer(i)});
+                            "Lock token ''{0}'' is not ASCII at byte ''{1}''", new Object[] {token, i});
                     SVNErrorManager.error(err, SVNLogType.FSFS);
                 }
             }
@@ -2546,7 +2546,7 @@ public class FSFS {
         SVNProperties revisionProperties = getRevisionProperties(revision);
         String timeString = revisionProperties.getStringValue(SVNRevisionProperty.DATE);
         if (timeString == null) {
-            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_GENERAL, "Failed to find time on revision {0}", new Long(revision));
+            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_GENERAL, "Failed to find time on revision {0}", revision);
             SVNErrorManager.error(err, SVNLogType.FSFS);
         }
         return SVNDate.parseDateString(timeString);

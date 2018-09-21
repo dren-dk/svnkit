@@ -845,7 +845,7 @@ public class SVNWCClient16 extends SVNBasicDelegate {
         SVNNodeKind kind = repos.checkPath("", revNumber);
         if (kind == SVNNodeKind.NONE) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_NOT_FOUND, "Path ''{0}'' does not exist in revision {1}", new Object[] {
-                    url.getPath(), new Long(revNumber)
+                    url.getPath(), revNumber
             });
             SVNErrorManager.error(err, SVNLogType.WC);
         }
@@ -2777,7 +2777,7 @@ public class SVNWCClient16 extends SVNBasicDelegate {
                 SVNNodeKind urlKind = repos.checkPath("", revNum[0]);
                 if (urlKind == SVNNodeKind.NONE) {
                     SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_ILLEGAL_URL, "URL ''{0}'' non-existent in revision {1}", new Object[] {
-                            url, new Long(revNum[0])
+                            url, revNum[0]
                     });
                     SVNErrorManager.error(err, SVNLogType.WC);
                 }
@@ -2793,7 +2793,7 @@ public class SVNWCClient16 extends SVNBasicDelegate {
                 }
                 if (rootEntry == null) {
                     SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_ILLEGAL_URL, "URL ''{0}'' non-existent in revision {1}", new Object[] {
-                            url, new Long(revNum[0])
+                            url, revNum[0]
                     });
                     SVNErrorManager.error(err, SVNLogType.WC);
                 }
@@ -2803,7 +2803,7 @@ public class SVNWCClient16 extends SVNBasicDelegate {
         }
         if (rootEntry == null || rootEntry.getKind() == SVNNodeKind.NONE) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_ILLEGAL_URL, "URL ''{0}'' non-existent in revision ''{1}''", new Object[] {
-                    url, new Long(revNum[0])
+                    url, revNum[0]
             });
             SVNErrorManager.error(err, SVNLogType.WC);
         }
@@ -3431,7 +3431,7 @@ public class SVNWCClient16 extends SVNBasicDelegate {
                 if (info.myRevision == SVNRevision.UNDEFINED) {
                     lockPaths.put(encodedPath, null);
                 } else {
-                    lockPaths.put(encodedPath, new Long(info.myRevision.getNumber()));
+                    lockPaths.put(encodedPath, info.myRevision.getNumber());
                 }
             } else {
                 lockPaths.put(encodedPath, info.myToken);

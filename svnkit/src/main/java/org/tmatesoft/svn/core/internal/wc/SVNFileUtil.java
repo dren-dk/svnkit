@@ -518,7 +518,7 @@ public class SVNFileUtil {
 
     public static void writeVersionFile(File file, int version) throws SVNException {
         if (version < 0) {
-            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.INCORRECT_PARAMS, "Version {0} is not non-negative", new Integer(version));
+            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.INCORRECT_PARAMS, "Version {0} is not non-negative", new Object[]{version});
             SVNErrorManager.error(err, Level.FINE, SVNLogType.WC);
         }
 
@@ -1397,7 +1397,7 @@ public class SVNFileUtil {
             int hi = Character.digit(hexDigest.charAt(2 * i), 16) << 4;
 
             int lo = Character.digit(hexDigest.charAt(2 * i + 1), 16);
-            Integer ib = new Integer(hi | lo);
+            Integer ib = hi | lo;
             byte b = ib.byteValue();
 
             digest[i] = b;

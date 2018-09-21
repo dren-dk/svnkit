@@ -142,7 +142,7 @@ public class FSPacker {
         SVNFileUtil.deleteAll(packDir, false, myCanceller);
 
         if (fsfs.isUseLogAddressing()) {
-            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_UNSUPPORTED_FORMAT, "Logical addressing is unsupported for FS format ''{0}''", new Object[]{new Integer(fsfs.getDBFormat())});
+            SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_UNSUPPORTED_FORMAT, "Logical addressing is unsupported for FS format ''{0}''", new Object[]{fsfs.getDBFormat()});
             SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
         } else {
             packPhysicallyAddressed(fsfs, shard, shardPath, packFile, manifestFile);

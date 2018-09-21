@@ -91,7 +91,7 @@ public class FSLogicalAddressingIndex {
             if (pageEntries.size() > 0) {
                 FSP2LEntry entry = pageEntries.get(pageEntries.size() - 1);
                 if (entry.getOffset() + entry.getSize() > pageInfo.getPageSize() * pageInfo.getPageCount()) {
-                    SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_INDEX_OVERFLOW, "Last P2L index entry extends beyond the last page in revision {0}", new Long(revision));
+                    SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_INDEX_OVERFLOW, "Last P2L index entry extends beyond the last page in revision {0}", revision);
                     SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
                 }
             }

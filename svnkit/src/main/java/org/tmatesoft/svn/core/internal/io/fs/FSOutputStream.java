@@ -390,7 +390,7 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
             if (entry == null ||
                     entry.getType().getCode() < FSP2LProtoIndex.ItemType.FILE_REP.getCode() ||
                     entry.getType().getCode() > FSP2LProtoIndex.ItemType.DIR_PROPS.getCode()) {
-                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_CORRUPT, "No representation found at offset {0} for item %s in revision {1}", new Object[]{new Long(offset), new Long(representation.getItemIndex())});
+                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.FS_CORRUPT, "No representation found at offset {0} for item %s in revision {1}", new Object[]{offset, representation.getItemIndex()});
                 SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
             }
         } else {

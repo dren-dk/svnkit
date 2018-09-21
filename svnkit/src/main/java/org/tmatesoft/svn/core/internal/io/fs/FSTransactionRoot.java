@@ -238,7 +238,7 @@ public class FSTransactionRoot extends FSRoot {
         
         SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.IO_UNIQUE_NAMES_EXHAUSTED, 
                 "Unable to create transaction directory in ''{0}'' for revision {1}", 
-                new Object[] { parent, new Long(revision) });
+                new Object[] { parent, revision});
         SVNErrorManager.error(err, SVNLogType.FSFS);
         return null;    
     }
@@ -285,13 +285,13 @@ public class FSTransactionRoot extends FSRoot {
         if (node.getMergeInfoCount() < 0) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_CORRUPT, 
                     "Can''t increment mergeinfo count on node-revision {0} to negative value {1}",
-                    new Object[] { node.getId(), new Long(node.getMergeInfoCount()) });
+                    new Object[] { node.getId(), node.getMergeInfoCount()});
             SVNErrorManager.error(err, SVNLogType.FSFS);
         }
         if (node.getMergeInfoCount() > 1 && node.getType() == SVNNodeKind.FILE) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_CORRUPT,
                     "Can''t increment mergeinfo count on *file* node-revision {0} to {1} (> 1)",
-                    new Object[]{node.getId(), new Long(node.getMergeInfoCount())});
+                    new Object[]{node.getId(), node.getMergeInfoCount()});
             SVNErrorManager.error(err, SVNLogType.FSFS);
         }
         getOwner().putTxnRevisionNode(node.getId(), node);

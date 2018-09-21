@@ -248,7 +248,7 @@ class SVNCommitEditor implements ISVNEditor {
     }
 
     private static Long getRevisionObject(long rev) {
-        return rev >= 0 ? new Long(rev) : null;
+        return rev >= 0 ? rev : null;
     }
 
     private final static class DirBaton {

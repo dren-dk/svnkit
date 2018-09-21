@@ -1521,7 +1521,7 @@ public abstract class SVNRepository {
         final Map result = entries != null ? entries : new SVNHashMap();
         getLocations(path, pegRevision, revisions, new ISVNLocationEntryHandler() {
             public void handleLocationEntry(SVNLocationEntry locationEntry) {
-                result.put(new Long(locationEntry.getRevision()), locationEntry);
+                result.put(locationEntry.getRevision(), locationEntry);
             } 
         });
         return result;        
@@ -2918,13 +2918,13 @@ public abstract class SVNRepository {
     }
     
     protected static Long getRevisionObject(long revision) {
-        return isValidRevision(revision) ? new Long(revision) : null;
+        return isValidRevision(revision) ? revision : null;
     }
     
     protected static void assertValidRevision(long revision) throws SVNException {
         if (!isValidRevision(revision)) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.CLIENT_BAD_REVISION, 
-                    "Invalid revision number ''{0}''", new Long(revision));
+                    "Invalid revision number ''{0}''", revision);
             SVNErrorManager.error(err, SVNLogType.NETWORK);
         }
     }
@@ -3076,7 +3076,7 @@ public abstract class SVNRepository {
         if (kind == SVNNodeKind.NONE) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_NOT_FOUND, 
                     "Path ''{0}'' doesn''t exist in revision {1}", 
-                    new Object[] { reposAbsPath, new Long(pegRevision) });
+                    new Object[] { reposAbsPath, pegRevision});
             SVNErrorManager.error(err, SVNLogType.NETWORK);
         }
 
@@ -3098,7 +3098,7 @@ public abstract class SVNRepository {
         if (kind == SVNNodeKind.NONE) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_NOT_FOUND, 
                     "Path ''{0}'' doesn''t exist in revision {1}", 
-                    new Object[] { reposAbsPath, new Long(pegRevision) });
+                    new Object[] { reposAbsPath, pegRevision});
             SVNErrorManager.error(err, SVNLogType.NETWORK);
         }
         if (revisions == null || revisions.length == 0) {
@@ -3124,7 +3124,7 @@ public abstract class SVNRepository {
         if (locationsLogHandler.myLastPath != null) {
             for (int i = 0; i < revisions.length; i++) {
                 long rev = revisions[i];
-                Long revObject = new Long(rev);
+                Long revObject = rev;
                 if (handler != null && !locationsLogHandler.myProcessedRevisions.contains(revObject)) {
                     handler.handleLocationEntry(new SVNLocationEntry(rev, locationsLogHandler.myLastPath));
                     locationsLogHandler.myProcessedRevisions.add(revObject);
@@ -3135,14 +3135,14 @@ public abstract class SVNRepository {
         if (locationsLogHandler.myPegPath == null) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.UNKNOWN, 
                     "Unable to find repository location for ''{0}'' in revision {1}", 
-                    new Object[] { reposAbsPath, new Long(pegRevision) });
+                    new Object[] { reposAbsPath, pegRevision});
             SVNErrorManager.error(err, SVNLogType.NETWORK);
         }
         
         if (!reposAbsPath.equals(locationsLogHandler.myPegPath)) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.CLIENT_UNRELATED_RESOURCES, 
                     "''{0}'' in revision {1} is an unrelated object",
-                    new Object[] { reposAbsPath, new Long(youngest) });
+                    new Object[] { reposAbsPath, youngest});
             SVNErrorManager.error(err, SVNLogType.NETWORK);
         }
         return locationsLogHandler.myProcessedRevisions.size();
@@ -3270,7 +3270,7 @@ public abstract class SVNRepository {
             } else {
                 SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.CLIENT_UNRELATED_RESOURCES, 
                         "Missing changed-path information for ''{0}'' in revision {1}", 
-                        new Object[] { path, new Long(revision) });
+                        new Object[] { path, revision});
                 SVNErrorManager.error(err, SVNLogType.NETWORK);
             }
         }
@@ -3431,7 +3431,7 @@ public abstract class SVNRepository {
                 if (logEntry.getRevision() <= nextRev) {
                     if (myLocationsHandler != null) {
                         myLocationsHandler.handleLocationEntry(new SVNLocationEntry(nextRev, currentPath));
-                        myProcessedRevisions.add(new Long(nextRev));
+                        myProcessedRevisions.add(nextRev);
                     }
                     myRevisionsCount--;
                 } else {

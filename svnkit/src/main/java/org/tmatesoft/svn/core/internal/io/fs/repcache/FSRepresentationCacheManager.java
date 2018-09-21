@@ -128,9 +128,9 @@ public class FSRepresentationCacheManager implements IFSRepresentationCacheManag
         }
         
         try {
-            myTable.insert(new Object[] { representation.getSHA1HexDigest(), new Long(representation.getRevision()),
-                    new Long(representation.getItemIndex()), new Long(representation.getSize()),
-                    new Long(representation.getExpandedSize()) });
+            myTable.insert(new Object[] { representation.getSHA1HexDigest(), representation.getRevision(),
+                    representation.getItemIndex(), representation.getSize(),
+                    representation.getExpandedSize()});
         } catch (SqlJetException e) {
             SVNErrorManager.error(convertError(e), SVNLogType.FSFS);
         }

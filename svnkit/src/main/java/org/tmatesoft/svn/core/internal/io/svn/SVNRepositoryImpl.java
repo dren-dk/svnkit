@@ -352,7 +352,7 @@ public class SVNRepositoryImpl extends SVNRepository implements ISVNReporter {
     }
 
     public long getFile(String path, long revision, SVNProperties properties, OutputStream contents) throws SVNException {
-        Long rev = revision > 0 ? new Long(revision) : null;
+        Long rev = revision > 0 ? revision : null;
         try {
             openConnection();
             Object[] buffer = new Object[]{"get-file", getLocationRelativePath(path), rev,
@@ -707,7 +707,7 @@ public class SVNRepositoryImpl extends SVNRepository implements ISVNReporter {
             if (revisionPropertyNames != null && revisionPropertyNames.length > 0) {
                 Object[] realBuffer = new Object[]{"log", repositoryPaths, getRevisionObject(startRevision),
                         getRevisionObject(endRevision), Boolean.valueOf(changedPaths),
-                        Boolean.valueOf(strictNode), new Long(limit > 0 ? limit : 0),
+                        Boolean.valueOf(strictNode), limit > 0 ? limit : 0,
                         Boolean.valueOf(includeMergedRevisions), "revprops", revisionPropertyNames};
                 for (int i = 0; i < revisionPropertyNames.length; i++) {
                     String propName = revisionPropertyNames[i];
@@ -723,7 +723,7 @@ public class SVNRepositoryImpl extends SVNRepository implements ISVNReporter {
             } else {
                 buffer = new Object[]{"log",
                         repositoryPaths, getRevisionObject(startRevision), getRevisionObject(endRevision),
-                        Boolean.valueOf(changedPaths), Boolean.valueOf(strictNode), new Long(limit > 0 ? limit : 0),
+                        Boolean.valueOf(changedPaths), Boolean.valueOf(strictNode), limit > 0 ? limit : 0,
                         Boolean.valueOf(includeMergedRevisions), "all-revprops"};
 
                 write("(w((*s)(n)(n)wwnww()))", buffer);

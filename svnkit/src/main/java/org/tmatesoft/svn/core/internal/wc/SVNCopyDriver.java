@@ -251,7 +251,7 @@ public class SVNCopyDriver extends SVNBasicDelegate {
             info.mySourceKind = nonTopRepos.checkPath("", pair.mySourceRevisionNumber);
             if (info.mySourceKind == SVNNodeKind.NONE) {
                 SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_NOT_FOUND,
-                        "Path ''{0}'' does not exist in revision {1}", new Object[] {SVNURL.parseURIEncoded(pair.mySource), new Long(pair.mySourceRevisionNumber)});
+                        "Path ''{0}'' does not exist in revision {1}", new Object[] {SVNURL.parseURIEncoded(pair.mySource), pair.mySourceRevisionNumber});
                 SVNErrorManager.error(err, SVNLogType.WC);
             }
             // dst already exists at HEAD.
@@ -1055,7 +1055,7 @@ public class SVNCopyDriver extends SVNBasicDelegate {
                     SVNErrorMessage err;
                     if (pair.mySourceRevisionNumber >= 0) {
                         err = SVNErrorMessage.create(SVNErrorCode.FS_NOT_FOUND, "Path ''{0}'' not found in revision {1}",
-                                new Object[] {SVNURL.parseURIEncoded(pair.mySource), new Long(pair.mySourceRevisionNumber)});
+                                new Object[] {SVNURL.parseURIEncoded(pair.mySource), pair.mySourceRevisionNumber});
                     } else {
                         err = SVNErrorMessage.create(SVNErrorCode.FS_NOT_FOUND, "Path ''{0}'' not found in head revision",
                                 SVNURL.parseURIEncoded(pair.mySource));

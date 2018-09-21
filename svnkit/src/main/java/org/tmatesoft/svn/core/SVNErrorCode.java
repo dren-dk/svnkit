@@ -55,7 +55,7 @@ public class SVNErrorCode implements Serializable {
      * @return a corresponding <b>SVNErrorCode</b>.
      */
     public static SVNErrorCode getErrorCode(int code) {
-        SVNErrorCode errorCode = (SVNErrorCode) ourErrorCodes.get(new Integer(code));
+        SVNErrorCode errorCode = (SVNErrorCode) ourErrorCodes.get(code);
         if (errorCode == null) {
             errorCode = UNKNOWN;
         }
@@ -66,7 +66,7 @@ public class SVNErrorCode implements Serializable {
         myCategory = category;
         myCode = category + index;
         myDescription = description;
-        ourErrorCodes.put(new Integer(myCode), this);
+        ourErrorCodes.put(myCode, this);
     }
     
     /**
@@ -131,7 +131,7 @@ public class SVNErrorCode implements Serializable {
     }
     
     private Object readResolve() {
-        return ourErrorCodes.get(new Integer(myCode));
+        return ourErrorCodes.get(myCode);
     }
     
     /**

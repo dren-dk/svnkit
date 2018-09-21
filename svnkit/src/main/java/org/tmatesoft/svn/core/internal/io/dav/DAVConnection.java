@@ -736,7 +736,7 @@ public class DAVConnection {
         } else {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_DAV_OPTIONS_REQ_FAILED,
                     "OPTIONS request (for capabilities) got HTTP response code {0}",
-                    new Integer(status.getCode()));
+                    new Object[]{status.getCode()});
             SVNErrorManager.error(err, SVNLogType.NETWORK);
         }
     }

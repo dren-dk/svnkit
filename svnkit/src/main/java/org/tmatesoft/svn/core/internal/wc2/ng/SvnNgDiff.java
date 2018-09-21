@@ -709,14 +709,14 @@ public class SvnNgDiff extends SvnNgOperationRunner<Void, SvnDiff> {
                 SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_NOT_FOUND,
                         "Diff target ''{0}'' was not found in the " +
                                 "repository at revision ''{1}''", new Object[]{
-                        url, new Long(revision)
+                        url, revision
                 });
                 SVNErrorManager.error(err, SVNLogType.WC);
             } else {
                 SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_NOT_FOUND,
                         "Diff target ''{0}'' was not found in the " +
                                 "repository at revisions ''{1}'' and ''{2}''", new Object[]{
-                        url, new Long(revision), new Long(otherRevision)
+                        url, revision, otherRevision
                 });
                 SVNErrorManager.error(err, SVNLogType.WC);
             }
