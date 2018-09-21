@@ -108,7 +108,7 @@ public abstract class SVNRepositoryFactory {
 
     private static final Map myFactoriesMap = new SVNHashMap();
     private static final String REPOSITORY_TEMPLATE_PATH = "/org/tmatesoft/svn/core/io/repository/template.jar";
-    
+
     static {
         FSRepositoryFactory.setup();
         SVNRepositoryFactoryImpl.setup();
@@ -634,9 +634,6 @@ public abstract class SVNRepositoryFactory {
                         format += "layout sharded " + String.valueOf(maxFilesPerDir) + "\n";
                     } else {
                         format += "layout linear\n";
-                    }
-                    if (fsFormat >= FSFS.MIN_LOG_ADDRESSING_MINIMAL_FORMAT) {
-                        format += "addressing logical\n";
                     }
                     fsFormatOS.write(format.getBytes("US-ASCII"));
                 } catch (IOException e) {
