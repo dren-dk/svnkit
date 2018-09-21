@@ -171,6 +171,8 @@ public abstract class SvnRepositoryAccess {
         
         if (repository == null) {
             repository = createRepository(url, null, true);
+        } else {
+            repository.setLocation(url, false);
         }
 
         Structure<RevisionsPair> pair = null;

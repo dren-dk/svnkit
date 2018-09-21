@@ -2824,6 +2824,8 @@ public class SvnNgMergeDriver {
         }
         if (repository == null) {
             repository = repositoryAccess.createRepository(url, null, false);
+        } else {
+            repository.setLocation(url, false);
         }
         return repository; 
     }

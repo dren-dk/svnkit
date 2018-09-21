@@ -770,6 +770,8 @@ public class SvnNgReposToWcCopy extends SvnNgOperationRunner<Void, SvnCopy> {
         SVNRepository repos = repository;
         if (repos == null) {
             repos = getRepositoryAccess().createRepository(url, null, false);
+        } else {
+            repos.setLocation(url, false);
         }
         SVNURL oldLocation = null;
         try {
