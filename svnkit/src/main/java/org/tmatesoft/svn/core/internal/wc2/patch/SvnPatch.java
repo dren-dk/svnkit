@@ -26,6 +26,8 @@ import org.tmatesoft.svn.core.internal.wc2.ng.SvnDiffGenerator;
 
 public class SvnPatch {
 
+    public static final File DEV_NULL = new File("/dev/null");
+
     private static final Transition[] TRANSITIONS = new Transition[] {
             new Transition("--- ", ParserState.START, IParserFunction.DIFF_MINUS),
             new Transition("+++ ", ParserState.MINUS_SEEN, IParserFunction.DIFF_PLUS),
@@ -778,6 +780,9 @@ public class SvnPatch {
     }
 
     private static File grabFileName(String s) {
+        if ("/dev/null".equals(s)) {
+            return DEV_NULL;
+        }
         return SVNFileUtil.createFilePath(SVNPathUtil.canonicalizePath(s));
     }
 

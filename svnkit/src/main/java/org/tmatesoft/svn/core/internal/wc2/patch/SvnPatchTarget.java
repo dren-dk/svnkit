@@ -1056,10 +1056,10 @@ public class SvnPatchTarget extends SvnTargetContent {
     }
 
     private static File chooseTargetFilename(SvnPatch patch) {
-        if (patch.getOldFileName().getPath().equals("/dev/null")) {
+        if (patch.getOldFileName() == SvnPatch.DEV_NULL) {
             return patch.getNewFileName();
         }
-        if (patch.getNewFileName().getPath().equals("/dev/null")) {
+        if (patch.getNewFileName() == SvnPatch.DEV_NULL) {
             return patch.getOldFileName();
         }
         if (patch.getOperation() == SvnDiffCallback.OperationKind.Moved) {
