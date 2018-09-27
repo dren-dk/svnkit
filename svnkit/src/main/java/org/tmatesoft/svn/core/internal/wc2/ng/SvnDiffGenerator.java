@@ -496,7 +496,7 @@ public class SvnDiffGenerator implements ISvnDiffGenerator {
                 //write right file first as base85 encoded gzipped content
                 final DeflatingInputStream rightGzipInputStream = createCompressed(rightFile);
                 try {
-                    writeLiteral(rightFile.length(), rightGzipInputStream, outputStream);
+                    writeLiteral(rightFile == null ? 0 : rightFile.length(), rightGzipInputStream, outputStream);
                 } finally {
                     SVNFileUtil.closeFile(rightGzipInputStream);
                 }
@@ -504,7 +504,7 @@ public class SvnDiffGenerator implements ISvnDiffGenerator {
 
                 final DeflatingInputStream leftGzipInputStream = createCompressed(leftFile);
                 try {
-                    writeLiteral(leftFile.length(), leftGzipInputStream, outputStream);
+                    writeLiteral(leftFile == null ? 0 : leftFile.length(), leftGzipInputStream, outputStream);
                 } finally {
                     SVNFileUtil.closeFile(leftGzipInputStream);
                 }
@@ -530,7 +530,7 @@ public class SvnDiffGenerator implements ISvnDiffGenerator {
     }
 
     private DeflatingInputStream createCompressed(File file) throws IOException {
-        return new DeflatingInputStream(new BufferedInputStream(new FileInputStream(file)));
+        return new DeflatingInputStream(file == null ? SVNFileUtil.DUMMY_IN : new BufferedInputStream(new FileInputStream(file)));
     }
 
     private void internalDiff(SvnTarget target, OutputStream outputStream, String displayPath, File file1, File file2, String label1, String label2, SvnDiffCallback.OperationKind operation, String copyFromPath, String revision1, String revision2) throws SVNException {
