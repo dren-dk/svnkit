@@ -1272,7 +1272,7 @@ public class SvnDiffGenerator implements ISvnDiffGenerator {
                 outputStream.write(five);
             }
             outputStream.write('\n');
-        } while (bytesRead == 85);
+        } while (bytesRead == chunk.length);
     }
 
     private void checkCancelled() {
