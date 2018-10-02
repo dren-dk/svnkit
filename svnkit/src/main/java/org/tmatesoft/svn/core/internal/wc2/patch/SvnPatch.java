@@ -1382,6 +1382,9 @@ public class SvnPatch {
             totalBytesRead += bytesRead;
             off += bytesRead;
             len -= bytesRead;
+            if (len == 0) {
+                break;
+            }
         }
         if (totalBytesRead == 0) {
             return -1;
