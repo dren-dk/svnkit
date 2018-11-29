@@ -1,9 +1,20 @@
 package org.tmatesoft.svn.test;
 
+import java.io.File;
+import java.util.Map;
+
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
-import org.tmatesoft.svn.core.*;
+import org.tmatesoft.svn.core.SVNCommitInfo;
+import org.tmatesoft.svn.core.SVNDepth;
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNLogEntry;
+import org.tmatesoft.svn.core.SVNLogEntryPath;
+import org.tmatesoft.svn.core.SVNProperty;
+import org.tmatesoft.svn.core.SVNPropertyValue;
+import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.internal.wc.SVNExternal;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc17.SVNWCContext;
@@ -12,12 +23,24 @@ import org.tmatesoft.svn.core.internal.wc17.db.StructureFields;
 import org.tmatesoft.svn.core.internal.wc2.SvnWcGeneration;
 import org.tmatesoft.svn.core.io.ISVNEditor;
 import org.tmatesoft.svn.core.io.SVNRepository;
-import org.tmatesoft.svn.core.wc.*;
-import org.tmatesoft.svn.core.wc2.*;
+import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
+import org.tmatesoft.svn.core.wc.DefaultSVNCommitHandler;
+import org.tmatesoft.svn.core.wc.DefaultSVNRepositoryPool;
+import org.tmatesoft.svn.core.wc.SVNClientManager;
+import org.tmatesoft.svn.core.wc.SVNCommitClient;
+import org.tmatesoft.svn.core.wc.SVNCommitItem;
+import org.tmatesoft.svn.core.wc.SVNCommitPacket;
+import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.SVNStatusType;
+import org.tmatesoft.svn.core.wc2.SvnCheckout;
+import org.tmatesoft.svn.core.wc2.SvnCommit;
+import org.tmatesoft.svn.core.wc2.SvnLog;
+import org.tmatesoft.svn.core.wc2.SvnOperationFactory;
+import org.tmatesoft.svn.core.wc2.SvnRevisionRange;
+import org.tmatesoft.svn.core.wc2.SvnScheduleForAddition;
+import org.tmatesoft.svn.core.wc2.SvnStatus;
+import org.tmatesoft.svn.core.wc2.SvnTarget;
 import org.tmatesoft.svn.core.wc2.admin.SvnRepositoryCreate;
-
-import java.io.File;
-import java.util.Map;
 
 public class CommitTest {
     @Test
@@ -487,6 +510,68 @@ public class CommitTest {
         } finally {
             operationFactory.dispose();
             sandbox.dispose();
+        }
+    }
+    @Test
+    public void testEmptyCommitPacketWithOtherPackets() throws Exception {
+        //SVNKIT-358
+        final TestOptions testOptions = TestOptions.getInstance();
+
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testEmptyCommitPacketWithOtherPackets", testOptions);
+
+        final SvnOperationFactory operationFactory = new SvnOperationFactory();
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final CommitBuilder commitBuilder = new CommitBuilder(url);
+            commitBuilder.addFile("file1");
+            commitBuilder.addFile("file2");
+            commitBuilder.commit();
+
+            final WorkingCopy workingCopy = sandbox.checkoutNewWorkingCopy(url);
+            final File workingCopyDirectory = workingCopy.getWorkingCopyDirectory();
+
+            final File file1 = workingCopy.getFile("file1");
+            final File file2 = workingCopy.getFile("file2");
+            TestUtil.writeFileContentsString(file1, "changed");
+            TestUtil.writeFileContentsString(file2, "changed");
+
+            final SVNClientManager clientManager = SVNClientManager.newInstance();
+            try {
+                final SVNCommitClient commitClient = clientManager.getCommitClient();
+                final SVNCommitPacket[] commitPackets = commitClient.doCollectCommitItems(new File[]{workingCopyDirectory}, false, false, SVNDepth.INFINITY, false, new String[0]);
+                Assert.assertEquals(1, commitPackets.length);
+
+                commitClient.doCommit(new SVNCommitPacket[]{SVNCommitPacket.EMPTY, commitPackets[0]}, false, "Commit message");
+            } finally {
+                clientManager.dispose();
+            }
+            final SVNRepository svnRepository = SVNRepositoryFactory.create(url);
+            try {
+                final long latestRevision = svnRepository.getLatestRevision();
+                Assert.assertEquals(2, latestRevision);
+            } finally {
+                svnRepository.closeSession();
+            }
+        } finally {
+            operationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
+    @Test
+    public void testCommitEmptyPacket() throws Exception {
+        //SVNKIT-358
+        final SVNClientManager clientManager = SVNClientManager.newInstance();
+        try {
+            final SVNCommitClient commitClient = clientManager.getCommitClient();
+            commitClient.doCommit(SVNCommitPacket.EMPTY, false, "Commit message");
+            commitClient.doCommit(new SVNCommitPacket[]{}, false, "Commit message");
+            commitClient.doCommit(new SVNCommitPacket[]{SVNCommitPacket.EMPTY}, false, "Commit message");
+            commitClient.doCommit(new SVNCommitPacket[]{SVNCommitPacket.EMPTY, SVNCommitPacket.EMPTY}, false, "Commit message");
+            //no exception should be thrown
+        } finally {
+            clientManager.dispose();
         }
     }
 
