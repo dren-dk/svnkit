@@ -68,10 +68,10 @@ if \$cygwin; then
   [ -n "\$LOGGING_PROPERTIES_PATH" ] && REPO=`cygpath --path --windows "\$LOGGING_PROPERTIES_PATH"`
 fi
 
-EXTRA_JVM_ARGUMENTS="-Djava.util.logging.config.file=\$LOGGING_PROPERTIES_PATH -Dsun.io.useCanonCaches=false"
+EXTRA_JVM_ARGUMENTS="-Djava.util.logging.config.file=\\"\$LOGGING_PROPERTIES_PATH\\" -Dsun.io.useCanonCaches=false"
 
 exec "\$JAVACMD" \$JAVA_OPTS \\
-  "\$EXTRA_JVM_ARGUMENTS" \\
+  \$EXTRA_JVM_ARGUMENTS \\
   -classpath "\$CLASSPATH" \\
   ${mainclass} \\
   "\$@"
