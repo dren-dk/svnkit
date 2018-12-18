@@ -209,7 +209,7 @@ public class SVNPathBasedAccess {
                     if (getCurrentLineColumn() == 0) {
                         parseSectionName(is);
                     } else {
-                        SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_DAV_INVALID_CONFIG_VALUE, "''{0}'' : ''{1}'' : Section header must start in the first column.", new Object[]{getConfigPath(), new Integer(getCurrentLineNumber())}), SVNLogType.NETWORK);
+                        SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_DAV_INVALID_CONFIG_VALUE, "''{0}'' : ''{1}'' : Section header must start in the first column.", new Object[]{getConfigPath(), getCurrentLineNumber()}), SVNLogType.NETWORK);
                     }
                     break;
                 case'#':
@@ -217,7 +217,7 @@ public class SVNPathBasedAccess {
                         skipToEndOfLine(is);
                         increaseCurrentLineNumber();
                     } else {
-                        SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_DAV_INVALID_CONFIG_VALUE, "''{0}'' : ''{1}'' : Comment must start in the first column.", new Object[]{getConfigPath(), new Integer(getCurrentLineNumber())}), SVNLogType.NETWORK);
+                        SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_DAV_INVALID_CONFIG_VALUE, "''{0}'' : ''{1}'' : Comment must start in the first column.", new Object[]{getConfigPath(), getCurrentLineNumber()}), SVNLogType.NETWORK);
                     }
                     break;
                 case'\n':
@@ -228,9 +228,9 @@ public class SVNPathBasedAccess {
                     break;
                 default:
                     if (getSectionName().length() == 0) {
-                        SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_DAV_INVALID_CONFIG_VALUE, "''{0}'' : ''{1}'' : Section header expected.", new Object[]{getConfigPath(), new Integer(getCurrentLineNumber())}), SVNLogType.NETWORK);
+                        SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_DAV_INVALID_CONFIG_VALUE, "''{0}'' : ''{1}'' : Section header expected.", new Object[]{getConfigPath(), getCurrentLineNumber()}), SVNLogType.NETWORK);
                     } else if (getCurrentLineColumn() != 0) {
-                        SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_DAV_INVALID_CONFIG_VALUE, "''{0}'' : ''{1}'' : Option expected.", new Object[]{getConfigPath(), new Integer(getCurrentLineNumber())}), SVNLogType.NETWORK);
+                        SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_DAV_INVALID_CONFIG_VALUE, "''{0}'' : ''{1}'' : Option expected.", new Object[]{getConfigPath(), getCurrentLineNumber()}), SVNLogType.NETWORK);
                     } else {
                         parseOption(is, currentByte);
                     }
@@ -249,7 +249,7 @@ public class SVNPathBasedAccess {
             currentByte = getc(is);
         }
         if (currentByte != ']') {
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_DAV_INVALID_CONFIG_VALUE, "''{0}'' : ''{1}'' : Section header must end with ']'.", new Object[]{getConfigPath(), new Integer(getCurrentLineNumber())}), SVNLogType.NETWORK);
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_DAV_INVALID_CONFIG_VALUE, "''{0}'' : ''{1}'' : Section header must end with ']'.", new Object[]{getConfigPath(), getCurrentLineNumber()}), SVNLogType.NETWORK);
         } else {
             currentByte = skipToEndOfLine(is);
             if (currentByte != -1) {
@@ -267,7 +267,7 @@ public class SVNPathBasedAccess {
             currentByte = getc(is);
         }
         if (currentByte != ':' && currentByte != '=') {
-            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_DAV_INVALID_CONFIG_VALUE, "''{0}'' : ''{1}'' : Option must end with ':' or '='.", new Object[]{getConfigPath(), new Integer(getCurrentLineNumber())}), SVNLogType.NETWORK);
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_DAV_INVALID_CONFIG_VALUE, "''{0}'' : ''{1}'' : Option must end with ':' or '='.", new Object[]{getConfigPath(), getCurrentLineNumber()}), SVNLogType.NETWORK);
         } else {
             trimBuffer(getOption());
             currentByte = parseValue(is);

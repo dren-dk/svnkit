@@ -79,7 +79,7 @@ public class DAVGetLocationsRequest extends DAVRequest {
         if (myRevisions == null) {
             myRevisions = new LinkedList();
         }
-        myRevisions.add(new Long(revision));
+        myRevisions.add(revision);
     }
     
     protected void init() throws SVNException {
