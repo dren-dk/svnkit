@@ -81,96 +81,96 @@ public class JavaHLObjectFactory {
     };
 
     static{
-        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_ADDED, new Integer(StatusKind.added));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_CONFLICTED, new Integer(StatusKind.conflicted));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_DELETED, new Integer(StatusKind.deleted));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_EXTERNAL, new Integer(StatusKind.external));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_IGNORED, new Integer(StatusKind.ignored));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_INCOMPLETE, new Integer(StatusKind.incomplete));
-        //STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_MERGED, new Integer(StatusKind.merged));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_MISSING, new Integer(StatusKind.missing));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_MODIFIED, new Integer(StatusKind.modified));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_NONE, new Integer(StatusKind.none));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_NORMAL, new Integer(StatusKind.normal));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_OBSTRUCTED, new Integer(StatusKind.obstructed));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_REPLACED, new Integer(StatusKind.replaced));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_UNVERSIONED, new Integer(StatusKind.unversioned));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_NAME_CONFLICT, new Integer(StatusKind.unversioned));
+        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_ADDED, StatusKind.added);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_CONFLICTED, StatusKind.conflicted);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_DELETED, StatusKind.deleted);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_EXTERNAL, StatusKind.external);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_IGNORED, StatusKind.ignored);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_INCOMPLETE, StatusKind.incomplete);
+        //STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_MERGED, StatusKind.merged;
+        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_MISSING, StatusKind.missing);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_MODIFIED, StatusKind.modified);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_NONE, StatusKind.none);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_NORMAL, StatusKind.normal);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_OBSTRUCTED, StatusKind.obstructed);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_REPLACED, StatusKind.replaced);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_UNVERSIONED, StatusKind.unversioned);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.STATUS_NAME_CONFLICT, StatusKind.unversioned);
 
-        STATUS_CONVERSION_MAP.put(SVNStatusType.CHANGED, new Integer(NotifyStatus.changed));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.CONFLICTED, new Integer(NotifyStatus.conflicted));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.INAPPLICABLE, new Integer(NotifyStatus.inapplicable));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.MERGED, new Integer(NotifyStatus.merged));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.MISSING, new Integer(NotifyStatus.missing));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.OBSTRUCTED, new Integer(NotifyStatus.obstructed));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.UNCHANGED, new Integer(NotifyStatus.unchanged));
-        STATUS_CONVERSION_MAP.put(SVNStatusType.UNKNOWN, new Integer(NotifyStatus.unknown));
+        STATUS_CONVERSION_MAP.put(SVNStatusType.CHANGED, NotifyStatus.changed);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.CONFLICTED, NotifyStatus.conflicted);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.INAPPLICABLE, NotifyStatus.inapplicable);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.MERGED, NotifyStatus.merged);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.MISSING, NotifyStatus.missing);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.OBSTRUCTED, NotifyStatus.obstructed);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.UNCHANGED, NotifyStatus.unchanged);
+        STATUS_CONVERSION_MAP.put(SVNStatusType.UNKNOWN, NotifyStatus.unknown);
 
-        LOCK_CONVERSION_MAP.put(SVNStatusType.LOCK_INAPPLICABLE, new Integer(LockStatus.inapplicable));
-        LOCK_CONVERSION_MAP.put(SVNStatusType.LOCK_LOCKED, new Integer(LockStatus.locked));
-        LOCK_CONVERSION_MAP.put(SVNStatusType.LOCK_UNCHANGED, new Integer(LockStatus.unchanged));
-        LOCK_CONVERSION_MAP.put(SVNStatusType.LOCK_UNKNOWN, new Integer(LockStatus.unknown));
-        LOCK_CONVERSION_MAP.put(SVNStatusType.LOCK_UNLOCKED, new Integer(LockStatus.unlocked));
+        LOCK_CONVERSION_MAP.put(SVNStatusType.LOCK_INAPPLICABLE, LockStatus.inapplicable);
+        LOCK_CONVERSION_MAP.put(SVNStatusType.LOCK_LOCKED, LockStatus.locked);
+        LOCK_CONVERSION_MAP.put(SVNStatusType.LOCK_UNCHANGED, LockStatus.unchanged);
+        LOCK_CONVERSION_MAP.put(SVNStatusType.LOCK_UNKNOWN, LockStatus.unknown);
+        LOCK_CONVERSION_MAP.put(SVNStatusType.LOCK_UNLOCKED, LockStatus.unlocked);
 
-        REVISION_KIND_CONVERSION_MAP.put(new Integer(RevisionKind.base), SVNRevision.BASE);
-        REVISION_KIND_CONVERSION_MAP.put(new Integer(RevisionKind.committed), SVNRevision.COMMITTED);
-        REVISION_KIND_CONVERSION_MAP.put(new Integer(RevisionKind.head), SVNRevision.HEAD);
-        REVISION_KIND_CONVERSION_MAP.put(new Integer(RevisionKind.previous), SVNRevision.PREVIOUS);
-        REVISION_KIND_CONVERSION_MAP.put(new Integer(RevisionKind.unspecified), SVNRevision.UNDEFINED);
-        REVISION_KIND_CONVERSION_MAP.put(new Integer(RevisionKind.working), SVNRevision.WORKING);
+        REVISION_KIND_CONVERSION_MAP.put(RevisionKind.base, SVNRevision.BASE);
+        REVISION_KIND_CONVERSION_MAP.put(RevisionKind.committed, SVNRevision.COMMITTED);
+        REVISION_KIND_CONVERSION_MAP.put(RevisionKind.head, SVNRevision.HEAD);
+        REVISION_KIND_CONVERSION_MAP.put(RevisionKind.previous, SVNRevision.PREVIOUS);
+        REVISION_KIND_CONVERSION_MAP.put(RevisionKind.unspecified, SVNRevision.UNDEFINED);
+        REVISION_KIND_CONVERSION_MAP.put(RevisionKind.working, SVNRevision.WORKING);
 
-        ACTION_CONVERSION_MAP.put(SVNEventAction.ADD, new Integer(NotifyAction.add));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.ANNOTATE, new Integer(NotifyAction.blame_revision));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.COMMIT_ADDED, new Integer(NotifyAction.commit_added));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.COMMIT_DELETED, new Integer(NotifyAction.commit_deleted));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.COMMIT_DELTA_SENT, new Integer(NotifyAction.commit_postfix_txdelta));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.COMMIT_MODIFIED, new Integer(NotifyAction.commit_modified));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.COMMIT_REPLACED, new Integer(NotifyAction.commit_replaced));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.COPY, new Integer(NotifyAction.copy));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.DELETE, new Integer(NotifyAction.delete));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.FAILED_REVERT, new Integer(NotifyAction.failed_revert));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.LOCK_FAILED, new Integer(NotifyAction.failed_lock));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.LOCKED, new Integer(NotifyAction.locked));
-        //ACTION_CONVERSION_MAP.put(SVNEventAction.PROGRESS, new Integer(NotifyAction.));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.RESOLVED, new Integer(NotifyAction.resolved));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.RESTORE, new Integer(NotifyAction.restore));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.REVERT, new Integer(NotifyAction.revert));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.SKIP, new Integer(NotifyAction.skip));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.STATUS_COMPLETED, new Integer(NotifyAction.status_completed));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.STATUS_EXTERNAL, new Integer(NotifyAction.status_external));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.UNLOCK_FAILED, new Integer(NotifyAction.failed_unlock));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.UNLOCKED, new Integer(NotifyAction.unlocked));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.UPDATE_ADD, new Integer(NotifyAction.update_add));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.UPDATE_COMPLETED, new Integer(NotifyAction.update_completed));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.UPDATE_DELETE, new Integer(NotifyAction.update_delete));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.UPDATE_EXTERNAL, new Integer(NotifyAction.update_external));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.UPDATE_UPDATE, new Integer(NotifyAction.update_update));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.UPDATE_NONE, new Integer(NotifyAction.update_update));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.UPDATE_EXISTS, new Integer(NotifyAction.exists));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.UPDATE_REPLACE, new Integer(NotifyAction.update_replaced));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.CHANGELIST_SET, new Integer(NotifyAction.changelist_set));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.CHANGELIST_CLEAR, new Integer(NotifyAction.changelist_clear));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.MERGE_BEGIN, new Integer(NotifyAction.merge_begin));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.FOREIGN_MERGE_BEGIN, new Integer(NotifyAction.foreign_merge_begin));
+        ACTION_CONVERSION_MAP.put(SVNEventAction.ADD, NotifyAction.add);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.ANNOTATE, NotifyAction.blame_revision);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.COMMIT_ADDED, NotifyAction.commit_added);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.COMMIT_DELETED, NotifyAction.commit_deleted);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.COMMIT_DELTA_SENT, NotifyAction.commit_postfix_txdelta);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.COMMIT_MODIFIED, NotifyAction.commit_modified);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.COMMIT_REPLACED, NotifyAction.commit_replaced);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.COPY, NotifyAction.copy);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.DELETE, NotifyAction.delete);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.FAILED_REVERT, NotifyAction.failed_revert);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.LOCK_FAILED, NotifyAction.failed_lock);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.LOCKED, NotifyAction.locked);
+        //ACTION_CONVERSION_MAP.put(SVNEventAction.PROGRESS, NotifyAction.);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.RESOLVED, NotifyAction.resolved);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.RESTORE, NotifyAction.restore);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.REVERT, NotifyAction.revert);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.SKIP, NotifyAction.skip);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.STATUS_COMPLETED, NotifyAction.status_completed);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.STATUS_EXTERNAL, NotifyAction.status_external);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.UNLOCK_FAILED, NotifyAction.failed_unlock);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.UNLOCKED, NotifyAction.unlocked);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.UPDATE_ADD, NotifyAction.update_add);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.UPDATE_COMPLETED, NotifyAction.update_completed);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.UPDATE_DELETE, NotifyAction.update_delete);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.UPDATE_EXTERNAL, NotifyAction.update_external);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.UPDATE_UPDATE, NotifyAction.update_update);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.UPDATE_NONE, NotifyAction.update_update);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.UPDATE_EXISTS, NotifyAction.exists);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.UPDATE_REPLACE, NotifyAction.update_replaced);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.CHANGELIST_SET, NotifyAction.changelist_set);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.CHANGELIST_CLEAR, NotifyAction.changelist_clear);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.MERGE_BEGIN, NotifyAction.merge_begin);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.FOREIGN_MERGE_BEGIN, NotifyAction.foreign_merge_begin);
 
-        ACTION_CONVERSION_MAP.put(SVNEventAction.PROPERTY_ADD, new Integer(NotifyAction.property_added));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.PROPERTY_MODIFY, new Integer(NotifyAction.property_modified));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.PROPERTY_DELETE, new Integer(NotifyAction.property_deleted));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.PROPERTY_DELETE_NONEXISTENT, new Integer(NotifyAction.property_deleted_nonexistent));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.REVPROPER_SET, new Integer(NotifyAction.revprop_set));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.REVPROP_DELETE, new Integer(NotifyAction.revprop_deleted));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.MERGE_COMPLETE, new Integer(NotifyAction.merge_completed));
-        ACTION_CONVERSION_MAP.put(SVNEventAction.TREE_CONFLICT, new Integer(NotifyAction.tree_conflict));
+        ACTION_CONVERSION_MAP.put(SVNEventAction.PROPERTY_ADD, NotifyAction.property_added);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.PROPERTY_MODIFY, NotifyAction.property_modified);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.PROPERTY_DELETE, NotifyAction.property_deleted);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.PROPERTY_DELETE_NONEXISTENT, NotifyAction.property_deleted_nonexistent);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.REVPROPER_SET, NotifyAction.revprop_set);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.REVPROP_DELETE, NotifyAction.revprop_deleted);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.MERGE_COMPLETE, NotifyAction.merge_completed);
+        ACTION_CONVERSION_MAP.put(SVNEventAction.TREE_CONFLICT, NotifyAction.tree_conflict);
 
         // undocumented thing.
-        ACTION_CONVERSION_MAP.put(SVNEventAction.COMMIT_COMPLETED, new Integer(-11));
+        ACTION_CONVERSION_MAP.put(SVNEventAction.COMMIT_COMPLETED, -11);
 
-        CONFLICT_REASON_CONVERSATION_MAP.put(SVNConflictReason.ADDED, new Integer(ConflictDescriptor.Reason.added));
-        CONFLICT_REASON_CONVERSATION_MAP.put(SVNConflictReason.DELETED, new Integer(ConflictDescriptor.Reason.deleted));
-        CONFLICT_REASON_CONVERSATION_MAP.put(SVNConflictReason.EDITED, new Integer(ConflictDescriptor.Reason.edited));
-        CONFLICT_REASON_CONVERSATION_MAP.put(SVNConflictReason.MISSING, new Integer(ConflictDescriptor.Reason.missing));
-        CONFLICT_REASON_CONVERSATION_MAP.put(SVNConflictReason.OBSTRUCTED, new Integer(ConflictDescriptor.Reason.obstructed));
-        CONFLICT_REASON_CONVERSATION_MAP.put(SVNConflictReason.UNVERSIONED, new Integer(ConflictDescriptor.Reason.unversioned));
+        CONFLICT_REASON_CONVERSATION_MAP.put(SVNConflictReason.ADDED, ConflictDescriptor.Reason.added);
+        CONFLICT_REASON_CONVERSATION_MAP.put(SVNConflictReason.DELETED, ConflictDescriptor.Reason.deleted);
+        CONFLICT_REASON_CONVERSATION_MAP.put(SVNConflictReason.EDITED, ConflictDescriptor.Reason.edited);
+        CONFLICT_REASON_CONVERSATION_MAP.put(SVNConflictReason.MISSING, ConflictDescriptor.Reason.missing);
+        CONFLICT_REASON_CONVERSATION_MAP.put(SVNConflictReason.OBSTRUCTED, ConflictDescriptor.Reason.obstructed);
+        CONFLICT_REASON_CONVERSATION_MAP.put(SVNConflictReason.UNVERSIONED, ConflictDescriptor.Reason.unversioned);
     }
 
     public static Collection getChangeListsCollection(String[] changelists) {
@@ -268,7 +268,7 @@ public class JavaHLObjectFactory {
         } else if(r.getKind() == RevisionKind.date){
             return SVNRevision.create(((Revision.DateSpec)r).getDate());
         }
-        return (SVNRevision)REVISION_KIND_CONVERSION_MAP.get(new Integer(r.getKind()));
+        return (SVNRevision)REVISION_KIND_CONVERSION_MAP.get(r.getKind());
     }
 
     public static SVNDepth getSVNDepth(int depth) {
