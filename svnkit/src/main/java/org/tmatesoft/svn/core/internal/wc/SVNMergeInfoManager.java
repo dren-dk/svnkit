@@ -146,7 +146,7 @@ public class SVNMergeInfoManager {
         if (mergeInfoString == null) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_CORRUPT, 
                     "Node-revision ''{0}@{1}'' claims to have mergeinfo but doesn''t", 
-                    new Object[] { nearestAncestor.getAbsPath(), new Long(revRoot.getRevision()) });
+                    new Object[] { nearestAncestor.getAbsPath(), revRoot.getRevision()});
             SVNErrorManager.error(err, SVNLogType.FSFS);
         }
         

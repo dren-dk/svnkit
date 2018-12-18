@@ -286,7 +286,7 @@ public class DAVUtil {
         if (status.getCode() != 200) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_DAV_OPTIONS_REQ_FAILED,
                     "OPTIONS request (for latest revision) got HTTP response code {0}",
-                    new Integer(status.getCode()));
+                    new Object[]{status.getCode()});
             SVNErrorManager.error(err, SVNLogType.NETWORK);
         }
         davConnection.parseCapabilities(status);
