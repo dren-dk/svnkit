@@ -169,12 +169,12 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
     public SVNAuthentication requestClientAuthentication(String kind, SVNURL url, String realm, SVNErrorMessage errorMessage, SVNAuthentication previousAuth, boolean authMayBeStored) {
         Integer requestsCount = (Integer) myRequestsCount.get(kind + "$" + url + "$" + realm);
         if (requestsCount == null) {
-            myRequestsCount.put(kind + "$" + url + "$" + realm, new Integer(1));
+            myRequestsCount.put(kind + "$" + url + "$" + realm, 1);
         } else if (requestsCount.intValue() == MAX_PROMPT_COUNT) {
             // no more than three requests per realm
             return null;
         } else {
-            myRequestsCount.put(kind + "$" + url + "$" + realm, new Integer(requestsCount.intValue() + 1));
+            myRequestsCount.put(kind + "$" + url + "$" + realm, requestsCount.intValue() + 1);
         }
         
         if (ISVNAuthenticationManager.PASSWORD.equals(kind)) {

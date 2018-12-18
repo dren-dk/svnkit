@@ -72,7 +72,7 @@ public class SVNPropListCommand extends SVNPropertiesCommand {
                 rev = wcClient.doGetRevisionProperty(targetPath, null, getSVNEnvironment().getStartRevision(), this);
             }
             Map revisionPropertiesMap = getRevisionProperties();
-            List revisionProperties = (List) revisionPropertiesMap.get(new Long(rev));
+            List revisionProperties = (List) revisionPropertiesMap.get(rev);
             if (revisionProperties == null) {
                 revisionProperties = Collections.EMPTY_LIST;
             }

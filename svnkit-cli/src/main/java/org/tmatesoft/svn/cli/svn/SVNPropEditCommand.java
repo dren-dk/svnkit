@@ -94,11 +94,11 @@ public class SVNPropEditCommand extends SVNPropertiesCommand {
                     client.doSetRevisionProperty(targetPath, SVNRevision.create(rev), propertyName, newPropertyValue, getSVNEnvironment().isForce(), this);
                 }
                 String message = "Set new value for property ''{0}'' on revision {1}";
-                message = MessageFormat.format(message, new Object[]{propertyName, new Long(rev)});
+                message = MessageFormat.format(message, new Object[]{propertyName, rev});
                 getSVNEnvironment().getOut().println(message);
             } else {
                 String message = "No changes to property ''{0}'' on revision {1}";
-                message = MessageFormat.format(message, new Object[]{propertyName, new Long(rev)});
+                message = MessageFormat.format(message, new Object[]{propertyName, rev});
                 getSVNEnvironment().getOut().println(message);
             }
         } else if (getSVNEnvironment().getStartRevision() != SVNRevision.UNDEFINED) {

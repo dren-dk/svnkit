@@ -391,7 +391,7 @@ public class SVNLogCommand extends SVNXMLCommand implements ISVNLogEntryHandler 
         }
 
         if (logEntry.hasChildren()) {
-            Long rev = new Long(logEntry.getRevision());
+            Long rev = logEntry.getRevision();
             if (myMergeStack == null) {
                 myMergeStack = new LinkedList();
             }
@@ -571,7 +571,7 @@ public class SVNLogCommand extends SVNXMLCommand implements ISVNLogEntryHandler 
             if (myMergeStack == null) {
                 myMergeStack = new LinkedList();
             }
-            myMergeStack.addLast(new Long(logEntry.getRevision()));
+            myMergeStack.addLast(logEntry.getRevision());
         } else {
             buffer = closeXMLTag("logentry", buffer);
         }

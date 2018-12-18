@@ -147,7 +147,7 @@ public class SVNPropDelCommand extends SVNPropertiesCommand {
         super.handleProperty(revision, property);
         if (!getSVNEnvironment().isQuiet()) {
             String message = "property ''{0}'' deleted from repository revision {1}";
-            message = MessageFormat.format(message, new Object[] {property.getName(), new Long(revision)});
+            message = MessageFormat.format(message, new Object[] {property.getName(), revision});
             getSVNEnvironment().getOut().println(message);
         }
     }

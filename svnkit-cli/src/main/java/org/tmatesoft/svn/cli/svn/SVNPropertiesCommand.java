@@ -99,17 +99,17 @@ public abstract class SVNPropertiesCommand extends SVNXMLCommand implements ISVN
     }
 
     public void handleProperty(long revision, SVNPropertyData property) throws SVNException {
-        Object key = new Long(revision);
+        Object key = revision;
         if (!myRevisionProperties.containsKey(key)) {
             myRevisionProperties.put(key, new LinkedList());
         }
-        ((Collection) myRevisionProperties.get(new Long(revision))).add(property);
+        ((Collection) myRevisionProperties.get(revision)).add(property);
     }
 
     protected SVNPropertyData getRevisionProperty(long revision) {
-        Object key = new Long(revision);
+        Object key = revision;
         if (myRevisionProperties.containsKey(key)) {
-            return (SVNPropertyData) ((List) myRevisionProperties.get(new Long(revision))).get(0);
+            return (SVNPropertyData) ((List) myRevisionProperties.get(revision)).get(0);
         }
         return null;
     }
