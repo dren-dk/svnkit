@@ -1,5 +1,8 @@
 == version 1.10.0  ==
 
++ Java 11 support
++ SVN 1.10 repository format support
+
 == version 1.9.3  ==
 
 + SVNKIT-726: Newly introduced flock locking fallback didn't work properly
