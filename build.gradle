@@ -128,8 +128,8 @@ configure(javaProjects()) {
 
 project(':svnkit') {
     dependencies {
-        compile 'de.regnis.q.sequence:sequence-library:1.0.3'
-        compile 'org.tmatesoft.sqljet:sqljet:1.1.11'
+        compile 'de.regnis.q.sequence:sequence-library:1.0.4'
+        compile 'org.tmatesoft.sqljet:sqljet:1.1.12'
         compile 'net.java.dev.jna:jna:4.1.0'
         compile 'net.java.dev.jna:jna-platform:4.1.0'
         compile 'com.trilead:trilead-ssh2:1.0.0-build221'
@@ -385,7 +385,7 @@ project(':svnkit-distribution') {
 
         osgi project(path: ':svnkit-osgi', configuration: 'archives')
         osgi 'com.trilead:trilead-ssh2-osgi:1.0.0-build221'
-        osgi 'org.tmatesoft.sqljet:sqljet-osgi:1.1.11'
+        osgi 'org.tmatesoft.sqljet:sqljet-osgi:1.1.12'
         osgi 'net.java.dev.jna:jna-osgi:4.1.0'
     }
 }
