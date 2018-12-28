@@ -10,7 +10,7 @@ def javaProjects() {
 }
 
 ext {
-   release = false
+   release = true
    target = '1.6'
    compatibleSvnVersion = '1.10.0'
 
