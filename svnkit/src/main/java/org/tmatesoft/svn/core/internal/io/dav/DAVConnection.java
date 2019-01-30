@@ -701,7 +701,7 @@ public class DAVConnection {
         IHTTPConnection httpConnection = getConnection();
         HTTPStatus status = performHttpRequest(httpConnection, "OPTIONS", path, null, DAVOptionsHandler.OPTIONS_REQUEST, 200, 0, null, null);
 
-        if (correctedUrl != null && status.getCode() == 301) {
+        if (DAVRepository.ourRedirectsEnabled && correctedUrl != null && status.getCode() == 301) {
             final String newLocation = status.getHeader().getFirstHeaderValue(HTTPHeader.LOCATION_HEADER);
             if (newLocation == null || newLocation.length() == 0) {
                 final SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.RA_DAV_RESPONSE_HEADER_BADNESS, "Location header not set on redirect response");

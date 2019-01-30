@@ -50,10 +50,15 @@ public class DAVRepository extends SVNRepository {
 
     private static boolean ourIsKeepCredentials = Boolean.valueOf(System.getProperty("svnkit.http.keepCredentials", Boolean.TRUE.toString())).booleanValue();
     private static boolean ourHttpV2Enabled = Boolean.valueOf(System.getProperty("svnkit.http.httpV2Enabled", Boolean.FALSE.toString())).booleanValue();
+    protected static boolean ourRedirectsEnabled = true; //e.g. http://... -> https://...
     private File mySpoolLocation;
 
     public static void setKeepCredentials(boolean keepCredentials) {
         ourIsKeepCredentials = keepCredentials;
+    }
+
+    public static void setOurRedirectsEnabled(boolean ourRedirectsEnabled) {
+        DAVRepository.ourRedirectsEnabled = ourRedirectsEnabled;
     }
 
     protected DAVRepository(IHTTPConnectionFactory connectionFactory, SVNURL location, ISVNSession options) {
