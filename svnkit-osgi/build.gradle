@@ -35,7 +35,11 @@ jar {
     ext {
         bundleName = rootProject.group
         bundleSymbolicName = 'SVNKit pure Java Subversion Library'
-        bundleVersion = rootProject.version.replace('-SNAPSHOT', '.SNAPSHOT').replace('-', '.') + (rootProject.release ? '.' : '_') + buildNumber
+        if (rootProject.release && rootProject.buildNumber.startsWith("snapshot")) {
+            bundleVersion = rootProject.version.replace('-snapshot', '.snapshot').replace('-', '.')
+        } else {
+            bundleVersion = rootProject.version.replace('-SNAPSHOT', '.SNAPSHOT').replace('-', '.') + (rootProject.release ? '.' : '_') + buildNumber
+        }
         bundleVendor = 'TMate Software'
 
         println "OSGi version: ${bundleVersion}"

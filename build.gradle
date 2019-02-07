@@ -1,5 +1,5 @@
 group = 'org.tmatesoft.svnkit'
-version = '1.10.0'
+version = '1.10.1'
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.14'
@@ -10,7 +10,7 @@ def javaProjects() {
 }
 
 ext {
-   release = false
+   release = project.hasProperty('release')
    target = '1.6'
    compatibleSvnVersion = '1.10.0'
 
@@ -19,11 +19,11 @@ ext {
    }
    buildNumber = project.hasProperty('revision') ? ('r' + project.revision) : null
    if (buildNumber == null) {
-        if (release) {
-            throw new GradleException('release or interim targets requires build number to be specified via revision project property (-Prevision=REV)')
-        }
         def buildTime = new java.text.SimpleDateFormat("yyyyMMddHHmmss", java.util.Locale.US).format(new Date())
-        buildNumber = 't' + buildTime
+        buildNumber = (release ? 'snapshot' : 't') + buildTime
+        if (release) {
+            rootProject.version = rootProject.version + '-' + buildNumber
+        }
    }
    println "Version: ${rootProject.version}"
    println "Build Number: ${rootProject.buildNumber}"
@@ -54,11 +54,11 @@ subprojects {
        compatibleSvnVersion = rootProject.compatibleSvnVersion
 
        buildVersion = [
-           baseVersion : '1.9.2',
+           baseVersion : '1.10.1',
            buildNumber : buildNumber,
            major: '1',
-           minor: '9',
-           micro: '2'
+           minor: '10',
+           micro: '1'
        ]
        buildNumber = rootProject.buildNumber
     }
