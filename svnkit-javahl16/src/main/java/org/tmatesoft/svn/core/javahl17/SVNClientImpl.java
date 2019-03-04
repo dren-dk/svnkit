@@ -1911,27 +1911,26 @@ public class SVNClientImpl implements ISVNClient {
     }
 
     private Status getStatus(SvnStatus status) throws SVNException {
-        String repositoryRelativePath = status.getRepositoryRelativePath() == null ? "" : status.getRepositoryRelativePath();
-        SVNURL repositoryRootUrl = status.getRepositoryRootUrl();
+        final String repositoryRelativePath = status.getRepositoryRelativePath() == null ? "" : status.getRepositoryRelativePath();
+        final SVNURL repositoryRootUrl = status.getRepositoryRootUrl();
 
-        String itemUrl = repositoryRootUrl == null ? null : getUrlString(repositoryRootUrl.appendPath(repositoryRelativePath, false));
-
-        int statusFormat = status.getWorkingCopyFormat();
-
-        return new Status(
-                getFilePath(status.getPath()),
+        final String itemUrl = repositoryRootUrl == null ? null : getUrlString(repositoryRootUrl.appendPath(repositoryRelativePath, false));
+        return new Status(getFilePath(status.getPath()),
                 itemUrl,
                 getNodeKind(status.getKind()),
                 status.getRevision(),
                 status.getChangedRevision(),
                 getLongDate(status.getChangedDate()),
                 status.getChangedAuthor(),
-                getStatusKind(SVNStatus.combineNodeAndContentsStatus(statusFormat, status.getNodeStatus(), status.getTextStatus(), status.isVersioned(), status.isConflicted())),
+                getStatusKind(status.getNodeStatus()),
+                getStatusKind(status.getTextStatus()),
                 getStatusKind(status.getPropertiesStatus()),
-                getStatusKind(SVNStatus.combineRemoteNodeAndContentsStatus(statusFormat, status.getRepositoryNodeStatus(), status.getRepositoryTextStatus())),
+                getStatusKind(status.getRepositoryNodeStatus()),
+                getStatusKind(status.getRepositoryTextStatus()),
                 getStatusKind(status.getRepositoryPropertiesStatus()),
                 status.isWcLocked(),
                 status.isCopied(),
+                getDepth(status.getDepth()),
                 status.isConflicted(),
                 status.isSwitched(),
                 status.isFileExternal(),
@@ -1942,9 +1941,8 @@ public class SVNClientImpl implements ISVNClient {
                 getNodeKind(status.getRepositoryKind()),
                 status.getRepositoryChangedAuthor(),
                 status.getChangelist(),
-                null,
-                null
-        );
+                getFilePath(status.getMovedFromPath()),
+                getFilePath(status.getMovedToPath()));
     }
 
     static Lock getLock(SVNLock lock) {
