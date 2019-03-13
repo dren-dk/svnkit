@@ -323,7 +323,7 @@ public class FSCommitter {
                         });
                     } catch (SVNException e) {
                         // ignore
-                        SVNDebugLog.getDefaultLog().logError(SVNLogType.FSFS, e);
+                        SVNDebugLog.getDefaultLog().logFiner(SVNLogType.FSFS, e);
                     }
                 }
             }
