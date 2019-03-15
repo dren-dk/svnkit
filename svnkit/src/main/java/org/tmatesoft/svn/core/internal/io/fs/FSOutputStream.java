@@ -67,7 +67,7 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
     private boolean myIsCompress;
     private FSWriteLock myTxnLock;
 
-    private FSOutputStream(FSRevisionNode revNode, CountingOutputStream targetFileOS, File targetFile, InputStream source, long deltaStart, 
+    private FSOutputStream(FSRevisionNode revNode, CountingOutputStream targetFileOS, File targetFile, InputStream source, long deltaStart,
             long repSize, long repOffset, FSTransactionRoot txnRoot, boolean compress, FSWriteLock txnLock) throws SVNException {
         myTxnRoot = txnRoot;
         myTargetFileOS = targetFileOS;
@@ -100,7 +100,7 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
         myIsCompress = compress;
     }
 
-    private void reset(FSRevisionNode revNode, CountingOutputStream targetFileOS, File targetFile, InputStream source, long deltaStart, 
+    private void reset(FSRevisionNode revNode, CountingOutputStream targetFileOS, File targetFile, InputStream source, long deltaStart,
             long repSize, long repOffset, FSTransactionRoot txnRoot, FSWriteLock txnLock) {
         myTxnRoot = txnRoot;
         myTargetFileOS = targetFileOS;
@@ -138,7 +138,7 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
         try {
             txnLock = FSWriteLock.getWriteLockForTxn(txnRoot.getTxnID(), txnRoot.getOwner());
             txnLock.lock();
-            
+
             File targetFile = txnRoot.getWritableTransactionProtoRevFile();
             offset = targetFile.length();
             targetOS = SVNFileUtil.openFileForWriting(targetFile, true);
@@ -163,7 +163,7 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
                 return dstStream;
             }
 
-            return new FSOutputStream(revNode, revWriter, targetFile, sourceStream, deltaStart, 0, offset, txnRoot, 
+            return new FSOutputStream(revNode, revWriter, targetFile, sourceStream, deltaStart, 0, offset, txnRoot,
                     compress, txnLock);
 
         } catch (IOException ioe) {
@@ -242,7 +242,7 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
 
             rep.setMD5HexDigest(SVNFileUtil.toHexDigest(myMD5Digest));
             rep.setSHA1HexDigest(SVNFileUtil.toHexDigest(mySHA1Digest));
-            
+
             FSFS fsfs = myTxnRoot.getOwner();
             FSRepresentation oldRep = getSharedRepresentation(fsfs, rep, null);
 
@@ -340,9 +340,8 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
                     if (e.getErrorMessage().getErrorCode() == SVNErrorCode.FS_CORRUPT || e.getErrorMessage().getErrorCode().getCategory() == SVNErrorCode.MALFUNC_CATEGORY) {
                         throw e;
                     }
-
                     // explicitly ignore.
-                    SVNDebugLog.getDefaultLog().logError(SVNLogType.FSFS, e);
+                    SVNDebugLog.getDefaultLog().logFiner(SVNLogType.FSFS, e);
                 }
                 if (oldRepresentation != null) {
                     checkRepresentation(myTxnRoot.getOwner(), oldRepresentation, null);
