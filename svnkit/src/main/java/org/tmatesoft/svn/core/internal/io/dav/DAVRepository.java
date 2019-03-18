@@ -57,7 +57,7 @@ public class DAVRepository extends SVNRepository {
         ourIsKeepCredentials = keepCredentials;
     }
 
-    public static void setOurRedirectsEnabled(boolean ourRedirectsEnabled) {
+    public static void setRedirectsEnabled(boolean ourRedirectsEnabled) {
         DAVRepository.ourRedirectsEnabled = ourRedirectsEnabled;
     }
 
