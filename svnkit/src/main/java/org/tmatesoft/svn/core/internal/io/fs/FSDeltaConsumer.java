@@ -81,12 +81,10 @@ public class FSDeltaConsumer implements ISVNDeltaConsumer {
 
         InputStream sourceStream = null;
         OutputStream targetStream = null;
-        
-        int dbFormat = myFSFS.getDBFormat();
-        
+
         try {
             sourceStream = FSInputStream.createDeltaStream(getCombiner(), node, myFSFS);
-            targetStream = FSOutputStream.createStream(node, myTxnRoot, myTargetStream, dbFormat >= 2);
+            targetStream = FSOutputStream.createStream(node, myTxnRoot, myTargetStream, myFSFS.getDeltaCompression());
             if (myDeltaProcessor == null) {
                 myDeltaProcessor = new SVNDeltaProcessor();
             }
@@ -114,12 +112,10 @@ public class FSDeltaConsumer implements ISVNDeltaConsumer {
 
         InputStream sourceStream = null;
         OutputStream targetStream = null;
-        
-        int dbFormat = myFSFS.getDBFormat();
-        
+
         try {
             sourceStream = SVNFileUtil.DUMMY_IN;
-            targetStream = FSOutputStream.createStream(node, myTxnRoot, myTargetStream, dbFormat >= 2);
+            targetStream = FSOutputStream.createStream(node, myTxnRoot, myTargetStream, myFSFS.getDeltaCompression());
             if (myDeltaProcessor == null) {
                 myDeltaProcessor = new SVNDeltaProcessor();
             }

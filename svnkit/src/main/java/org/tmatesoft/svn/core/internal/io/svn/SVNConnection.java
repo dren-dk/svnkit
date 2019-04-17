@@ -29,9 +29,11 @@ import org.tmatesoft.svn.core.auth.BasicAuthenticationManager;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManagerExt;
 import org.tmatesoft.svn.core.auth.SVNAuthentication;
+import org.tmatesoft.svn.core.internal.delta.SVNDeltaCompression;
 import org.tmatesoft.svn.core.internal.util.SVNHashSet;
 import org.tmatesoft.svn.core.internal.wc.SVNClassLoader;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.io.SVNCapability;
 import org.tmatesoft.svn.util.SVNLogType;
 
 /**
@@ -46,7 +48,7 @@ public class SVNConnection {
     private OutputStream myOutputStream;
     private InputStream myInputStream;
     private SVNRepositoryImpl myRepository;
-    private boolean myIsSVNDiff1;
+    private SVNDeltaCompression myDeltaCompression = SVNDeltaCompression.None;
     private boolean myIsCommitRevprops;
     private boolean myIsReopening = false;
     private boolean myIsCredentialsReceived = false;
@@ -89,9 +91,20 @@ public class SVNConnection {
     public String getRealm() {
         return myRealm;
     }
-    
+
+    /**
+     * @deprecated use {@link #getDeltaCompression()} instead
+     */
+    @Deprecated
     public boolean isSVNDiff1() {
-        return myIsSVNDiff1;
+        return myDeltaCompression == SVNDeltaCompression.Zlib;
+    }
+
+    /**
+     * @since 1.10
+     */
+    public SVNDeltaCompression getDeltaCompression() {
+        return myDeltaCompression;
     }
 
     public boolean isCommitRevprops() {
@@ -152,11 +165,16 @@ public class SVNConnection {
             		"Server does not support edit pipelining"), SVNLogType.NETWORK);
         }
         
-        
-        myIsSVNDiff1 = SVNReader.hasValue(items, 3, SVNDIFF1);
+
+        if (SVNReader.hasValue(items, 3, SVNCapability.ACCEPTS_SVNDIFF2.toString())) {
+            myDeltaCompression = SVNDeltaCompression.LZ4;
+        } else if (SVNReader.hasValue(items, 3, SVNDIFF1)) {
+            myDeltaCompression = SVNDeltaCompression.Zlib;
+        }
+
         myIsCommitRevprops = SVNReader.hasValue(items, 3, COMMIT_REVPROPS);
 
-        write("(n(wwwwww)s)", new Object[]{"2", EDIT_PIPELINE, SVNDIFF1, ABSENT_ENTRIES, DEPTH, MERGE_INFO, LOG_REVPROPS, 
+        write("(n(wwwwwww)s)", new Object[]{"2", EDIT_PIPELINE, SVNDIFF1, SVNCapability.ACCEPTS_SVNDIFF2.toString(), ABSENT_ENTRIES, DEPTH, MERGE_INFO, LOG_REVPROPS,
                 repository.getLocation().toString()});
     }
 

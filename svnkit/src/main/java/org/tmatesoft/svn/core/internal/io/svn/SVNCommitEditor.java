@@ -174,7 +174,7 @@ class SVNCommitEditor implements ISVNEditor {
         String fileToken = (String) myFilesToTokens.get(path);
 
         try {
-            diffWindow.writeTo(myConnection.getDeltaStream(fileToken), myDiffWindowCount == 0, myConnection.isSVNDiff1());
+            diffWindow.writeTo(myConnection.getDeltaStream(fileToken), myDiffWindowCount == 0, myConnection.getDeltaCompression());
             myDiffWindowCount++;
             return SVNFileUtil.DUMMY_OUT;
         } catch (IOException e) {

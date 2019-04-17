@@ -33,6 +33,7 @@ import org.tmatesoft.svn.core.SVNProperties;
 import org.tmatesoft.svn.core.SVNProperty;
 import org.tmatesoft.svn.core.SVNPropertyValue;
 import org.tmatesoft.svn.core.SVNRevisionProperty;
+import org.tmatesoft.svn.core.internal.delta.SVNDeltaCompression;
 import org.tmatesoft.svn.core.internal.delta.SVNDeltaReader;
 import org.tmatesoft.svn.core.internal.io.fs.index.FSLogicalAddressingIndex;
 import org.tmatesoft.svn.core.internal.io.fs.index.FSL2PProtoIndex;
@@ -148,7 +149,7 @@ public class FSFS {
     public static final int MIN_REP_STRING_OPTIONAL_VALUES_FORMAT = 8;
     public static final int MIN_REP_CACHE_SCHEMA_V2_FORMAT = 8;
 
-    public static final int MIN_COMPRESSION_FORMAT = 8;
+    public static final int MIN_COMPRESSION_FORMAT = MIN_SVNDIFF2_FORMAT;
 
     public static int getRepCacheSchemaFormat(int fsfsFormat) {
         return fsfsFormat < MIN_REP_CACHE_SCHEMA_V2_FORMAT ? 1 : 2;
@@ -203,7 +204,7 @@ public class FSFS {
     private long myBlockSize;
     private long myL2PPageSize;
     private long myP2LPageSize;
-    private String myDeltificationCompressionAlgorithm;
+    private SVNDeltaCompression myDeltaCompression;
 
     public FSFS(File repositoryRoot) {
         myRepositoryRoot = repositoryRoot;
@@ -235,8 +236,19 @@ public class FSFS {
         return myUseLogAddressing;
     }
 
+    /**
+     * @since 1.10
+     */
+    public SVNDeltaCompression getDeltaCompression() {
+        return myDeltaCompression;
+    }
+
+    /**
+     * @deprecated use {@link #getDeltaCompression()} instead.
+     */
+    @Deprecated
     public String getDeltificationCompressionAlgorithm() {
-        return myDeltificationCompressionAlgorithm;
+        return myDeltaCompression.toString().toLowerCase(Locale.ENGLISH);
     }
 
     public void open() throws SVNException {
@@ -311,6 +323,14 @@ public class FSFS {
             getMinUnpackedRev();
         }
 
+        if (myDBFormat >= MIN_SVNDIFF2_FORMAT) {
+            myDeltaCompression = SVNDeltaCompression.LZ4;
+        } else if (myDBFormat >= MIN_SVNDIFF1_FORMAT) {
+            myDeltaCompression = SVNDeltaCompression.Zlib;
+        } else {
+            myDeltaCompression = SVNDeltaCompression.None;
+        }
+
         boolean isRepSharingAllowed = true;
         SVNConfigFile config = loadConfig();
         if (config != null) {
@@ -318,21 +338,22 @@ public class FSFS {
             isRepSharingAllowed = DefaultSVNOptions.getBooleanValue(optionValue, true);
 
             if (myDBFormat >= MIN_COMPRESSION_FORMAT) {
-                myDeltificationCompressionAlgorithm = myConfig.getPropertyValue(DELTIFICATION_SECTION, COMPRESSION_OPTION);
-                if (myDeltificationCompressionAlgorithm == null) {
-                    myDeltificationCompressionAlgorithm = "lz4";
+                final String compressionName = myConfig.getPropertyValue(DELTIFICATION_SECTION, COMPRESSION_OPTION);
+                if ("lz4".equals(compressionName)) {
+                    myDeltaCompression = SVNDeltaCompression.LZ4;
+                } else if ("none".equals(compressionName)) {
+                    myDeltaCompression = SVNDeltaCompression.None;
+                } else if (compressionName != null) {
+                    if (compressionName.startsWith("zlib")) {
+                        myDeltaCompression = SVNDeltaCompression.Zlib;
+                    } else {
+                        SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.BAD_CONFIG_VALUE, "Unsupported compression algorithm {0} in fsfs.conf setting '{1}'", compressionName, COMPRESSION_OPTION);
+                        SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
+                    }
                 }
             }
-            if (myDeltificationCompressionAlgorithm == null) {
-                myDeltificationCompressionAlgorithm = "none";
-            }
-        } else {
-            if (myDBFormat >= MIN_COMPRESSION_FORMAT) {
-                myDeltificationCompressionAlgorithm = "lz4";
-            } else {
-                myDeltificationCompressionAlgorithm = "zlib";
-            }
         }
+
         myIsRepSharingAllowed = isRepSharingAllowed;
 
         if (myDBFormat >= MIN_REP_SHARING_FORMAT && isRepSharingAllowed) {

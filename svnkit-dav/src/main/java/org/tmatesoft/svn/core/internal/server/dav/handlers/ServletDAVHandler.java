@@ -46,6 +46,7 @@ import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNProperties;
 import org.tmatesoft.svn.core.SVNProperty;
 import org.tmatesoft.svn.core.SVNPropertyValue;
+import org.tmatesoft.svn.core.internal.delta.SVNDeltaCompression;
 import org.tmatesoft.svn.core.internal.delta.SVNDeltaReader;
 import org.tmatesoft.svn.core.internal.io.dav.DAVElement;
 import org.tmatesoft.svn.core.internal.io.dav.handlers.BasicDAVHandler;
@@ -1663,8 +1664,8 @@ public abstract class ServletDAVHandler extends BasicDAVHandler {
         return contains;
     }
 
-    protected boolean getSVNDiffVersion() {
-        boolean diffCompress = false;
+    protected SVNDeltaCompression getDeltaCompression() {
+        SVNDeltaCompression compression = SVNDeltaCompression.None;
         for (Enumeration headerEncodings = getRequestHeaders(ACCEPT_ENCODING_HEADER); headerEncodings.hasMoreElements();)
         {
             String currentEncodings = (String) headerEncodings.nextElement();
@@ -1680,8 +1681,11 @@ public abstract class ServletDAVHandler extends BasicDAVHandler {
                 });
 
                 for (int i = encodings.length - 1; i >= 0; i--) {
-                    if (DIFF_VERSION_1.equals(getEncodingName(encodings[i]))) {
-                        diffCompress = true;
+                    if (SVNCapability.ACCEPTS_SVNDIFF2.toString().equals(getEncodingName(encodings[i]))) {
+                        compression = SVNDeltaCompression.LZ4;
+                        break;
+                    } else if (DIFF_VERSION_1.equals(getEncodingName(encodings[i]))) {
+                        compression = SVNDeltaCompression.Zlib;
                         break;
                     } else if (DIFF_VERSION.equals(getEncodingName(encodings[i]))) {
                         break;
@@ -1689,7 +1693,7 @@ public abstract class ServletDAVHandler extends BasicDAVHandler {
                 }
             }
         }
-        return diffCompress;
+        return compression;
     }
     
     protected FSCommitter getCommitter(FSFS fsfs, FSRoot root, FSTransactionInfo txn, Collection lockTokens, String userName) {

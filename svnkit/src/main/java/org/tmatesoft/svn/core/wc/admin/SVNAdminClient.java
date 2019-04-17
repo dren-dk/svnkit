@@ -306,14 +306,14 @@ public class SVNAdminClient extends SVNAdminBasicClient {
     public SVNURL doCreateRepository(File path, String uuid, boolean enableRevisionProperties, boolean force,
             boolean pre14Compatible, boolean pre15Compatible, boolean pre16Compatible, boolean pre17Compatible, boolean with17Compatible) throws SVNException {
         return doCreateRepository(path, uuid, enableRevisionProperties, force, pre14Compatible, pre15Compatible, pre16Compatible, pre17Compatible, with17Compatible,
-                true);
+                false);
     }
 
     public SVNURL doCreateRepository(File path, String uuid, boolean enableRevisionProperties, boolean force,
                                      boolean pre14Compatible, boolean pre15Compatible, boolean pre16Compatible, boolean pre17Compatible, boolean with17Compatible,
-                                     boolean pre10Compatible) throws SVNException {
+                                     boolean pre110Compatible) throws SVNException {
         return SVNRepositoryFactory.createLocalRepository(path, uuid, enableRevisionProperties, force, pre14Compatible, pre15Compatible, pre16Compatible, pre17Compatible, with17Compatible,
-                pre10Compatible);
+                pre110Compatible);
     }
 
     /**
