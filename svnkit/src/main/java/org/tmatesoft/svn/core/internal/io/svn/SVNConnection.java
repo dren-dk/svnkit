@@ -33,7 +33,6 @@ import org.tmatesoft.svn.core.internal.delta.SVNDeltaCompression;
 import org.tmatesoft.svn.core.internal.util.SVNHashSet;
 import org.tmatesoft.svn.core.internal.wc.SVNClassLoader;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
-import org.tmatesoft.svn.core.io.SVNCapability;
 import org.tmatesoft.svn.util.SVNLogType;
 
 /**
@@ -60,6 +59,7 @@ public class SVNConnection {
     
     private static final String EDIT_PIPELINE = "edit-pipeline";
     private static final String SVNDIFF1 = "svndiff1";
+    private static final String ACCEPTS_SVNDIFF2 = "accepts-svndiff2";
     private static final String ABSENT_ENTRIES = "absent-entries";
     private static final String COMMIT_REVPROPS = "commit-revprops";
     private static final String MERGE_INFO = "mergeinfo";
@@ -164,9 +164,8 @@ public class SVNConnection {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_SVN_BAD_VERSION, 
             		"Server does not support edit pipelining"), SVNLogType.NETWORK);
         }
-        
 
-        if (SVNReader.hasValue(items, 3, SVNCapability.ACCEPTS_SVNDIFF2.toString())) {
+        if (SVNReader.hasValue(items, 3, ACCEPTS_SVNDIFF2)) {
             myDeltaCompression = SVNDeltaCompression.LZ4;
         } else if (SVNReader.hasValue(items, 3, SVNDIFF1)) {
             myDeltaCompression = SVNDeltaCompression.Zlib;
@@ -174,7 +173,7 @@ public class SVNConnection {
 
         myIsCommitRevprops = SVNReader.hasValue(items, 3, COMMIT_REVPROPS);
 
-        write("(n(wwwwwww)s)", new Object[]{"2", EDIT_PIPELINE, SVNDIFF1, SVNCapability.ACCEPTS_SVNDIFF2.toString(), ABSENT_ENTRIES, DEPTH, MERGE_INFO, LOG_REVPROPS,
+        write("(n(wwwwwww)s)", new Object[]{"2", EDIT_PIPELINE, SVNDIFF1, ACCEPTS_SVNDIFF2, ABSENT_ENTRIES, DEPTH, MERGE_INFO, LOG_REVPROPS,
                 repository.getLocation().toString()});
     }
 

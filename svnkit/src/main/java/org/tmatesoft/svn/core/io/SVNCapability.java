@@ -62,12 +62,6 @@ public class SVNCapability {
 
 	public static final SVNCapability GET_FILE_REVS_REVERSED = new SVNCapability("get-file-revs-reversed");
 
-	/**
-	 * Represents the capability of receiving LZ4-compressed deltas.
-	 */
-	public static final SVNCapability ACCEPTS_SVNDIFF2 = new SVNCapability("accepts-svndiff2");
-
-
 	private String myName;
 
 	private SVNCapability(String name) {

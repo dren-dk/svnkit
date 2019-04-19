@@ -175,6 +175,7 @@ public abstract class ServletDAVHandler extends BasicDAVHandler {
 
     protected static final String NAMESPACE_ATTR = "namespace";
 
+    protected static final String DIFF_VERSION_2 = "svndiff2";
     protected static final String DIFF_VERSION_1 = "svndiff1";
     protected static final String DIFF_VERSION = "svndiff";
 
@@ -1681,7 +1682,7 @@ public abstract class ServletDAVHandler extends BasicDAVHandler {
                 });
 
                 for (int i = encodings.length - 1; i >= 0; i--) {
-                    if (SVNCapability.ACCEPTS_SVNDIFF2.toString().equals(getEncodingName(encodings[i]))) {
+                    if (DIFF_VERSION_2.equals(getEncodingName(encodings[i]))) {
                         compression = SVNDeltaCompression.LZ4;
                         break;
                     } else if (DIFF_VERSION_1.equals(getEncodingName(encodings[i]))) {
