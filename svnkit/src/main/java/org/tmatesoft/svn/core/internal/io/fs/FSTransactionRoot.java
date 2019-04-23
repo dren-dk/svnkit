@@ -709,7 +709,7 @@ public class FSTransactionRoot extends FSRoot {
             final FSFS fsfs = getOwner();
             myTxnRevFile = fsfs.getTransactionProtoRevFile(myTxnID);
             if (fsfs.isUseLogAddressing()) {
-                final FSP2LProtoIndex index = FSP2LProtoIndex.open(fsfs, myTxnID, false);
+                final FSP2LProtoIndex index = FSP2LProtoIndex.open(fsfs, myTxnID, true);
                 assert index != null;
                 try {
                     final long actualLength = myTxnRevFile.length();
