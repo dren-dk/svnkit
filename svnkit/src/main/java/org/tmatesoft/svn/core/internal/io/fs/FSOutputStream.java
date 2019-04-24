@@ -27,6 +27,7 @@ import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.internal.delta.SVNDeltaCombiner;
+import org.tmatesoft.svn.core.internal.delta.SVNDeltaCompression;
 import org.tmatesoft.svn.core.internal.io.fs.index.FSLogicalAddressingIndex;
 import org.tmatesoft.svn.core.internal.io.fs.index.FSP2LEntry;
 import org.tmatesoft.svn.core.internal.io.fs.index.FSP2LProtoIndex;
@@ -64,11 +65,11 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
     private long mySourceOffset;
     private ByteArrayOutputStream myTextBuffer;
     private boolean myIsClosed;
-    private boolean myIsCompress;
+    private SVNDeltaCompression myDeltaCompression;
     private FSWriteLock myTxnLock;
 
     private FSOutputStream(FSRevisionNode revNode, CountingOutputStream targetFileOS, File targetFile, InputStream source, long deltaStart,
-            long repSize, long repOffset, FSTransactionRoot txnRoot, boolean compress, FSWriteLock txnLock) throws SVNException {
+            long repSize, long repOffset, FSTransactionRoot txnRoot, SVNDeltaCompression compression, FSWriteLock txnLock) throws SVNException {
         myTxnRoot = txnRoot;
         myTargetFileOS = targetFileOS;
         myTargetFile = targetFile;
@@ -97,7 +98,7 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
             SVNErrorManager.error(err, nsae, SVNLogType.FSFS);
         }
 
-        myIsCompress = compress;
+        myDeltaCompression = compression;
     }
 
     private void reset(FSRevisionNode revNode, CountingOutputStream targetFileOS, File targetFile, InputStream source, long deltaStart,
@@ -119,7 +120,18 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
         myTxnLock = txnLock;
     }
 
+    /**
+     * @deprecated use {@link #createStream(FSRevisionNode, FSTransactionRoot, OutputStream, SVNDeltaCompression)} instead
+     */
+    @Deprecated
     public static OutputStream createStream(FSRevisionNode revNode, FSTransactionRoot txnRoot, OutputStream dstStream, boolean compress) throws SVNException {
+        return createStream(revNode, txnRoot, dstStream, SVNDeltaCompression.fromLegacyCompress(compress));
+    }
+
+    /**
+     * @since 1.10
+     */
+    public static OutputStream createStream(FSRevisionNode revNode, FSTransactionRoot txnRoot, OutputStream dstStream, SVNDeltaCompression compression) throws SVNException {
         if (revNode.getType() != SVNNodeKind.FILE) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_NOT_FILE, "Attempted to set textual contents of a *non*-file node");
             SVNErrorManager.error(err, SVNLogType.FSFS);
@@ -164,7 +176,7 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
             }
 
             return new FSOutputStream(revNode, revWriter, targetFile, sourceStream, deltaStart, 0, offset, txnRoot,
-                    compress, txnLock);
+                    compression, txnLock);
 
         } catch (IOException ioe) {
             SVNFileUtil.closeFile(targetOS);
@@ -299,7 +311,7 @@ public class FSOutputStream extends OutputStream implements ISVNDeltaConsumer {
     public OutputStream textDeltaChunk(String path, SVNDiffWindow diffWindow) throws SVNException {
         mySourceOffset += diffWindow.getSourceViewLength();
         try {
-            diffWindow.writeTo(myTargetFileOS, !isHeaderWritten, myIsCompress);
+            diffWindow.writeTo(myTargetFileOS, !isHeaderWritten, myDeltaCompression);
             isHeaderWritten = true;
         } catch (IOException ioe) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.IO_ERROR, ioe.getLocalizedMessage());

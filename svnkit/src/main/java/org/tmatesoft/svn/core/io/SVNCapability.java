@@ -62,7 +62,6 @@ public class SVNCapability {
 
 	public static final SVNCapability GET_FILE_REVS_REVERSED = new SVNCapability("get-file-revs-reversed");
 
-
 	private String myName;
 
 	private SVNCapability(String name) {

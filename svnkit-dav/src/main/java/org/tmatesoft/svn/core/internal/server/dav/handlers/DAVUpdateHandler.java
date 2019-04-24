@@ -102,7 +102,7 @@ public class DAVUpdateHandler extends DAVReportHandler implements ISVNEditor {
     public DAVUpdateHandler(DAVRepositoryManager repositoryManager, HttpServletRequest request, HttpServletResponse response, 
             DAVReportHandler commonReportHandler) {
         super(repositoryManager, request, response);
-        setSVNDiffVersion(getSVNDiffVersion());
+        setDeltaCompression(getDeltaCompression());
         myCommonReportHandler = commonReportHandler;
     }
 

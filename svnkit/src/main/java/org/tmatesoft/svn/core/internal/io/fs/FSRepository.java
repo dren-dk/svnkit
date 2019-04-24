@@ -696,6 +696,8 @@ public class FSRepository extends SVNRepository implements ISVNReporter {
 		    return true;
 		} else if (capability == SVNCapability.EPHEMERAL_PROPS) {
             return true;
+        } else if (capability == SVNCapability.GET_FILE_REVS_REVERSED) {
+            return false;
         }
 		SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.UNKNOWN_CAPABILITY,
 				"Don''t know anything about capability ''{0}''", capability);

@@ -31,6 +31,7 @@ import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNPropertyValue;
+import org.tmatesoft.svn.core.internal.delta.SVNDeltaCompression;
 import org.tmatesoft.svn.core.internal.io.dav.DAVElement;
 import org.tmatesoft.svn.core.internal.server.dav.DAVException;
 import org.tmatesoft.svn.core.internal.server.dav.DAVRepositoryManager;
@@ -78,7 +79,7 @@ public class DAVReportHandler extends ServletDAVHandler {
     private OutputStream myDiffWindowWriter;
 
     private boolean myWriteTextDeltaHeader = true;
-    private boolean mySVNDiffVersion = false;
+    private SVNDeltaCompression myDeltaCompression = SVNDeltaCompression.None;
     private boolean myIsUnknownReport;
 
     static {
@@ -124,12 +125,27 @@ public class DAVReportHandler extends ServletDAVHandler {
         }
     }
 
+    /**
+     * @deprecated use {@link #getDeltaCompression()} instead.
+     */
+    @Deprecated
     public boolean doCompress() {
-        return mySVNDiffVersion;
+        return myDeltaCompression != SVNDeltaCompression.None;
     }
 
+    /**
+     * @since  1.10
+     */
+    public void setDeltaCompression(SVNDeltaCompression compression) {
+        myDeltaCompression = compression;
+    }
+
+    /**
+     * @deprecated use {@link #setDeltaCompression(SVNDeltaCompression)} instead.
+     */
+    @Deprecated
     public void setSVNDiffVersion(boolean SVNDiffVersion) {
-        mySVNDiffVersion = SVNDiffVersion;
+        setDeltaCompression(SVNDeltaCompression.fromLegacyCompress(SVNDiffVersion));
     }
 
     private boolean isWriteTextDeltaHeader() {
@@ -248,7 +264,7 @@ public class DAVReportHandler extends ServletDAVHandler {
             myDiffWindowWriter = new DAVBase64OutputStream(getResponseWriter());
         }
         try {
-            diffWindow.writeTo(myDiffWindowWriter, isWriteTextDeltaHeader(), doCompress());
+            diffWindow.writeTo(myDiffWindowWriter, isWriteTextDeltaHeader(), myDeltaCompression);
         } catch (IOException e) {
             SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_DAV_REQUEST_FAILED, e), e, SVNLogType.NETWORK);
         } finally {
