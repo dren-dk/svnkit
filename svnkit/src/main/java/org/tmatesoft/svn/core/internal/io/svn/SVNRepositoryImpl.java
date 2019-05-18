@@ -70,6 +70,7 @@ import org.tmatesoft.svn.core.io.SVNFileRevision;
 import org.tmatesoft.svn.core.io.SVNLocationEntry;
 import org.tmatesoft.svn.core.io.SVNLocationSegment;
 import org.tmatesoft.svn.core.io.SVNRepository;
+import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.util.SVNLogType;
 import org.tmatesoft.svn.util.Version;
 
@@ -586,6 +587,13 @@ public class SVNRepositoryImpl extends SVNRepository implements ISVNReporter {
         Long srev = getRevisionObject(startRevision);
         Long erev = getRevisionObject(endRevision);
         SVNDeltaReader deltaReader = new SVNDeltaReader();
+
+        if (((startRevision > endRevision) ||
+                !SVNRevision.isValidRevisionNumber(startRevision))
+                && !hasCapability(SVNCapability.GET_FILE_REVS_REVERSED)) {
+            SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_NOT_IMPLEMENTED), SVNLogType.NETWORK);
+        }
+
         try {
             openConnection();
             Object[] buffer = new Object[]{"get-file-revs",
@@ -1580,7 +1588,12 @@ public class SVNRepositoryImpl extends SVNRepository implements ISVNReporter {
 	    }
 		try {
         	openConnection();
-        	return myConnection.hasCapability(capability.toString());
+
+            final String capabilityName = capability == SVNCapability.GET_FILE_REVS_REVERSED
+                    ? "file-revs-reverse"
+                    : capability.toString();
+
+            return myConnection.hasCapability(capabilityName);
         } catch (SVNException e) {
             closeSession();
             throw e;
