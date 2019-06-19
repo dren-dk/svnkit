@@ -575,6 +575,32 @@ public class CommitTest {
         }
     }
 
+    @Test
+    public void testDotDotInPath() throws Exception {
+        final TestOptions testOptions = TestOptions.getInstance();
+
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testDotDotInPath", testOptions);
+
+        final SvnOperationFactory operationFactory = new SvnOperationFactory();
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final CommitBuilder commitBuilder = new CommitBuilder(url);
+            commitBuilder.addFile("../file");
+            try {
+                commitBuilder.commit();
+                Assert.fail("An exception should be thrown");
+            } catch (SVNException e) {
+                //expected
+                Assert.assertEquals(SVNErrorCode.FS_PATH_SYNTAX, e.getErrorMessage().getErrorCode());
+                Assert.assertTrue(e.getMessage().contains("Path '/..' contains . or .. element"));
+            }
+        } finally {
+            operationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
     private void setIncomplete(SvnOperationFactory svnOperationFactory, File path, long revision, File reposRelpath) throws SVNException {
         SVNWCContext context = new SVNWCContext(svnOperationFactory.getOptions(), svnOperationFactory.getEventHandler());
         try {

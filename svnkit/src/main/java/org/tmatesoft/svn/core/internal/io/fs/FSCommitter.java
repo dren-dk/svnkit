@@ -196,7 +196,7 @@ public class FSCommitter {
     }
 
     public void makeDir(String path) throws SVNException {
-        SVNPathUtil.checkPathIsValid(path);
+        checkFSPathIsValid(path);
         FSTransactionRoot txnRoot = getTxnRoot();
         String txnId = txnRoot.getTxnID();
         FSParentPath parentPath = txnRoot.openPath(path, false, true);
@@ -805,4 +805,51 @@ public class FSCommitter {
         }
     }
 
+    private static void checkFSPathIsValid(String path) throws SVNException {
+        SVNPathUtil.checkPathIsValid(path);
+
+        if (containsBackPath(path) || containsDotPath(path)) {
+            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_PATH_SYNTAX,
+                    "Path ''{0}'' contains '.' or '..' element", path);
+            SVNErrorManager.error(err, SVNLogType.DEFAULT);
+        }
+
+        if (path.contains("\n")) {
+            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.FS_PATH_SYNTAX,
+                    "Invalid control character '0x0a' in path ''{0}''", path);
+            SVNErrorManager.error(err, SVNLogType.DEFAULT);
+        }
+    }
+
+    private static boolean containsBackPath(String path) {
+        if (path.length() == 0 || path.length() == 1) {
+            return false;
+        }
+        if (path.charAt(0) == '.' && path.charAt(1) == '.' && (path.length() == 2 || path.charAt(2) == '/')) {
+            return true;
+        }
+        if (path.length() == 2) {
+            return false;
+        }
+        if (path.contains("/../")) {
+            return true;
+        }
+        return path.endsWith("/..");
+    }
+
+    private static boolean containsDotPath(String path) {
+        if (path.length() == 0) {
+            return false;
+        }
+        if (path.charAt(0) == '.' && (path.length() == 1 || path.charAt(1) == '/')) {
+            return true;
+        }
+        if (path.length() == 1) {
+            return false;
+        }
+        if (path.contains("/./")) {
+            return true;
+        }
+        return path.endsWith("/.");
+    }
 }
