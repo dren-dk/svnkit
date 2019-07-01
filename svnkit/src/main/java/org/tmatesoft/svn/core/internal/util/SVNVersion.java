@@ -3,6 +3,9 @@ package org.tmatesoft.svn.core.internal.util;
 public class SVNVersion implements Comparable<SVNVersion> {
 
     public static SVNVersion parse(String versionString) {
+        if (versionString == null) {
+            return null;
+        }
         try {
             final String[] fields = versionString.split("\\.");
             if (fields.length == 1) {

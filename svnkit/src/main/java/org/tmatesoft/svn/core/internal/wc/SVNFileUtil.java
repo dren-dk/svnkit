@@ -51,6 +51,7 @@ import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.internal.util.SVNFormatUtil;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
 import org.tmatesoft.svn.core.internal.util.SVNUUIDGenerator;
+import org.tmatesoft.svn.core.internal.util.SVNVersion;
 import org.tmatesoft.svn.core.internal.util.jna.SVNJNAUtil;
 import org.tmatesoft.svn.core.internal.util.jna.SVNOS2Util;
 import org.tmatesoft.svn.core.internal.wc.admin.SVNTranslator;
@@ -78,6 +79,8 @@ public class SVNFileUtil {
     public static final boolean isOS2;
     public static final boolean isOSX;
     public static final boolean isBSD;
+    /* FreeBSD project has changed STAT structure in release 12.0 */
+    public static final boolean isIno64;
     public static boolean isLinux;
     public static final boolean isSolaris;
     public static final boolean isOpenVMS;
@@ -159,6 +162,15 @@ public class SVNFileUtil {
 
         is32Bit = "32".equals(System.getProperty("sun.arch.data.model", "32"));
         is64Bit = "64".equals(System.getProperty("sun.arch.data.model", "64"));
+
+        if (isBSD && "freebsd".equals(osNameLC)) {
+            final SVNVersion version12 = SVNVersion.parse("12.0-CURRENT");
+            final SVNVersion version = SVNVersion.parse(System.getProperty("os.version"));
+            isIno64 = (version != null) && (version12 != null) &&
+                    (version12.compareTo(version) <= 0);
+        } else {
+            isIno64 = false;
+        }
 
         if (isOpenVMS) {
             setAdminDirectoryName("_svn");
