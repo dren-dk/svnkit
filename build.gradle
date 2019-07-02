@@ -132,7 +132,7 @@ project(':svnkit') {
         compile 'org.tmatesoft.sqljet:sqljet:1.1.12'
         compile 'net.java.dev.jna:jna:4.1.0'
         compile 'net.java.dev.jna:jna-platform:4.1.0'
-        compile 'com.trilead:trilead-ssh2:1.0.0-build221'
+        compile 'com.trilead:trilead-ssh2:1.0.0-build222'
         compile('com.jcraft:jsch.agentproxy.connector-factory:0.0.7') {
             exclude group: 'net.java.dev.jna'
         }
@@ -384,7 +384,7 @@ project(':svnkit-distribution') {
         sources project(path: ':svnkit-javahl16', configuration: 'sources')
 
         osgi project(path: ':svnkit-osgi', configuration: 'archives')
-        osgi 'com.trilead:trilead-ssh2-osgi:1.0.0-build221'
+        osgi 'com.trilead:trilead-ssh2-osgi:1.0.0-build222'
         osgi 'org.tmatesoft.sqljet:sqljet-osgi:1.1.12'
         osgi 'net.java.dev.jna:jna-osgi:4.1.0'
     }
