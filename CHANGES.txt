@@ -1,3 +1,9 @@
+== version 1.10.1  ==
+
++ OSGi bundle (eclipse update site) fixed to include LZ4 library classes.
++ FreeBSD compatibility fixes.
++ Possible repository corruption when using SVNKit DAV servlet fixed.
+
 == version 1.10.0  ==
 
 + Java 11 support
