@@ -13,6 +13,7 @@ dependencies {
     embedOsgi project(path: ':svnkit-javahl16', transitive: false, configuration: 'jar_archive')
     embedOsgi 'de.regnis.q.sequence:sequence-library:1.0.3'
     embedOsgi 'com.jcraft:jsch.agentproxy.connector-factory:0.0.7'
+    embedOsgi 'org.lz4:lz4-java:1.4.1'
     embedOsgi('com.jcraft:jsch.agentproxy.svnkit-trilead-ssh2:0.0.7'){
        transitive = false
     }
