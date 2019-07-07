@@ -269,6 +269,24 @@ public class SVNFileUtil {
         return STAT_COMMAND;
     }
 
+    public static int getJavaVersion() {
+        String version = System.getProperty("java.version");
+        if(version.startsWith("1.")) {
+            version = version.substring(2, 3);
+        } else {
+            int dot = version.indexOf(".");
+            if (dot != -1) {
+                version = version.substring(0, dot);
+            }
+        }
+        try {
+            return Integer.parseInt(version);
+        } catch (NumberFormatException nfe) {
+            //
+        }
+        return  0;
+    }
+
     public static File getParentFile(File file) {
         if (file == null) {
             return null;
@@ -586,7 +604,7 @@ public class SVNFileUtil {
         SVNErrorManager.error(err, Level.FINE, SVNLogType.WC);
         return null;
     }
-    
+
     public static synchronized File createUniqueDir(File parent, String name, String suffix, boolean useUUIDGenerator) throws SVNException {
         StringBuffer fileName = new StringBuffer();
         fileName.append(name);
@@ -614,17 +632,17 @@ public class SVNFileUtil {
             file = new File(parent, fileName.toString());
             i++;
         } while (i < 99999);
-        
+
 
         SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.IO_UNIQUE_NAMES_EXHAUSTED, "Unable to make name for ''{0}''", new File(parent, name));
         SVNErrorManager.error(err, Level.FINE, SVNLogType.WC);
         return null;
     }
-    
+
     public static void moveFile(File src, File dst) throws SVNException {
-    	
+
     	File tmpPath = SVNFileUtil.createUniqueFile(SVNFileUtil.getFileDir(dst), SVNFileUtil.getFileName(src), "tmp", false);
-    	
+
     	try {
     		SVNFileUtil.copyFile(src, tmpPath, true);
     	}
@@ -634,7 +652,7 @@ public class SVNFileUtil {
     		} catch (SVNException ex2) {}
     		throw ex;
     	}
-    	
+
     	try {
     		SVNFileUtil.rename(tmpPath, dst);
     	}
@@ -644,7 +662,7 @@ public class SVNFileUtil {
     		} catch (SVNException ex2) {}
     		throw ex;
     	}
-    	
+
     	try {
     		SVNFileUtil.deleteFile(src);
     	}
@@ -655,10 +673,10 @@ public class SVNFileUtil {
     		throw ex;
     	}
     }
-    
+
     public static void moveDir(File src, File dst) throws SVNException {
     	File tmpPath = SVNFileUtil.createUniqueDir(SVNFileUtil.getFileDir(dst), SVNFileUtil.getFileName(src), "tmp", false);
-    	
+
     	try {
     		SVNFileUtil.copyDirectory(src, tmpPath, false, null);
     	}
@@ -666,7 +684,7 @@ public class SVNFileUtil {
     		SVNFileUtil.deleteAll(tmpPath, true);
     		throw ex;
     	}
-    	
+
     	try {
     		SVNFileUtil.rename(tmpPath, dst);
     	}
@@ -674,7 +692,7 @@ public class SVNFileUtil {
     		SVNFileUtil.deleteAll(tmpPath, true);
     		throw ex;
     	}
-    	
+
     	try {
     		SVNFileUtil.deleteAll(src, true, null);
     	}
@@ -682,17 +700,17 @@ public class SVNFileUtil {
     		SVNFileUtil.deleteAll(dst, true);
     		throw ex;
     	}
-    	
-    	
-    	
-    }
-    
-    /*
-    
-      
-          
 
-         
+
+
+    }
+
+    /*
+
+
+
+
+
 
           err = svn_io_remove_file2(from_path, FALSE, pool);
           if (! err)
@@ -743,7 +761,7 @@ public class SVNFileUtil {
                 }
             } else if (SVNJNAUtil.moveFile(src, dst)) {
                 renamed = true;
-            } 
+            }
             if (!renamed) {
             	boolean caseOnly = dst.getAbsolutePath().equalsIgnoreCase(src.getAbsolutePath());
                 boolean wasRO = dst.exists() && !dst.canWrite();
@@ -824,7 +842,7 @@ public class SVNFileUtil {
             }
         }
         try {
-            SVNFileType fileType = SVNFileType.getType(file);            
+            SVNFileType fileType = SVNFileType.getType(file);
             if (fileType == SVNFileType.FILE && useCopyOnSetWritable() && file.length() < 1024 * 100) {
                 // faster way for small files.
                 File tmp = createUniqueFile(SVNFileUtil.getFileDir(file), SVNFileUtil.getFileName(file), ".ro", true);
@@ -862,7 +880,7 @@ public class SVNFileUtil {
         if (isWindows || isOpenVMS || file == null || !file.exists() || SVNFileType.getType(file) == SVNFileType.SYMLINK) {
             return;
         }
-        
+
         if (ourSetExecutableMethod != null) {
             try {
                 ourSetExecutableMethod.invoke(file, new Object[] {
@@ -875,7 +893,7 @@ public class SVNFileUtil {
             } catch (InvocationTargetException e) {
             }
         }
-        
+
         if (SVNJNAUtil.setExecutable(file, executable)) {
             return;
         }
@@ -1054,7 +1072,7 @@ public class SVNFileUtil {
             SVNFileUtil.setLastModified(dst, src.lastModified());
         }
     }
-    
+
     public static boolean setLastModified(File file, long timestamp) {
         if (file != null && timestamp >= 0) {
             return file.setLastModified(timestamp);
@@ -2288,7 +2306,7 @@ public class SVNFileUtil {
                     return new ByteArrayInputStream(sb.toString().getBytes());
                 }
             }
-        } 
+        }
         return openFileForReading(link);
     }
 
@@ -2310,7 +2328,7 @@ public class SVNFileUtil {
         //use getFileLastModifiedMicros instead
         return getFileLastModifiedMicros(file) / 1000;
     }
-    
+
     private static Method java7readAttributesMethod = null;
     private static Method java7toPathMethod = null;
     private static Method java7lastModifiedTimeMethod = null;
@@ -2420,7 +2438,7 @@ public class SVNFileUtil {
         }
         setLastModified(file, timeInMicros / 1000);
     }
-    
+
     public static long getFileLastModifiedMicros(File file) {
         // we have 2 options:
         // if the file is a symlink, the approaches are: Java 9 -> JNA -> Java 7 -> 'stat' -> File.lastModified

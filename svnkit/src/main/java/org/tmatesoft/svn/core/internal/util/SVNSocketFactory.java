@@ -40,6 +40,7 @@ import org.tmatesoft.svn.core.ISVNCanceller;
 import org.tmatesoft.svn.core.SVNCancelException;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.internal.wc.SVNClassLoader;
+import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.util.SVNDebugLog;
 import org.tmatesoft.svn.util.SVNLogType;
 
@@ -65,7 +66,7 @@ public class SVNSocketFactory {
     private static String ourSSLProtocols = System.getProperty("svnkit.http.sslProtocols");
 
     public static Socket createPlainSocket(String host, int port, int connectTimeout, int readTimeout, ISVNCanceller cancel) throws IOException, SVNException {
-        InetAddress address = createAddres(host);
+        InetAddress address = createAddress(host);
         Socket socket = new Socket();
         int bufferSize = getSocketReceiveBufferSize();
         if (bufferSize > 0) {
@@ -104,13 +105,13 @@ public class SVNSocketFactory {
     }
 
     private static Socket _createSSLSocket(KeyManager[] keyManagers, TrustManager trustManager, String host, int port, int connectTimeout, int readTimeout, ISVNCanceller cancel, boolean withSNIsupport) throws IOException, SVNException {
-        InetAddress address = createAddres(host);
+        InetAddress address = createAddress(host);
         Socket sslSocket = createSSLContext(keyManagers, trustManager).getSocketFactory().createSocket();
         int bufferSize = getSocketReceiveBufferSize();
         if (bufferSize > 0) {
             sslSocket.setReceiveBufferSize(bufferSize);
         }
-        if (withSNIsupport) {
+        if (withSNIsupport && sslSocket instanceof SSLSocket && SVNFileUtil.getJavaVersion() < 8) {
             sslSocket = setSSLSocketHost(sslSocket, host);
         }
         InetSocketAddress socketAddress = new InetSocketAddress(address, port);
@@ -182,7 +183,7 @@ public class SVNSocketFactory {
         }
     }
 
-    private static InetAddress createAddres(String hostName) throws UnknownHostException {
+    private static InetAddress createAddress(String hostName) throws UnknownHostException {
         byte[] bytes = new byte[4];
         int index = 0;
         for (StringTokenizer tokens = new StringTokenizer(hostName, "."); tokens.hasMoreTokens();) {
