@@ -7,27 +7,27 @@ public class SVNVersion implements Comparable<SVNVersion> {
             return null;
         }
         try {
-            final String[] fields = versionString.split("\\.");
+            final String[] fields = versionString.split("\\.", 3);
+            final String[] fields2 = fields[fields.length - 1].split("-", 2);
+            final int major;
+            final int minor;
+            final int micro;
             if (fields.length == 1) {
-                final int major = Integer.parseInt(fields[0]);
-                return new SVNVersion(major, -1, -1, null);
+                major = Integer.parseInt(fields2[0]);
+                minor = -1;
+                micro = -1;
             } else if (fields.length == 2) {
-                final int major = Integer.parseInt(fields[0]);
-                final int minor = Integer.parseInt(fields[1]);
-                return new SVNVersion(major, minor, -1, null);
+                major = Integer.parseInt(fields[0]);
+                minor = Integer.parseInt(fields2[0]);
+                micro = -1;
             } else if (fields.length == 3) {
-                final int major = Integer.parseInt(fields[0]);
-                final int minor = Integer.parseInt(fields[1]);
-                final String[] fields2 = fields[2].split("-");
-                if (fields2.length == 1) {
-                    final int micro = Integer.parseInt(fields2[0]);
-                    return new SVNVersion(major, minor, micro, null);
-                } else {
-                    final int micro = Integer.parseInt(fields2[0]);
-                    final String build = fields2[1];
-                    return new SVNVersion(major, minor, micro, build);
-                }
+                major = Integer.parseInt(fields[0]);
+                minor = Integer.parseInt(fields[1]);
+                micro = Integer.parseInt(fields2[0]);
+            } else {
+                return null;
             }
+            return new SVNVersion(major, minor, micro, fields2.length >= 2 ? fields2[1] : null);
         } catch (NumberFormatException e) {
             //
         }
@@ -69,8 +69,7 @@ public class SVNVersion implements Comparable<SVNVersion> {
         return stringBuilder.toString();
     }
 
-    @Override
-    public int compareTo(SVNVersion o) {
+    public int compareNumericParts(SVNVersion o) {
         if (o == null) {
             return 1;
         }
@@ -86,7 +85,12 @@ public class SVNVersion implements Comparable<SVNVersion> {
         if (diff != 0) {
             return diff;
         }
-        diff = micro - o.micro;
+        return micro - o.micro;
+    }
+
+    @Override
+    public int compareTo(SVNVersion o) {
+        int diff = compareNumericParts(o);
         if (diff != 0) {
             return diff;
         }

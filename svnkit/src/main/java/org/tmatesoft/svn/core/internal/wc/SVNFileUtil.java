@@ -167,7 +167,7 @@ public class SVNFileUtil {
             final SVNVersion version12 = SVNVersion.parse("12.0-CURRENT");
             final SVNVersion version = SVNVersion.parse(System.getProperty("os.version"));
             isIno64 = (version != null) && (version12 != null) &&
-                    (version12.compareTo(version) <= 0);
+                    (version12.compareNumericParts(version) <= 0);
         } else {
             isIno64 = false;
         }
