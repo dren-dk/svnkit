@@ -141,7 +141,7 @@ public class SvnRemoteExport extends SvnRemoteOperationRunner<Long, SvnExport> {
             
             handleEvent(SVNEventFactory.createSVNEvent(dstPath, SVNNodeKind.FILE, null, SVNRepository.INVALID_REVISION, SVNEventAction.UPDATE_ADD, null, null, null));
         } else {
-            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_ILLEGAL_URL, "URL ''{0}'' doesn't exist", repository.getLocation());
+            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_ILLEGAL_URL, "URL ''{0}'' doesn''t exist", repository.getLocation());
             SVNErrorManager.error(err, SVNLogType.WC);
         }
         

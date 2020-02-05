@@ -2158,7 +2158,7 @@ public abstract class SVNRepository {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_ILLEGAL_URL, "URL ''{0}'' refers to a file, not a directory", getLocation());
             SVNErrorManager.error(err, SVNLogType.NETWORK);
         } else if (nodeKind == SVNNodeKind.NONE) {
-            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_ILLEGAL_URL, "URL ''{0}'' doesn't exist", getLocation());
+            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_ILLEGAL_URL, "URL ''{0}'' doesn''t exist", getLocation());
             SVNErrorManager.error(err, SVNLogType.NETWORK);
         }
         final SVNDepth reporterDepth = depth;
