@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.SequenceInputStream;
+import java.net.SocketTimeoutException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -116,6 +117,9 @@ public class SVNConnection {
         int r = 0;
         try {
             r = getInputStream().read(bytes);
+        } catch (SocketTimeoutException e) {
+            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_SVN_IO_ERROR, "time out reading data", null, SVNErrorMessage.TYPE_ERROR, e);
+            SVNErrorManager.error(err, e, SVNLogType.NETWORK);
         } catch (IOException e) {
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_SVN_MALFORMED_DATA, "Handshake failed: ''{0}''", e.getMessage());
             SVNErrorManager.error(err, SVNLogType.NETWORK);
@@ -419,7 +423,7 @@ public class SVNConnection {
         if (myInputStream == null) {
             try {
                 InputStream is = myConnector.getInputStream();
-                myInputStream = myRepository.getDebugLog().createLogStream(SVNLogType.NETWORK, is); 
+                myInputStream = myRepository.getDebugLog().createLogStream(SVNLogType.NETWORK, is);
                 myLoggingInputStream = myInputStream;
             } catch (IOException e) {
                 SVNErrorManager.error(SVNErrorMessage.create(SVNErrorCode.RA_SVN_IO_ERROR, e.getMessage()), e, SVNLogType.NETWORK);

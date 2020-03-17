@@ -68,17 +68,17 @@ public class SVNSocketFactory {
     public static Socket createPlainSocket(String host, int port, int connectTimeout, int readTimeout, ISVNCanceller cancel) throws IOException, SVNException {
         InetAddress address = createAddress(host);
         Socket socket = new Socket();
-        int bufferSize = getSocketReceiveBufferSize();
+        final int bufferSize = getSocketReceiveBufferSize();
         if (bufferSize > 0) {
             socket.setReceiveBufferSize(bufferSize);
         }
-        InetSocketAddress socketAddress = new InetSocketAddress(address, port);
-        connect(socket, socketAddress, connectTimeout, cancel);
+        final InetSocketAddress socketAddress = new InetSocketAddress(address, port);
         socket.setReuseAddress(true);
         socket.setTcpNoDelay(true);
         socket.setKeepAlive(true);
         socket.setSoLinger(true, 0);
         socket.setSoTimeout(readTimeout);
+        connect(socket, socketAddress, connectTimeout, cancel);
         return socket;
     }
 

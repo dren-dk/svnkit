@@ -13,6 +13,7 @@ package org.tmatesoft.svn.core.internal.io.svn;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -416,6 +417,10 @@ public class SVNReader {
                         }
                         toRead -= r;
                     }
+                } catch (SocketTimeoutException e) {
+                    SVNDebugLog.getDefaultLog().logFinest(SVNLogType.NETWORK, e);
+                    SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_SVN_IO_ERROR, "time out reading data", null, SVNErrorMessage.TYPE_ERROR, e);
+                    SVNErrorManager.error(err, e, SVNLogType.NETWORK);
                 } catch (IOException e) {
                     SVNDebugLog.getDefaultLog().logFinest(SVNLogType.NETWORK, e);
                     SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_SVN_MALFORMED_DATA);
@@ -472,6 +477,10 @@ public class SVNReader {
                 SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_SVN_MALFORMED_DATA);
                 SVNErrorManager.error(err, SVNLogType.NETWORK);
             }
+        } catch (SocketTimeoutException e) {
+            SVNDebugLog.getDefaultLog().logFinest(SVNLogType.NETWORK, e);
+            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_SVN_IO_ERROR, "time out reading data", null, SVNErrorMessage.TYPE_ERROR, e);
+            SVNErrorManager.error(err, e, SVNLogType.NETWORK);
         } catch (IOException e) {
             SVNDebugLog.getDefaultLog().logFinest(SVNLogType.NETWORK, e);
             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_SVN_MALFORMED_DATA);
