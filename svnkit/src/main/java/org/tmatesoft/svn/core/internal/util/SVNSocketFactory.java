@@ -38,6 +38,8 @@ import javax.net.ssl.X509TrustManager;
 
 import org.tmatesoft.svn.core.ISVNCanceller;
 import org.tmatesoft.svn.core.SVNCancelException;
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.internal.wc.SVNClassLoader;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
@@ -58,12 +60,18 @@ import org.tmatesoft.svn.util.SVNLogType;
  */
 public class SVNSocketFactory {
 
+    public interface SocketConfigurator {
+        void configureSocket(Socket socket);
+    }
+
     private static final String EMPTY_JAVA7_TRUST_MANAGER_CLASSNAME = "org.tmatesoft.svn.core.internal.util.Java7EmptyTrustManager";
+
 
     private static boolean ourIsSocketStaleCheck = false;
     private static int ourSocketReceiveBufferSize = 0; // default
     private static ISVNThreadPool ourThreadPool = SVNClassLoader.getThreadPool();
     private static String ourSSLProtocols = System.getProperty("svnkit.http.sslProtocols");
+    private static volatile SocketConfigurator configurator;
 
     public static Socket createPlainSocket(String host, int port, int connectTimeout, int readTimeout, ISVNCanceller cancel) throws IOException, SVNException {
         InetAddress address = createAddress(host);
@@ -78,8 +86,29 @@ public class SVNSocketFactory {
         socket.setKeepAlive(true);
         socket.setSoLinger(true, 0);
         socket.setSoTimeout(readTimeout);
+        configureSocket(socket);
         connect(socket, socketAddress, connectTimeout, cancel);
         return socket;
+    }
+
+    private static void configureSocket(Socket socket) throws SVNException {
+        final SocketConfigurator configurator = SVNSocketFactory.configurator;
+        if (configurator != null) {
+            try {
+                configurator.configureSocket(socket);
+            } catch (Throwable th) {
+                SVNDebugLog.getDefaultLog().logError(SVNLogType.NETWORK, th);
+                throw new SVNException(SVNErrorMessage.create(SVNErrorCode.RA_SVN_IO_ERROR, th), th);
+            }
+        }
+    }
+
+    public static void setConfigurator(SVNSocketFactory.SocketConfigurator configurator) {
+        SVNSocketFactory.configurator = configurator;
+    }
+
+    public static SVNSocketFactory.SocketConfigurator getConfigurator() {
+        return SVNSocketFactory.configurator;
     }
 
     public static synchronized void setSSLProtocols(String sslProtocols) {
@@ -127,7 +156,7 @@ public class SVNSocketFactory {
         return sslSocket;
     }
 
-    public static Socket createSSLSocket(KeyManager[] keyManagers, TrustManager trustManager, String host, int port, Socket socket, int readTimeout) throws IOException {
+    public static Socket createSSLSocket(KeyManager[] keyManagers, TrustManager trustManager, String host, int port, Socket socket, int readTimeout) throws IOException, SVNException {
         Socket sslSocket = createSSLContext(keyManagers, trustManager).getSocketFactory().createSocket(socket, host, port, true);
         sslSocket = setSSLSocketHost(sslSocket, host);
         sslSocket.setReuseAddress(true);
@@ -135,6 +164,7 @@ public class SVNSocketFactory {
         sslSocket.setKeepAlive(true);
         sslSocket.setSoLinger(true, 0);
         sslSocket.setSoTimeout(readTimeout);
+
         sslSocket = configureSSLSocket(sslSocket);
 
         return sslSocket;
@@ -362,7 +392,7 @@ public class SVNSocketFactory {
 	    return protocolsToUse;
 	}
 
-    public static Socket configureSSLSocket(Socket socket) {
+    public static Socket configureSSLSocket(Socket socket) throws SVNException {
         if (socket == null || !(socket instanceof SSLSocket)) {
             return null;
         }
@@ -387,6 +417,9 @@ public class SVNSocketFactory {
         }
         sslSocket.setEnabledProtocols(protocolsToEnable.toArray(new String[protocolsToEnable.size()]));
         SVNDebugLog.getDefaultLog().logFinest(SVNLogType.NETWORK, "SSL protocols explicitly enabled: " + protocolsToEnable);
+
+        configureSocket(sslSocket);
+
         return sslSocket;
     }
 }
