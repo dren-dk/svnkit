@@ -1627,9 +1627,7 @@ public class SVNAdminClient extends SVNAdminBasicClient {
     private void checkIfRepositoryIsAtRoot(SVNRepository repos, SVNURL url) throws SVNException {
         SVNURL reposRoot = repos.getRepositoryRoot(true);
         if (!reposRoot.equals(url)) {
-            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.IO_ERROR, "Session is rooted at ''{0}'' but the repos root is ''{1}''", new SVNURL[] {
-                    url, reposRoot
-            });
+            SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.IO_ERROR, "Session is rooted at ''{0}'' but the repos root is ''{1}''",  url, reposRoot);
             SVNErrorManager.error(err, SVNLogType.FSFS);
         }
     }
