@@ -59,6 +59,7 @@ class DAVCommitEditor implements ISVNEditor {
     private ISVNWorkspaceMediator myCommitMediator;
     private Map myPathsMap;
     private Map myFilesMap;
+    private long myBaseRevision;
     private String myBaseChecksum;
     private SVNProperties myRevProps;
     private String myActivityLocation;
@@ -296,6 +297,7 @@ class DAVCommitEditor implements ISVNEditor {
     }
 
     public void addFile(String path, String copyPath, long copyRevision) throws SVNException {
+        myBaseRevision = -1;
         String originalPath = path;
         path = SVNEncodingUtil.uriEncode(path);
         // checkout parent collection.
@@ -372,6 +374,7 @@ class DAVCommitEditor implements ISVNEditor {
     }
 
     public void openFile(String path, long revision) throws SVNException {
+        myBaseRevision = revision;
         String originalPath = path;
         path = SVNEncodingUtil.uriEncode(path);
         DAVResource file = new DAVResource(myCommitMediator, myConnection, path, revision);
@@ -442,7 +445,7 @@ class DAVCommitEditor implements ISVNEditor {
                 try {
                     combinedData = new HTTPBodyInputStream(myDeltaFile);
                     myConnection.doPutDiff(currentFile.getURL(), myConnection.hasHttpV2Support() ? currentFile.getCustomURL() : currentFile.getWorkingURL(), combinedData, myDeltaFile.length(),
-                            myBaseChecksum, textChecksum);
+                            myBaseChecksum, textChecksum, myBaseRevision);
 
                 } catch (SVNException e) {
                     HTTPStatus httpStatus = myConnection.getLastStatus();
