@@ -1705,6 +1705,7 @@ public abstract class ServletDAVHandler extends BasicDAVHandler {
     protected FSDeltaConsumer getDeltaConsumer(FSRoot root, FSCommitter committer, FSFS fsfs, String userName, Collection lockTokens) {
         if (myDeltaConsumer == null) {
             myDeltaConsumer = new FSDeltaConsumer("", (FSTransactionRoot) root, fsfs, committer, userName, lockTokens);
+            myDeltaConsumer.setComputeChecksum(true);
         }
         return myDeltaConsumer;
     

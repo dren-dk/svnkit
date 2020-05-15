@@ -11,16 +11,18 @@
  */
 package org.tmatesoft.svn.core.internal.server.dav.handlers;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.internal.delta.SVNDeltaReader;
 import org.tmatesoft.svn.core.internal.io.fs.FSCommitter;
+import org.tmatesoft.svn.core.internal.io.fs.FSDeltaConsumer;
 import org.tmatesoft.svn.core.internal.io.fs.FSFS;
 import org.tmatesoft.svn.core.internal.io.fs.FSRoot;
 import org.tmatesoft.svn.core.internal.io.fs.FSTransactionInfo;
@@ -32,9 +34,11 @@ import org.tmatesoft.svn.core.internal.server.dav.DAVResourceState;
 import org.tmatesoft.svn.core.internal.server.dav.DAVResourceType;
 import org.tmatesoft.svn.core.internal.server.dav.DAVServlet;
 import org.tmatesoft.svn.core.internal.util.SVNEncodingUtil;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.io.ISVNDeltaConsumer;
 import org.tmatesoft.svn.core.io.diff.SVNDeltaGenerator;
+import org.tmatesoft.svn.util.SVNLogType;
 
 
 /**
@@ -132,8 +136,16 @@ public class DAVPutHandler extends ServletDAVHandler {
                     deltaConsumer.textDeltaEnd(path);
                 }
             }
+            final String actualChecksum = ((FSDeltaConsumer) deltaConsumer).getChecksum();
+            final String expectedChecksum = resource.getResultChecksum();
+
+            if (actualChecksum != null && expectedChecksum != null &&
+                    !expectedChecksum.equals(actualChecksum)) {
+                SVNErrorMessage errorMessage = SVNErrorMessage.create(SVNErrorCode.CHECKSUM_MISMATCH, "Checksum mismatch on ''{0}'':\n   expected:  {1}\n     actual:  {2}\n", new Object[] {path, expectedChecksum, actualChecksum});
+                SVNErrorManager.error(errorMessage, SVNLogType.FSFS);
+            }
         }
-        
+
         if (error == null) {
             resource.setExists(true);
         }
