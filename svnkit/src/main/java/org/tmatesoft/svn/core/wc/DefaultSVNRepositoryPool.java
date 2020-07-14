@@ -277,12 +277,14 @@ public class DefaultSVNRepositoryPool implements ISVNRepositoryPool, ISVNSession
         if (!(repos instanceof DAVRepository)) {
             return;
         }
-        if (!(options instanceof DefaultSVNOptions)) {
-            return;
-        }
         final File poolSpoolLocation = getSpoolLocation();
-        final File configSpoolLocation = ((DefaultSVNOptions) options).getHttpSpoolDirectory();
-        final File spoolLocation = poolSpoolLocation != null ? poolSpoolLocation : configSpoolLocation;
+        final File spoolLocation;
+        if (options instanceof DefaultSVNOptions) {
+            final File configSpoolLocation = ((DefaultSVNOptions) options).getHttpSpoolDirectory();
+            spoolLocation = poolSpoolLocation != null ? poolSpoolLocation : configSpoolLocation;
+        } else {
+            spoolLocation = poolSpoolLocation;
+        }
 
         if (spoolLocation != null) {
             ((DAVRepository) repos).setSpoolLocation(spoolLocation);
