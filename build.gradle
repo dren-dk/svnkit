@@ -130,8 +130,8 @@ project(':svnkit') {
     dependencies {
         compile 'de.regnis.q.sequence:sequence-library:1.0.4'
         compile 'org.tmatesoft.sqljet:sqljet:1.1.13'
-        compile 'net.java.dev.jna:jna:4.1.0'
-        compile 'net.java.dev.jna:jna-platform:4.1.0'
+        compile 'net.java.dev.jna:jna:5.6.0'
+        compile 'net.java.dev.jna:jna-platform:5.6.0'
         compile 'com.trilead:trilead-ssh2:1.0.0-build222'
         compile('com.jcraft:jsch.agentproxy.connector-factory:0.0.7') {
             exclude group: 'net.java.dev.jna'
