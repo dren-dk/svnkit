@@ -1,5 +1,5 @@
 group = 'org.tmatesoft.svnkit'
-version = '1.10.2'
+version = '1.10.3'
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.14'
@@ -141,7 +141,7 @@ project(':svnkit') {
 
         testCompile 'junit:junit:4.8'
     }
-    artifacts { 
+    artifacts {
         archives jar, sourcesJar, javadocJar
         jar_archive jar
     }
@@ -196,8 +196,8 @@ project(':svnkit-javahl16') {
 
         testCompile 'org.apache.subversion:svn-javahl-tests:1.9.3-SNAPSHOT'
     }
-    artifacts { 
-        archives jar, sourcesJar, javadocJar 
+    artifacts {
+        archives jar, sourcesJar, javadocJar
         jar_archive jar
     }
     uploadArchives {
@@ -247,8 +247,8 @@ project(':svnkit-cli') {
     dependencies {
         compile project(path: ':svnkit')
     }
-    artifacts { 
-        archives jar, sourcesJar, javadocJar 
+    artifacts {
+        archives jar, sourcesJar, javadocJar
     }
     uploadArchives {
         enabled = true
