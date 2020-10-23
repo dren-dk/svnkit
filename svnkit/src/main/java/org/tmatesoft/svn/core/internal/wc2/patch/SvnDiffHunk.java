@@ -201,10 +201,11 @@ public class SvnDiffHunk implements Comparable<SvnDiffHunk> {
                 }
 
                 str = readLine(patchFileStream, eolStr, eof);
+                byte[] strBytes = str.getBytes("UTF-8");
 
                 //here we apply "maxLen" restriction; suppose str="abcd\n", maxLen=3: we should cut str to "abc" and forget about finding EOL
-                if (maxLen >= 0 && str.length() >= maxLen) {
-                    str = str.substring(0, (int) maxLen);
+                if (maxLen >= 0 && strBytes.length >= maxLen) {
+                    str = new String(strBytes, 0, (int) maxLen);
                     if (eolStr != null && eolStr[0] != null && !str.endsWith("\r") && !str.endsWith("\n")) {
                         eolStr[0] = null;
                     }
@@ -223,6 +224,7 @@ public class SvnDiffHunk implements Comparable<SvnDiffHunk> {
             String result;
             if (filtered) {
                 result = "";
+                eolStr[0] = null;
             } else if (str.startsWith("+") || str.startsWith("-") || str.startsWith(" ")) {
                 result = str.substring(1);
             } else {
