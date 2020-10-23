@@ -11,6 +11,7 @@
  */
 package org.tmatesoft.svn.core.internal.wc.patch;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -197,6 +198,7 @@ public class SVNPatchFileStream {
     }
 
     private boolean readLine(StringBuffer input, StringBuffer eolStr, boolean detectEol) throws IOException, SVNException {
+        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
         int c;
         boolean eol;
@@ -210,7 +212,7 @@ public class SVNPatchFileStream {
                 eol = false;
                 filtered = false;
 
-                input.setLength(0);
+                byteArrayOutputStream.reset();
                 if (eolStr != null) {
                     eolStr.setLength(0);
                 }
@@ -242,27 +244,28 @@ public class SVNPatchFileStream {
                             eol = true;
                             break;
                         default:
-                            input.append((char) c);
+                            byteArrayOutputStream.write(c);
                             break;
                     }
                 }
 
                 if (lineFilter != null) {
-                    filtered = lineFilter.lineFilter(input.toString());
+                    filtered = lineFilter.lineFilter(byteArrayOutputStream.toString("UTF-8"));
                     if (filtered) {
-                        input.setLength(0);
+                        byteArrayOutputStream.reset();
                     }
                 }
 
             } while (filtered && !isEOF());
 
             if (lineTransformer != null) {
-                final String line = lineTransformer.lineTransformer(input.toString());
-                input.setLength(0);
-                input.append(line);
+                final String line = lineTransformer.lineTransformer(byteArrayOutputStream.toString("UTF-8"));
+                byteArrayOutputStream.reset();
+                byteArrayOutputStream.write(line.getBytes("UTF-8"));
             }
+            input.append(byteArrayOutputStream.toString("UTF-8"));
 
-            return input.length() == 0 && c == -1 && isEOF();
+            return byteArrayOutputStream.size() == 0 && c == -1 && isEOF();
         } finally {
             try {
                 bufferedFile.savePosition();
