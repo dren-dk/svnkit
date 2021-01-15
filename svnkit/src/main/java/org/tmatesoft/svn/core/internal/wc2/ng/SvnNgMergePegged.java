@@ -27,7 +27,7 @@ public class SvnNgMergePegged extends SvnNgOperationRunner<Void, SvnMerge> {
         return super.isApplicable(operation, wcGeneration) 
                 && !operation.isReintegrate() 
                 && operation.getSource() != null
-                && operation.getRevisionRanges() != null;
+                && (operation.getRevisionRanges() != null || SvnMerge.EMULATE_AUTOMATIC_MERGE);
     }
 
     @Override

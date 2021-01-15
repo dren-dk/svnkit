@@ -1210,6 +1210,45 @@ public class MergeTest {
         }
     }
 
+    @Test
+    public void testMergeAutomaticWorkaround() throws Exception {
+        final TestOptions options = TestOptions.getInstance();
+
+        final SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        final Sandbox sandbox = Sandbox.createWithCleanup(getTestName() + ".testMergeFileAdditionAndDeletion", options);
+        try {
+            final SVNURL url = sandbox.createSvnRepository();
+
+            final CommitBuilder commitBuilder1 = new CommitBuilder(url);
+            commitBuilder1.addFile("trunk/file", "base".getBytes());
+            commitBuilder1.commit();
+
+            final CommitBuilder commitBuilder2 = new CommitBuilder(url);
+            commitBuilder2.addDirectoryByCopying("branches/branch", "trunk", 1);
+            commitBuilder2.commit();
+
+            final CommitBuilder commitBuilder3 = new CommitBuilder(url);
+            commitBuilder3.changeFile("branches/branch/file", "theirs".getBytes());
+            commitBuilder3.commit();
+
+            final SVNURL trunkUrl = url.appendPath("trunk", false);
+            final SVNURL branchUrl = url.appendPath("branches/branch", false);
+
+            final WorkingCopy workingCopy = sandbox.checkoutNewWorkingCopy(trunkUrl);
+            final File workingCopyDirectory = workingCopy.getWorkingCopyDirectory();
+
+            final SvnMerge merge = svnOperationFactory.createMerge();
+            merge.setSource(SvnTarget.fromURL(branchUrl), false);
+            merge.setSingleTarget(SvnTarget.fromFile(workingCopyDirectory));
+            merge.run();
+
+            Assert.assertEquals("theirs", SVNFileUtil.readFile(workingCopy.getFile("file")));
+        } finally {
+            svnOperationFactory.dispose();
+            sandbox.dispose();
+        }
+    }
+
     private void update(SvnOperationFactory svnOperationFactory, WorkingCopy workingCopy) throws SVNException {
         final SvnUpdate update = svnOperationFactory.createUpdate();
         update.setSingleTarget(SvnTarget.fromFile(workingCopy.getWorkingCopyDirectory()));

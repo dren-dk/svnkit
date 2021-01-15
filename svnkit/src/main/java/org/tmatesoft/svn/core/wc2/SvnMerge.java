@@ -2,6 +2,7 @@ package org.tmatesoft.svn.core.wc2;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNErrorCode;
@@ -145,7 +146,13 @@ import org.tmatesoft.svn.core.wc.SVNRevision;
  * @version 1.7
  */
 public class SvnMerge extends SvnOperation<Void> {
-    
+
+    /*
+     * Honest automatic merge is yet to be implemented (SVNKIT-432)
+     * This is quick work-around
+     */
+    public static final boolean EMULATE_AUTOMATIC_MERGE = true;
+
     private SvnTarget firstSource;
     private SvnTarget secondSource;
 
@@ -194,6 +201,17 @@ public class SvnMerge extends SvnOperation<Void> {
     * @return revision ranges of the merge
     */
     public Collection<SvnRevisionRange> getRevisionRanges() {
+        if (ranges == null && EMULATE_AUTOMATIC_MERGE) {
+            SvnTarget source = getSource();
+            SVNRevision startRevision = SVNRevision.create(1);
+            SVNRevision endRevision = source.getPegRevision();
+            if (endRevision == null || endRevision == SVNRevision.UNDEFINED) {
+                endRevision = source.isURL() ? SVNRevision.HEAD : SVNRevision.WORKING;
+            }
+            final List<SvnRevisionRange> revisionRanges = new ArrayList<SvnRevisionRange>();
+            revisionRanges.add(SvnRevisionRange.create(startRevision, endRevision));
+            return revisionRanges;
+        }
         return ranges;
     }
     
