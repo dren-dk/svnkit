@@ -171,7 +171,9 @@ public class SpoolFile {
 
         private void closeCurrentFile() throws IOException {
             try {
-                myCurrentInput.close();
+                if (myCurrentInput != null) {
+                    myCurrentInput.close();
+                }
             } finally {
                 try {
                     SVNFileUtil.deleteFile(myCurrentFile);
