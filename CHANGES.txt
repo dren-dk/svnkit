@@ -1,3 +1,9 @@
+== version 1.10.3  ==
+
++ SVNKit 1.10.2 did not report its version properly, fixed.
++ SVNKIT-757: NPE on unexpected spool file deletion, fixed.
++ SVNKIT-432, fix in merge implementation.
+
 == version 1.10.2  ==
 
 + SVNKIT-753: conflicts were not detected when using HTTPv2 protocol, fixed.

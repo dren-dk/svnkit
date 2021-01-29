@@ -54,11 +54,11 @@ subprojects {
        compatibleSvnVersion = rootProject.compatibleSvnVersion
 
        buildVersion = [
-           baseVersion : '1.10.1',
+           baseVersion : '1.10.3',
            buildNumber : buildNumber,
            major: '1',
            minor: '10',
-           micro: '1'
+           micro: '3'
        ]
        buildNumber = rootProject.buildNumber
     }
