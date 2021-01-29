@@ -5,12 +5,12 @@
       version="${svnkit_osgi_version}"
       provider-name="TMate Software">
 
-   <description url="http://svnkit.com/">
+   <description url="https://svnkit.com/">
       %description
    </description>
 
-   <copyright url="http://svnkit.com/">
-      (c) 2004-2015, TMate Software Ltd.
+   <copyright url="https://svnkit.com/">
+      (c) 2004-2021, TMate Software Ltd.
    </copyright>
 
    <license url="">
@@ -18,8 +18,8 @@
    </license>
 
    <url>
-      <update label="TMate Software SVNKit 1.8.x Update Site" url="http://eclipse.tmatesoft.com/svnkit/1.8.x/"/>
-      <discovery label="TMate Software SVNKit 1.8.x Update Site" url="http://eclipse.tmatesoft.com/svnkit/1.8.x/"/>
+      <update label="TMate Software SVNKit 1.8.x Update Site" url="https://eclipse.tmatesoft.com/svnkit/1.8.x/"/>
+      <discovery label="TMate Software SVNKit 1.8.x Update Site" url="https://eclipse.tmatesoft.com/svnkit/1.8.x/"/>
    </url>
 
    <plugin
