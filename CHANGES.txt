@@ -1,3 +1,5 @@
+== version 1.10.4  ==
+
 == version 1.10.3  ==
 
 + SVNKit 1.10.2 did not report its version properly, fixed.
