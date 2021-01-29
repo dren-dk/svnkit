@@ -18,8 +18,8 @@
    </license>
 
    <url>
-      <update label="TMate Software SVNKit 1.8.x Update Site" url="https://eclipse.tmatesoft.com/svnkit/1.8.x/"/>
-      <discovery label="TMate Software SVNKit 1.8.x Update Site" url="https://eclipse.tmatesoft.com/svnkit/1.8.x/"/>
+      <update label="TMate Software SVNKit 1.10.x Update Site" url="https://eclipse.tmatesoft.com/1.10.x/"/>
+      <discovery label="TMate Software SVNKit 1.10.x Update Site" url="https://eclipse.tmatesoft.com/1.10.x/"/>
    </url>
 
    <plugin
