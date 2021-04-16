@@ -158,6 +158,7 @@ class DAVCommitEditor implements ISVNEditor {
     }
 
     public void deleteEntry(String path, long revision) throws SVNException {
+        path = SVNEncodingUtil.uriEncode(path);
         if (myConnection.hasHttpV2Support()) {
             String deleteTarget;
             deleteTarget = SVNPathUtil.append(myTxnRootUrl, path);
@@ -171,7 +172,6 @@ class DAVCommitEditor implements ISVNEditor {
             }
             myDeletedPaths.add(path);
         } else {
-            path = SVNEncodingUtil.uriEncode(path);
             // get parent's working copy. (checkout? or use checked out?)
             DAVResource parentResource = (DAVResource) myDirsStack.peek();
             checkoutResource(parentResource, true);
