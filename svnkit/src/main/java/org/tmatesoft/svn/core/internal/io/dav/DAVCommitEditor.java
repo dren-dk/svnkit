@@ -36,6 +36,7 @@ import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.io.ISVNEditor;
 import org.tmatesoft.svn.core.io.ISVNWorkspaceMediator;
+import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.io.diff.SVNDiffWindow;
 import org.tmatesoft.svn.util.SVNDebugLog;
 import org.tmatesoft.svn.util.SVNLogType;
@@ -59,7 +60,7 @@ class DAVCommitEditor implements ISVNEditor {
     private ISVNWorkspaceMediator myCommitMediator;
     private Map myPathsMap;
     private Map myFilesMap;
-    private long myBaseRevision;
+    private Map myBaseRevisionsMap;
     private String myBaseChecksum;
     private SVNProperties myRevProps;
     private String myActivityLocation;
@@ -86,6 +87,7 @@ class DAVCommitEditor implements ISVNEditor {
         myDirsStack = new Stack();
         myPathsMap = new SVNHashMap();
         myFilesMap = new SVNHashMap();
+        myBaseRevisionsMap = new SVNHashMap();
         myRevProps = revProps != null ? revProps : new SVNProperties();
         myDeletedPaths = new HashSet<String>();
     }
@@ -297,7 +299,7 @@ class DAVCommitEditor implements ISVNEditor {
     }
 
     public void addFile(String path, String copyPath, long copyRevision) throws SVNException {
-        myBaseRevision = -1;
+        myBaseRevisionsMap.put(path, (Long)SVNRepository.INVALID_REVISION);
         String originalPath = path;
         path = SVNEncodingUtil.uriEncode(path);
         // checkout parent collection.
@@ -374,7 +376,7 @@ class DAVCommitEditor implements ISVNEditor {
     }
 
     public void openFile(String path, long revision) throws SVNException {
-        myBaseRevision = revision;
+        myBaseRevisionsMap.put(path, revision);
         String originalPath = path;
         path = SVNEncodingUtil.uriEncode(path);
         DAVResource file = new DAVResource(myCommitMediator, myConnection, path, revision);
@@ -444,8 +446,9 @@ class DAVCommitEditor implements ISVNEditor {
                 InputStream combinedData = null;
                 try {
                     combinedData = new HTTPBodyInputStream(myDeltaFile);
+                    Long baseRevision = (Long) myBaseRevisionsMap.get(path);
                     myConnection.doPutDiff(currentFile.getURL(), myConnection.hasHttpV2Support() ? currentFile.getCustomURL() : currentFile.getWorkingURL(), combinedData, myDeltaFile.length(),
-                            myBaseChecksum, textChecksum, myBaseRevision);
+                            myBaseChecksum, textChecksum, baseRevision == null ? SVNRepository.INVALID_REVISION : baseRevision);
 
                 } catch (SVNException e) {
                     HTTPStatus httpStatus = myConnection.getLastStatus();
