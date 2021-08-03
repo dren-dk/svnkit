@@ -6,38 +6,190 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
 import java.text.ParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import org.apache.subversion.javahl.*;
+import org.apache.subversion.javahl.ClientException;
+import org.apache.subversion.javahl.ClientNotifyInformation;
+import org.apache.subversion.javahl.CommitInfo;
+import org.apache.subversion.javahl.CommitItem;
+import org.apache.subversion.javahl.ConflictDescriptor;
 import org.apache.subversion.javahl.ConflictDescriptor.Operation;
+import org.apache.subversion.javahl.ConflictResult;
 import org.apache.subversion.javahl.ConflictResult.Choice;
-import org.apache.subversion.javahl.ISVNReporter;
-import org.apache.subversion.javahl.callback.*;
-import org.apache.subversion.javahl.types.*;
+import org.apache.subversion.javahl.DiffSummary;
+import org.apache.subversion.javahl.ISVNClient;
+import org.apache.subversion.javahl.ISVNConfig;
+import org.apache.subversion.javahl.ISVNRemote;
+import org.apache.subversion.javahl.JavaHLObjectFactory;
+import org.apache.subversion.javahl.SubversionException;
+import org.apache.subversion.javahl.callback.AuthnCallback;
+import org.apache.subversion.javahl.callback.BlameCallback;
+import org.apache.subversion.javahl.callback.ChangelistCallback;
+import org.apache.subversion.javahl.callback.ClientNotifyCallback;
+import org.apache.subversion.javahl.callback.CommitCallback;
+import org.apache.subversion.javahl.callback.CommitMessageCallback;
+import org.apache.subversion.javahl.callback.ConfigEvent;
+import org.apache.subversion.javahl.callback.ConflictResolverCallback;
+import org.apache.subversion.javahl.callback.DiffSummaryCallback;
+import org.apache.subversion.javahl.callback.ImportFilterCallback;
+import org.apache.subversion.javahl.callback.InfoCallback;
+import org.apache.subversion.javahl.callback.InheritedProplistCallback;
+import org.apache.subversion.javahl.callback.ListCallback;
+import org.apache.subversion.javahl.callback.LogMessageCallback;
+import org.apache.subversion.javahl.callback.PatchCallback;
+import org.apache.subversion.javahl.callback.ProgressCallback;
+import org.apache.subversion.javahl.callback.ProplistCallback;
+import org.apache.subversion.javahl.callback.RemoteFileRevisionsCallback;
+import org.apache.subversion.javahl.callback.RemoteLocationSegmentsCallback;
+import org.apache.subversion.javahl.callback.StatusCallback;
+import org.apache.subversion.javahl.callback.TunnelAgent;
+import org.apache.subversion.javahl.callback.UserPasswordCallback;
+import org.apache.subversion.javahl.types.ChangePath;
+import org.apache.subversion.javahl.types.Checksum;
+import org.apache.subversion.javahl.types.ConflictVersion;
+import org.apache.subversion.javahl.types.CopySource;
+import org.apache.subversion.javahl.types.Depth;
+import org.apache.subversion.javahl.types.DiffOptions;
+import org.apache.subversion.javahl.types.DirEntry;
+import org.apache.subversion.javahl.types.ExternalItem;
+import org.apache.subversion.javahl.types.Info;
+import org.apache.subversion.javahl.types.JavaHLTypesObjectFactory;
+import org.apache.subversion.javahl.types.Lock;
+import org.apache.subversion.javahl.types.Mergeinfo;
 import org.apache.subversion.javahl.types.Mergeinfo.LogKind;
+import org.apache.subversion.javahl.types.NodeKind;
+import org.apache.subversion.javahl.types.Revision;
+import org.apache.subversion.javahl.types.RevisionRange;
+import org.apache.subversion.javahl.types.RuntimeVersion;
+import org.apache.subversion.javahl.types.Status;
+import org.apache.subversion.javahl.types.Tristate;
 import org.apache.subversion.javahl.types.Version;
-import org.tmatesoft.svn.core.*;
+import org.apache.subversion.javahl.types.VersionExtended;
+import org.tmatesoft.svn.core.ISVNLogEntryHandler;
+import org.tmatesoft.svn.core.SVNCommitInfo;
+import org.tmatesoft.svn.core.SVNDepth;
+import org.tmatesoft.svn.core.SVNDirEntry;
+import org.tmatesoft.svn.core.SVNErrorCode;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNLock;
+import org.tmatesoft.svn.core.SVNLogEntry;
+import org.tmatesoft.svn.core.SVNLogEntryPath;
+import org.tmatesoft.svn.core.SVNMergeInfo;
+import org.tmatesoft.svn.core.SVNMergeInfoInheritance;
+import org.tmatesoft.svn.core.SVNMergeRange;
+import org.tmatesoft.svn.core.SVNMergeRangeList;
+import org.tmatesoft.svn.core.SVNNodeKind;
+import org.tmatesoft.svn.core.SVNProperties;
+import org.tmatesoft.svn.core.SVNPropertyValue;
+import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.internal.io.svn.SVNSSHConnector;
 import org.tmatesoft.svn.core.internal.util.SVNDate;
 import org.tmatesoft.svn.core.internal.util.SVNEncodingUtil;
 import org.tmatesoft.svn.core.internal.util.SVNPathUtil;
-import org.tmatesoft.svn.core.internal.wc.*;
+import org.tmatesoft.svn.core.internal.wc.DefaultSVNAuthenticationManager;
+import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
+import org.tmatesoft.svn.core.internal.wc.ISVNAuthenticationStorage;
+import org.tmatesoft.svn.core.internal.wc.SVNCompositeConfigFile;
+import org.tmatesoft.svn.core.internal.wc.SVNConflictVersion;
+import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
+import org.tmatesoft.svn.core.internal.wc.SVNExternal;
+import org.tmatesoft.svn.core.internal.wc.SVNFileType;
+import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.core.internal.wc.patch.SVNPatchHunkInfo;
 import org.tmatesoft.svn.core.internal.wc2.ng.SvnDiffGenerator;
-import org.tmatesoft.svn.core.io.*;
+import org.tmatesoft.svn.core.io.ISVNFileRevisionHandler;
+import org.tmatesoft.svn.core.io.ISVNLocationSegmentHandler;
+import org.tmatesoft.svn.core.io.SVNCapability;
+import org.tmatesoft.svn.core.io.SVNLocationSegment;
 import org.tmatesoft.svn.core.javahl.JavaHLCompositeLog;
 import org.tmatesoft.svn.core.javahl.JavaHLDebugLog;
-import org.tmatesoft.svn.core.wc.*;
-import org.tmatesoft.svn.core.wc2.*;
+import org.tmatesoft.svn.core.wc.ISVNConfigEventHandler;
+import org.tmatesoft.svn.core.wc.ISVNConflictHandler;
+import org.tmatesoft.svn.core.wc.ISVNFileFilter;
+import org.tmatesoft.svn.core.wc.ISVNOptions;
+import org.tmatesoft.svn.core.wc.SVNConflictAction;
+import org.tmatesoft.svn.core.wc.SVNConflictChoice;
+import org.tmatesoft.svn.core.wc.SVNConflictDescription;
+import org.tmatesoft.svn.core.wc.SVNConflictReason;
+import org.tmatesoft.svn.core.wc.SVNConflictResult;
+import org.tmatesoft.svn.core.wc.SVNDiffOptions;
+import org.tmatesoft.svn.core.wc.SVNEvent;
+import org.tmatesoft.svn.core.wc.SVNEventAction;
+import org.tmatesoft.svn.core.wc.SVNOperation;
+import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.SVNStatusType;
+import org.tmatesoft.svn.core.wc.SVNTreeConflictDescription;
+import org.tmatesoft.svn.core.wc.SVNWCUtil;
+import org.tmatesoft.svn.core.wc2.ISvnObjectReceiver;
+import org.tmatesoft.svn.core.wc2.ISvnPatchHandler;
+import org.tmatesoft.svn.core.wc2.SvnAnnotate;
+import org.tmatesoft.svn.core.wc2.SvnAnnotateItem;
+import org.tmatesoft.svn.core.wc2.SvnCat;
+import org.tmatesoft.svn.core.wc2.SvnCheckout;
+import org.tmatesoft.svn.core.wc2.SvnChecksum;
+import org.tmatesoft.svn.core.wc2.SvnCleanup;
+import org.tmatesoft.svn.core.wc2.SvnCommit;
+import org.tmatesoft.svn.core.wc2.SvnCommitItem;
+import org.tmatesoft.svn.core.wc2.SvnCopy;
+import org.tmatesoft.svn.core.wc2.SvnCopySource;
+import org.tmatesoft.svn.core.wc2.SvnDiff;
+import org.tmatesoft.svn.core.wc2.SvnDiffStatus;
+import org.tmatesoft.svn.core.wc2.SvnDiffSummarize;
+import org.tmatesoft.svn.core.wc2.SvnExport;
+import org.tmatesoft.svn.core.wc2.SvnGetInfo;
+import org.tmatesoft.svn.core.wc2.SvnGetMergeInfo;
+import org.tmatesoft.svn.core.wc2.SvnGetProperties;
+import org.tmatesoft.svn.core.wc2.SvnGetStatus;
+import org.tmatesoft.svn.core.wc2.SvnGetStatusSummary;
+import org.tmatesoft.svn.core.wc2.SvnImport;
+import org.tmatesoft.svn.core.wc2.SvnInfo;
+import org.tmatesoft.svn.core.wc2.SvnInheritedProperties;
+import org.tmatesoft.svn.core.wc2.SvnList;
+import org.tmatesoft.svn.core.wc2.SvnLog;
+import org.tmatesoft.svn.core.wc2.SvnLogMergeInfo;
+import org.tmatesoft.svn.core.wc2.SvnMerge;
+import org.tmatesoft.svn.core.wc2.SvnOperationFactory;
+import org.tmatesoft.svn.core.wc2.SvnPatch;
+import org.tmatesoft.svn.core.wc2.SvnRelocate;
+import org.tmatesoft.svn.core.wc2.SvnRemoteCopy;
+import org.tmatesoft.svn.core.wc2.SvnRemoteDelete;
+import org.tmatesoft.svn.core.wc2.SvnRemoteMkDir;
+import org.tmatesoft.svn.core.wc2.SvnRemoteSetProperty;
+import org.tmatesoft.svn.core.wc2.SvnResolve;
+import org.tmatesoft.svn.core.wc2.SvnRevert;
+import org.tmatesoft.svn.core.wc2.SvnRevisionRange;
+import org.tmatesoft.svn.core.wc2.SvnSchedule;
+import org.tmatesoft.svn.core.wc2.SvnScheduleForAddition;
+import org.tmatesoft.svn.core.wc2.SvnScheduleForRemoval;
+import org.tmatesoft.svn.core.wc2.SvnSetChangelist;
+import org.tmatesoft.svn.core.wc2.SvnSetLock;
+import org.tmatesoft.svn.core.wc2.SvnSetProperty;
+import org.tmatesoft.svn.core.wc2.SvnStatus;
+import org.tmatesoft.svn.core.wc2.SvnStatusSummary;
+import org.tmatesoft.svn.core.wc2.SvnSuggestMergeSources;
+import org.tmatesoft.svn.core.wc2.SvnSwitch;
+import org.tmatesoft.svn.core.wc2.SvnTarget;
+import org.tmatesoft.svn.core.wc2.SvnUnlock;
+import org.tmatesoft.svn.core.wc2.SvnUpdate;
+import org.tmatesoft.svn.core.wc2.SvnUpgrade;
+import org.tmatesoft.svn.core.wc2.SvnWorkingCopyInfo;
 import org.tmatesoft.svn.core.wc2.hooks.ISvnCommitHandler;
-import org.tmatesoft.svn.util.*;
+import org.tmatesoft.svn.util.ISVNDebugLog;
+import org.tmatesoft.svn.util.SVNDebugLog;
+import org.tmatesoft.svn.util.SVNLogType;
 
 public class SVNClientImpl implements ISVNClient {
-
-    private static final String APR_ERROR_FIELD_NAME = "aprError";
 
     public static SVNClientImpl newInstance() {
         return new SVNClientImpl();
@@ -1532,39 +1684,14 @@ public class SVNClientImpl implements ISVNClient {
     }
 
     public static ClientException getClientException(Throwable e) throws ClientException {
-        ClientException ce = ClientException.fromException(e);
-        if (ce != e) {
-            // due to the changes of the initialization code in ClientException it is not possible anymore to override the cause this way!
-//        	ce.initCause(e);
-        	// so, we hack it here...
-            try {
-                Field f = Throwable.class.getDeclaredField("cause");
-                if (f != null) {
-                    f.setAccessible(true);
-                    f.set(ce, e);
-                }
-            } catch (SecurityException e1) {
-            } catch (NoSuchFieldException e1) {
-            } catch (IllegalArgumentException e1) {
-            } catch (IllegalAccessException e1) {
-            }
+        if (e instanceof ClientException) {
+            return (ClientException) e;
         }
-        
+        int aprError = -1;
         if (e instanceof SVNException) {
-            int errorCode = ((SVNException) e).getErrorMessage().getErrorCode().getCode();
-            try {
-                Field f = ce.getClass().getSuperclass().getDeclaredField(APR_ERROR_FIELD_NAME);
-                if (f != null) {
-                    f.setAccessible(true);
-                    f.set(ce, errorCode);
-                }
-            } catch (SecurityException e1) {
-            } catch (NoSuchFieldException e1) {
-            } catch (IllegalArgumentException e1) {
-            } catch (IllegalAccessException e1) {
-            }
+            aprError = ((SVNException) e).getErrorMessage().getErrorCode().getCode();
         }
-        return ce;
+        return JavaHLObjectFactory.createClientException(e.getMessage(), e, null, aprError, null);
     }
 
     public void setConfigDirectory(String configDir) throws ClientException {
@@ -1850,7 +1977,7 @@ public class SVNClientImpl implements ISVNClient {
         try {
             return JavaHLRemoteSession.open(SVNURL.parseURIEncoded(pathOrUrl));
         } catch (SVNException e) {
-            throw ClientException.fromException(e);
+            throw getClientException(e);
         }
     }
 
