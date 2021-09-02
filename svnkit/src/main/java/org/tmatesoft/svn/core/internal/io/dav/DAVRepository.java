@@ -1035,16 +1035,17 @@ public class DAVRepository extends SVNRepository {
         fireConnectionOpened();
         lock();
         if (myConnection == null) {
-
+            DAVConnection newConnection = null;
+            
             final Set<SVNURL> attempted = new HashSet<SVNURL>();
             final SVNURL[] correctedUrl = new SVNURL[1];
             int attemptsLeft = 4;
             while (attemptsLeft-- > 0) {
                 SVNURL originalLocation = myLocation;
                 correctedUrl[0] = null;
-                myConnection = createDAVConnection(myConnectionFactory, this);
-                myConnection.setReportResponseSpooled(isSpoolResponse());
-                myConnection.open(this, correctedUrl);
+                newConnection = createDAVConnection(myConnectionFactory, this);
+                newConnection.setReportResponseSpooled(isSpoolResponse());
+                newConnection.open(this, correctedUrl);
 
                 if (correctedUrl[0] == null) {
                     break;
@@ -1067,6 +1068,7 @@ public class DAVRepository extends SVNRepository {
                 //setLocation() but avoid double locking
                 setLocationInternal(correctedUrl[0], false);
             }
+            myConnection = newConnection;
         }
     }
 
