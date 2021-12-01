@@ -491,11 +491,8 @@ public class SVNLinuxUtil {
     }
 
     private static int getFileModeOffset() {
-        if (SVNFileUtil.isLinux && SVNFileUtil.is64Bit) {
-            return 24;
-        }
-        if (SVNFileUtil.isLinux && SVNFileUtil.is32Bit) {
-            return 16;
+        if (SVNFileUtil.isLinux) {
+            return SVNFileUtil.isAMD64 ? 24 : 16;
         }
         if (SVNFileUtil.isOSX) {
             return 8;
@@ -506,22 +503,16 @@ public class SVNLinuxUtil {
         if (SVNFileUtil.isSolaris && SVNFileUtil.is32Bit) {
             return 20;
         }
-        if (SVNFileUtil.isBSD && !SVNFileUtil.isIno64) {
-            return 8;
-        }
-        if (SVNFileUtil.isBSD && SVNFileUtil.isIno64) {
-            return 24;
+        if (SVNFileUtil.isBSD) {
+            return SVNFileUtil.isIno64 ? 24 : 8;
         }
         return 16;
     }
 
     private static int getFileUserIDOffset() {
         int modeOffset = getFileModeOffset();
-        if (SVNFileUtil.isLinux && SVNFileUtil.is64Bit) {
-            return modeOffset + 4;
-        }
-        if (SVNFileUtil.isLinux && SVNFileUtil.is32Bit) {
-            return modeOffset + 8;
+        if (SVNFileUtil.isLinux) {
+            return modeOffset + (SVNFileUtil.isAMD64 ? 4 : 8);
         }
         if (SVNFileUtil.isOSX) {
             return modeOffset + 4;
@@ -541,7 +532,6 @@ public class SVNLinuxUtil {
     }
 
     private static int getFileLastModifiedOffset() {
-        int groupOffset = getFileGroupIDOffset();
         if (SVNFileUtil.isLinux && SVNFileUtil.is64Bit) {
             return 88;
         }

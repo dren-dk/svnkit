@@ -87,6 +87,7 @@ public class SVNFileUtil {
 
     public static final boolean is32Bit;
     public static final boolean is64Bit;
+    public static final boolean isAMD64;
 
     public static final int STREAM_CHUNK_SIZE = 16384;
     public static final int FILE_CREATION_ATTEMPTS_COUNT;
@@ -162,6 +163,8 @@ public class SVNFileUtil {
 
         is32Bit = "32".equals(System.getProperty("sun.arch.data.model", "32"));
         is64Bit = "64".equals(System.getProperty("sun.arch.data.model", "64"));
+        String osArch = System.getProperty("os.arch", "").toLowerCase();
+        isAMD64 = osArch.equals("amd64") || osArch.equals("x86_64");
 
         if (isBSD && "freebsd".equals(osNameLC)) {
             final SVNVersion version12 = SVNVersion.parse("12.0-CURRENT");
