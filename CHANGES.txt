@@ -1,4 +1,10 @@
 == version 1.10.4  ==
++ SVNKIT-758: path are now URL-encoded before sending DELETE http request via HttpV2 protocol.
++ SVNKIT-760: Incorrect out-of-date error when committing over HTTP from a working copy, fixed.
++ SVNKIT-761: Reflective access issues with Java 9 solved in ClientException.
++ After an error, half-initalized DAVConnection instance was cached in connection pool
+  making the pool completely unusable, fixed.
++ SVNKIT-762: arm64 architecture support when using JNA.
 
 == version 1.10.3  ==
 
