@@ -2341,11 +2341,19 @@ public class SVNFileUtil {
     private static Class<?> java7BasciFileAttributesClazz = null;
     private static Class<?> java7FileTimeClazz = null;
     private static Object java7noFollowLinksParam= null;
-    private static boolean lastModifiedHasMicrosecondPrecision = false;
+    private static Boolean ourLastModifiedHasMicrosecondPrecision = null;
 
     private static final int[] MICROSECOND_PRECISION_JAVA_VERSION = {1, 9};
+    private static final String SVNKIT_FS_MTIME_MICROSECOND_PRECISION = "svnkit.fs.mtime_microsecond_precision";
 
     static {
+        final String mtimeMicrosecondPrecisionProperty = System.getProperty(SVNKIT_FS_MTIME_MICROSECOND_PRECISION);
+        if (Boolean.TRUE.toString().equalsIgnoreCase(mtimeMicrosecondPrecisionProperty)) {
+            ourLastModifiedHasMicrosecondPrecision = true;
+        } else if (Boolean.FALSE.toString().equalsIgnoreCase(mtimeMicrosecondPrecisionProperty)) {
+            ourLastModifiedHasMicrosecondPrecision = false;
+        }
+
         final ClassLoader loader = SVNFileUtil.class.getClassLoader();
         try {
             final Class<?> filesClazz = loader.loadClass("java.nio.file.Files");
@@ -2367,21 +2375,25 @@ public class SVNFileUtil {
             java7toTimeMethod = java7FileTimeClazz.getMethod("to", TimeUnit.class);
             java7fromTimeMethod = java7FileTimeClazz.getMethod("from", Long.TYPE, TimeUnit.class);
 
-            final String javaVersion = System.getProperty("java.version");
-            if (javaVersion != null) {
-                final String[] versionParts = javaVersion.split("\\.");
-                if (versionParts.length >= 2) {
-                    try {
-                        final int majorVersion = Integer.parseInt(versionParts[0]);
-                        final int minorVersion = Integer.parseInt(versionParts[1]);
+            if (ourLastModifiedHasMicrosecondPrecision == null) {
+                ourLastModifiedHasMicrosecondPrecision = false;
 
-                        if (majorVersion > MICROSECOND_PRECISION_JAVA_VERSION[0] ||
-                                (majorVersion == MICROSECOND_PRECISION_JAVA_VERSION[0] &&
-                                        minorVersion >= MICROSECOND_PRECISION_JAVA_VERSION[1])) {
-                            lastModifiedHasMicrosecondPrecision = true;
+                final String javaVersion = System.getProperty("java.version");
+                if (javaVersion != null) {
+                    final String[] versionParts = javaVersion.split("\\.");
+                    if (versionParts.length >= 2) {
+                        try {
+                            final int majorVersion = Integer.parseInt(versionParts[0]);
+                            final int minorVersion = Integer.parseInt(versionParts[1]);
+
+                            if (majorVersion > MICROSECOND_PRECISION_JAVA_VERSION[0] ||
+                                    (majorVersion == MICROSECOND_PRECISION_JAVA_VERSION[0] &&
+                                            minorVersion >= MICROSECOND_PRECISION_JAVA_VERSION[1])) {
+                                ourLastModifiedHasMicrosecondPrecision = true;
+                            }
+                        } catch (NumberFormatException e) {
+                            //
                         }
-                    } catch (NumberFormatException e) {
-                        //
                     }
                 }
             }
@@ -2393,6 +2405,10 @@ public class SVNFileUtil {
         } catch (SecurityException e) {
             java7BasciFileAttributesClazz = null;
         }
+    }
+
+    public static void setLastModifiedHasMicrosecondPrecision(boolean lastModifiedHasMicrosecondPrecision) {
+        SVNFileUtil.ourLastModifiedHasMicrosecondPrecision = lastModifiedHasMicrosecondPrecision;
     }
 
     private static Long getLastModifiedMicrosJava7(File file) {
@@ -2423,7 +2439,7 @@ public class SVNFileUtil {
     }
 
     public static void setFileLastModifiedMicros(File file, long timeInMicros) {
-        if (lastModifiedHasMicrosecondPrecision && java7BasciFileAttributesClazz != null && timeInMicros >=0 && file != null) {
+        if (ourLastModifiedHasMicrosecondPrecision && java7BasciFileAttributesClazz != null && timeInMicros >=0 && file != null) {
             try {
                 final Object path = java7toPathMethod.invoke(file);
                 if (path != null) {
@@ -2448,7 +2464,7 @@ public class SVNFileUtil {
         // if the file is regular, the approaches are: Java 9 -> JNA -> Java 7 -> File.lastModified
 
         //1. Try using Java 7 API when possible and when this approach gives enough precision (>= Java 9)
-        if (lastModifiedHasMicrosecondPrecision && java7BasciFileAttributesClazz != null) {
+        if (ourLastModifiedHasMicrosecondPrecision && java7BasciFileAttributesClazz != null) {
             final Long timeMicros = getLastModifiedMicrosJava7(file);
             if (timeMicros != null) {
                 return timeMicros;
@@ -2508,7 +2524,7 @@ public class SVNFileUtil {
     }
 
     public static boolean compareFileTimestamps(long microseconds1, long microseconds2) {
-        if ((lastModifiedHasMicrosecondPrecision && java7BasciFileAttributesClazz != null) ||
+        if ((ourLastModifiedHasMicrosecondPrecision && java7BasciFileAttributesClazz != null) ||
                 (SVNJNAUtil.isJNAPresent() && !isWindows)) {
             //only JNA on Unix and Java 9 have microseconds precision
             return microseconds1 == microseconds2;
