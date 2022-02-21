@@ -11,7 +11,7 @@ def javaProjects() {
 
 ext {
    release = project.hasProperty('release')
-   target = '1.6'
+   target = '1.8'
    compatibleSvnVersion = '1.10.0'
 
    if (!release) {
@@ -128,15 +128,13 @@ configure(javaProjects()) {
 
 project(':svnkit') {
     dependencies {
+        compile 'org.apache.sshd:sshd-core:2.8.0'
+        compile 'org.apache.sshd:sshd-common:2.8.0'
         compile 'de.regnis.q.sequence:sequence-library:1.0.4'
         compile 'org.tmatesoft.sqljet:sqljet:1.1.14'
         compile 'net.java.dev.jna:jna:5.6.0'
+        compile 'net.java.dev.jna:jna:5.6.0'
         compile 'net.java.dev.jna:jna-platform:5.6.0'
-        compile 'com.trilead:trilead-ssh2:1.0.0-build222'
-        compile('com.jcraft:jsch.agentproxy.connector-factory:0.0.7') {
-            exclude group: 'net.java.dev.jna'
-        }
-        compile 'com.jcraft:jsch.agentproxy.svnkit-trilead-ssh2:0.0.7'
         compile 'org.lz4:lz4-java:1.4.1'
 
         testCompile 'junit:junit:4.8'

@@ -11,6 +11,17 @@
  */
 package org.tmatesoft.svn.cli;
 
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.auth.*;
+import org.tmatesoft.svn.core.internal.util.SVNCertificateFailureKind;
+import org.tmatesoft.svn.core.internal.util.SVNSSLUtil;
+import org.tmatesoft.svn.core.internal.wc.ISVNAuthStoreHandler;
+import org.tmatesoft.svn.core.internal.wc.ISVNGnomeKeyringPasswordProvider;
+import org.tmatesoft.svn.core.internal.wc.ISVNSSLPasspharsePromptSupport;
+import org.tmatesoft.svn.core.wc.SVNWCUtil;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -22,26 +33,6 @@ import java.text.MessageFormat;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
-import org.tmatesoft.svn.core.auth.ISVNAuthenticationProvider;
-import org.tmatesoft.svn.core.auth.SVNAuthentication;
-import org.tmatesoft.svn.core.auth.SVNPasswordAuthentication;
-import org.tmatesoft.svn.core.auth.SVNSSHAuthentication;
-import org.tmatesoft.svn.core.auth.SVNSSLAuthentication;
-import org.tmatesoft.svn.core.auth.SVNUserNameAuthentication;
-import org.tmatesoft.svn.core.internal.io.svn.SVNSSHPrivateKeyUtil;
-import org.tmatesoft.svn.core.internal.util.SVNCertificateFailureKind;
-import org.tmatesoft.svn.core.internal.util.SVNSSLUtil;
-import org.tmatesoft.svn.core.internal.wc.ISVNAuthStoreHandler;
-import org.tmatesoft.svn.core.internal.wc.ISVNGnomeKeyringPasswordProvider;
-import org.tmatesoft.svn.core.internal.wc.ISVNSSLPasspharsePromptSupport;
-import org.tmatesoft.svn.core.wc.SVNWCUtil;
-
-import com.trilead.ssh2.auth.AgentProxy;
 
 
 /**
@@ -339,10 +330,12 @@ public class SVNConsoleAuthenticationProvider implements ISVNAuthenticationProvi
             } else if (keyFile != null) {
                 return SVNSSHAuthentication.newInstance(name, keyFile, passphrase, port, authMayBeStored, url, false);
             } else {
+                /* TODO: Figure out if special agent handling is needed
                 final AgentProxy agentProxy = SVNSSHPrivateKeyUtil.createOptionalSSHAgentProxy();
                 if (agentProxy != null) {
                     return new SVNSSHAuthentication(name, agentProxy, port, url, false);
                 }
+                 */
                 return null;
             }
         } else if (ISVNAuthenticationManager.USERNAME.equals(kind)) {

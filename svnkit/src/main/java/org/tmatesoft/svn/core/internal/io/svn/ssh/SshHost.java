@@ -1,148 +1,139 @@
 package org.tmatesoft.svn.core.internal.io.svn.ssh;
 
-import com.trilead.ssh2.Connection;
-import com.trilead.ssh2.InteractiveCallback;
-import com.trilead.ssh2.ServerHostKeyVerifier;
-import com.trilead.ssh2.auth.AgentProxy;
+import org.tmatesoft.svn.core.auth.ISVNSSHHostVerifier;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 
 public class SshHost {
-    
+
     private static final int CONNECTION_INACTIVITY_TIMEOUT = Integer.parseInt(System.getProperty("svnkit.ssh.connection.inactivity.timeout.secs", "600")) * 1000; // 10 minutes
     private static final int MAX_CONCURRENT_OPENERS = Integer.parseInt(System.getProperty("svnkit.ssh.max.concurrent.connection.openers", "3"));
     private static final int MAX_SESSIONS_PER_CONNECTION = Integer.parseInt(System.getProperty("svnkit.ssh.max.sessions.per.connection", "8"));
 
-    private String myHost;
-    private int myPort;
-    private ServerHostKeyVerifier myHostVerifier;
-    
-    private char[] myPrivateKey;
-    private char[] myPassphrase;
-    private char[] myPassword;
-    private String myUserName;
-    private AgentProxy myAgentProxy;
-    
+    private final String hostName;
+    private final int port;
+
+    private char[] privateKey;
+    private char[] privateKeyPassphrase;
+    private char[] password;
+    private String userName;
+
     private int myConnectTimeout;
-    private boolean myIsLocked;
-    private boolean myIsDisposed;
-    
-    private List<SshConnection> myConnections;
-    private Object myOpenerLock = new Object();
-    private int myOpenersCount;
-    private int myReadTimeout;
-    
-    public SshHost(String host, int port) {
-        myConnections = new LinkedList<SshConnection>();
-        myHost = host;
-        myPort = port;
+    private boolean locked;
+    private boolean disposed;
+
+    private final List<SshConnection> connections = new ArrayList<>();
+    final private Object OPENER_LOCK = new Object();
+    private int openersCount;
+    private int readTimeout;
+    private ISVNSSHHostVerifier hostVerifier;
+
+    public SshHost(String hostName, int port) {
+        this.hostName = hostName;
+        this.port = port;
     }
-    
-    public void setHostVerifier(ServerHostKeyVerifier verifier) {
-        myHostVerifier = verifier;
-    }
-    
+
     public void setConnectionTimeout(int timeout) {
         myConnectTimeout = timeout;
     }
 
     public void setReadTimeout(int readTimeout) {
-        myReadTimeout = readTimeout;
+        this.readTimeout = readTimeout;
     }
 
-    public void setCredentials(String userName, char[] key, char[] passphrase, char[] password, AgentProxy agentProxy) {
-        myUserName = userName;
-        myPrivateKey = key;
-        myPassphrase = passphrase;
-        myPassword = password;
-        myAgentProxy = agentProxy;
+    public void setCredentials(String userName, char[] privateKey, char[] privateKeyPassphrase, char[] password) {
+        this.userName = userName;
+        this.privateKey = privateKey;
+        this.privateKeyPassphrase = privateKeyPassphrase;
+        this.password = password;
     }
-    
+
     public boolean purge() {
         try {
             lock();
-            int size = myConnections.size();
+            int size = connections.size();
             long time = System.currentTimeMillis();
-            for (Iterator<SshConnection> connections = myConnections.iterator(); connections.hasNext();) {
+            for (Iterator<SshConnection> connections = this.connections.iterator(); connections.hasNext(); ) {
                 SshConnection connection = connections.next();
                 if (connection.getSessionsCount() == 0) {
-                    if (myConnections.size() == 1) {
+                    if (this.connections.size() == 1) {
                         long timeout = time - connection.lastAcccessTime();
                         if (timeout >= CONNECTION_INACTIVITY_TIMEOUT) {
                             connection.close();
                             connections.remove();
-                        } 
+                        }
                     } else {
                         connection.close();
                         connections.remove();
                     }
                 }
             }
-            if (myConnections.size() == 0 && size > 0) {
+            if (connections.size() == 0 && size > 0) {
                 setDisposed(true);
             }
             return isDisposed();
         } finally {
             unlock();
         }
-        
+
     }
-    
+
     public boolean isDisposed() {
-        return myIsDisposed;
+        return disposed;
     }
-    
+
     public void setDisposed(boolean disposed) {
-        myIsDisposed = disposed;
+        this.disposed = disposed;
         if (disposed) {
-            for (SshConnection connection : myConnections) {
+            for (SshConnection connection : connections) {
                 connection.close();
             }
-            myConnections.clear();
+            connections.clear();
         }
     }
-    
+
     public String getKey() {
-        String key = myUserName + ":" + myHost + ":" + myPort;
-        if (myPrivateKey != null) {
-            key += ":" + new String(myPrivateKey);
+        String key = userName + ":" + hostName + ":" + port;
+        if (privateKey != null) {
+            key += ":" + new String(privateKey);
         }
-        if (myPassphrase != null) {
-            key += ":" + new String(myPassphrase);
+        if (privateKeyPassphrase != null) {
+            key += ":" + new String(privateKeyPassphrase);
         }
-        if (myPassword != null) {
-            key += ":" + new String(myPassword);
+        if (password != null) {
+            key += ":" + new String(password);
         }
         return key;
     }
-    
+
     void lock() {
-        synchronized (myConnections) {
-            while(myIsLocked) {
+        synchronized (connections) {
+            while (locked) {
                 try {
-                    myConnections.wait();
+                    connections.wait();
                 } catch (InterruptedException e) {
                 }
             }
-            myIsLocked = true;
+            locked = true;
         }
     }
-    
+
     void unlock() {
-        synchronized (myConnections) {
-            myIsLocked = false;
-            myConnections.notifyAll();
+        synchronized (connections) {
+            locked = false;
+            connections.notifyAll();
         }
     }
-    
+
     public SshSession openSession() throws IOException {
         SshSession session = useExistingConnection();
         if (session != null) {
             return session;
-        }        
+        }
         SshConnection newConnection = null;
         addOpener();
         try {
@@ -154,21 +145,21 @@ public class SshHost {
         } finally {
             removeOpener();
         }
-        
+
         if (newConnection != null) {
             lock();
             try {
                 if (isDisposed()) {
                     newConnection.close();
                     throw new SshHostDisposedException();
-                }                
-                myConnections.add(newConnection);
+                }
+                connections.add(newConnection);
                 return newConnection.openSession();
             } finally {
                 unlock();
             }
         }
-        throw new IOException("Cannot establish SSH connection with " + myHost + ":" + myPort);
+        throw new IOException("Cannot establish SSH connection with " + hostName + ":" + port);
     }
 
     private SshSession useExistingConnection() throws IOException {
@@ -177,7 +168,7 @@ public class SshHost {
             if (isDisposed()) {
                 throw new SshHostDisposedException();
             }
-            for (Iterator<SshConnection> connections = myConnections.iterator(); connections.hasNext();) {
+            for (Iterator<SshConnection> connections = this.connections.iterator(); connections.hasNext(); ) {
                 final SshConnection connection = connections.next();
 
                 if (connection.getSessionsCount() < MAX_SESSIONS_PER_CONNECTION) {
@@ -200,75 +191,80 @@ public class SshHost {
         return null;
     }
 
-    
+
     private void removeOpener() {
-        synchronized (myOpenerLock) {
-            myOpenersCount--;
-            myOpenerLock.notifyAll();
+        synchronized (OPENER_LOCK) {
+            openersCount--;
+            OPENER_LOCK.notifyAll();
         }
     }
 
     private void addOpener() {
-        synchronized(myOpenerLock) {
-            while(myOpenersCount >= MAX_CONCURRENT_OPENERS) {
+        synchronized (OPENER_LOCK) {
+            while (openersCount >= MAX_CONCURRENT_OPENERS) {
                 try {
-                    myOpenerLock.wait();
+                    OPENER_LOCK.wait();
                 } catch (InterruptedException e) {
                 }
             }
-            myOpenersCount++;
+            openersCount++;
         }
     }
 
     private SshConnection openConnection() throws IOException {
-        Connection connection = new Connection(myHost, myPort);
-        connection.connect(new ServerHostKeyVerifier() {
-            public boolean verifyServerHostKey(String hostname, int port, String serverHostKeyAlgorithm, byte[] serverHostKey) throws Exception {
-                if (myHostVerifier != null) {
-                    myHostVerifier.verifyServerHostKey(hostname, port, serverHostKeyAlgorithm, serverHostKey);
-                }                    
-                return true;
-            }
-        }, myConnectTimeout, myReadTimeout, myConnectTimeout);
-        
-        boolean authenticated = false;        
-        
-        final String password = myPassword != null ? new String(myPassword) : null;
-        final String passphrase = myPassphrase != null ? new String(myPassphrase) : null;
-
-        if(myAgentProxy != null) {
-            authenticated = connection.authenticateWithAgent(myUserName, myAgentProxy);
+        try {
+            return new SshConnection(this);
+        } catch (Exception e) {
+            throw new IOException("Failed to connect to "+getKey(), e);
         }
-        if (!authenticated && myPrivateKey != null) {
-            authenticated = connection.authenticateWithPublicKey(myUserName, myPrivateKey, passphrase);
-        }
-        if (!authenticated && myPassword != null) {
-            String[] methods = connection.getRemainingAuthMethods(myUserName);
-            for (int i = 0; !authenticated && i < methods.length; i++) {
-                if ("password".equals(methods[i])) {
-                    authenticated = connection.authenticateWithPassword(myUserName, password);                    
-                } else if ("keyboard-interactive".equals(methods[i])) {
-                    authenticated = connection.authenticateWithKeyboardInteractive(myUserName, new InteractiveCallback() {
-                        public String[] replyToChallenge(String name, String instruction, int numPrompts, String[] prompt, boolean[] echo) throws Exception {
-                            String[] reply = new String[numPrompts];
-                            for (int i = 0; i < reply.length; i++) {
-                                reply[i] = password;
-                            }
-                            return reply;
-                        }
-                    });
-                }
-            }
-        }
-        if (!authenticated) {
-            connection.close();
-            throw new SshAuthenticationException("Credentials rejected by SSH server.");
-        }
-        return new SshConnection(this, connection);
     }
 
     public String toString() {
-        return myUserName + "@" + myHost + ":" + myPort + ":" + myConnections.size();
+        return userName + "@" + hostName + ":" + port + ":" + connections.size();
     }
 
+    public void setHostVerifier(ISVNSSHHostVerifier hostVerifier) {
+        this.hostVerifier = hostVerifier;
+    }
+
+    public ISVNSSHHostVerifier getHostVerifier() {
+        return hostVerifier;
+    }
+
+    public byte[] getPrivateKey() {
+        if (privateKey != null) {
+            return new String(privateKey).getBytes(StandardCharsets.UTF_8);
+        } else {
+            return null;
+        }
+    }
+
+    public String getHostName() {
+        return hostName;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public String getPassword() {
+        if (password != null) {
+            return new String(password);
+        } else {
+            return null;
+        }
+
+    }
+
+    public String getPrivateKeyPassphrase() {
+        if (privateKeyPassphrase != null) {
+            return new String(privateKeyPassphrase);
+        } else {
+            return null;
+        }
+    }
 }

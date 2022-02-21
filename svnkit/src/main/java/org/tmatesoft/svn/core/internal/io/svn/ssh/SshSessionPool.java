@@ -8,28 +8,25 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.tmatesoft.svn.core.auth.ISVNSSHHostVerifier;
 import org.tmatesoft.svn.util.SVNDebugLog;
 import org.tmatesoft.svn.util.SVNLogType;
-
-import com.trilead.ssh2.ServerHostKeyVerifier;
-import com.trilead.ssh2.auth.AgentProxy;
 
 public class SshSessionPool {
     
     private static final long PURGE_INTERVAL = 10*1000;
     
-    private Map<String, SshHost> myPool;
-    private Timer myTimer;
-    
+    private final Map<String, SshHost> myPool;
+
     public SshSessionPool() {
-        myPool = new HashMap<String, SshHost>();
-        myTimer = new Timer(true);
+        myPool = new HashMap<>();
+        Timer myTimer = new Timer(true);
         
         myTimer.schedule(new TimerTask() {
             @Override
             public void run() {
                 synchronized (myPool) {
-                    Collection<SshHost> hosts = new ArrayList<SshHost>(myPool.values());
+                    Collection<SshHost> hosts = new ArrayList<>(myPool.values());
                     for (SshHost host : hosts) {
                         if (host.purge()) {
                             myPool.remove(host.getKey());
@@ -44,7 +41,7 @@ public class SshSessionPool {
     
     public void shutdown() {
         synchronized (myPool) {
-            Collection<SshHost> hosts = new ArrayList<SshHost>(myPool.values());
+            Collection<SshHost> hosts = new ArrayList<>(myPool.values());
             for (SshHost host : hosts) {
                 try {
                     host.lock();
@@ -59,19 +56,17 @@ public class SshSessionPool {
     }
     
     public SshSession openSession(String host, int port, String userName,
-            char[] privateKey, char[] passphrase, char[] password,  AgentProxy agentProxy,
-            ServerHostKeyVerifier verifier, int connectTimeout, int readTimeout) throws IOException {
+                                  char[] privateKey, char[] passphrase, char[] password, ISVNSSHHostVerifier verifier, int connectTimeout, int readTimeout) throws IOException {
 
         final SshHost newHost = new SshHost(host, port);
-        newHost.setCredentials(userName, privateKey, passphrase, password, agentProxy);
+        newHost.setCredentials(userName, privateKey, passphrase, password);
         newHost.setConnectionTimeout(connectTimeout);
         newHost.setHostVerifier(verifier);
         newHost.setReadTimeout(readTimeout);
         
-        SshSession session = null;
         final String hostKey = newHost.getKey();
 
-        while(session == null) {
+        while(true) {
             SshHost sshHost;
             synchronized (myPool) {
                 sshHost = myPool.get(hostKey);
@@ -82,18 +77,14 @@ public class SshSessionPool {
             }
             
             try {
-                session = sshHost.openSession();
+                return sshHost.openSession();
             } catch (SshHostDisposedException e) {
                 // host has been removed from the pool.
                 synchronized (myPool) {
                   myPool.remove(hostKey);
                 }
-                continue;
             }
-            break;
         }
-        
-        return session;
     }
 
 }

@@ -1,57 +1,72 @@
 package org.tmatesoft.svn.core.internal.io.svn.ssh;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import org.apache.sshd.client.channel.ChannelExec;
+import org.apache.sshd.client.channel.ClientChannelEvent;
 
-import com.trilead.ssh2.ChannelCondition;
-import com.trilead.ssh2.Session;
+import java.io.*;
+import java.util.Collections;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class SshSession {
-    
-    private SshConnection myOwner;
-    private Session mySession;
+    private static final Logger log = Logger.getLogger(SshSession.class.getName());
+    private final SshConnection connection;
+    private ChannelExec channel;
+    private PipedInputStream out;
+    private PipedInputStream err;
+    private PipedOutputStream in;
 
-    public SshSession(SshConnection owner, Session session) {
-        mySession = session;
-        myOwner = owner;
+    public SshSession(SshConnection connection) {
+        this.connection = connection;
     }
     
     public void close() {
-        mySession.close();
-        waitForCondition(ChannelCondition.CLOSED, 0);        
-        myOwner.sessionClosed(this);
+        if (channel != null) {
+            try {
+                channel.close();
+                channel.waitFor(Collections.singleton(ClientChannelEvent.CLOSED), 10000);
+            } catch (Exception e) {
+                log.log(Level.WARNING, "Failed to close channel", e);
+            }
+        }
+//        waitForCondition(ChannelCondition.CLOSED, 0);
+        connection.sessionClosed(this);
     }    
     
     public InputStream getOut() {
-        return mySession.getStdout();
+        if (in == null) {
+            throw new IllegalStateException("execCommand must be called first");
+        }
+        return out;
     }
 
     public InputStream getErr() {
-        return mySession.getStderr();        
+        if (in == null) {
+            throw new IllegalStateException("execCommand must be called first");
+        }
+        return err;
     }
     
     public OutputStream getIn() {
-        return mySession.getStdin();
+        if (in == null) {
+            throw new IllegalStateException("execCommand must be called first");
+        }
+        return in;
     }
-    
-    public Integer getExitCode() {
-        return mySession.getExitStatus();
-    }
-    
-    public String getExitSignal() {
-        return mySession.getExitSignal();
-    }
-    
-    public void waitForCondition(int code, long timeout) {
-        mySession.waitForCondition(code, timeout);
-    }
-    
+
     public void execCommand(String command) throws IOException {
-        mySession.execCommand(command);
+        channel = connection.getSession().createExecChannel(command);
+        out = new PipedInputStream();
+        channel.setOut(new PipedOutputStream(out));
+        err = new PipedInputStream();
+        channel.setErr(new PipedOutputStream(err));
+        in = new PipedOutputStream();
+        channel.setIn(new PipedInputStream(in));
+        channel.open().await();
+        log.info("Opened connection with "+command);
     }
     
     public void ping() throws IOException {
-        mySession.ping();
+        // TODO
     }
 }
