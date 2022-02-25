@@ -2,7 +2,7 @@ group = 'org.tmatesoft.svnkit'
 version = '1.10.4'
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.14'
+    gradleVersion = '3.0'
 }
 
 def javaProjects() {
@@ -11,7 +11,7 @@ def javaProjects() {
 
 ext {
    release = project.hasProperty('release')
-   target = '1.6'
+   target = '1.8'
    compatibleSvnVersion = '1.10.0'
 
    if (!release) {
