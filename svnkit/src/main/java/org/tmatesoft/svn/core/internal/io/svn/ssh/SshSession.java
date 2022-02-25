@@ -4,54 +4,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import com.trilead.ssh2.ChannelCondition;
-import com.trilead.ssh2.Session;
+/**
+ * A Session, aka. an ssh channel
+ */
+public interface SshSession {
+    void close();
 
-public class SshSession {
-    
-    private SshConnection myOwner;
-    private Session mySession;
+    InputStream getOut();
 
-    public SshSession(SshConnection owner, Session session) {
-        mySession = session;
-        myOwner = owner;
-    }
-    
-    public void close() {
-        mySession.close();
-        waitForCondition(ChannelCondition.CLOSED, 0);        
-        myOwner.sessionClosed(this);
-    }    
-    
-    public InputStream getOut() {
-        return mySession.getStdout();
-    }
+    InputStream getErr();
 
-    public InputStream getErr() {
-        return mySession.getStderr();        
-    }
-    
-    public OutputStream getIn() {
-        return mySession.getStdin();
-    }
-    
-    public Integer getExitCode() {
-        return mySession.getExitStatus();
-    }
-    
-    public String getExitSignal() {
-        return mySession.getExitSignal();
-    }
-    
-    public void waitForCondition(int code, long timeout) {
-        mySession.waitForCondition(code, timeout);
-    }
-    
-    public void execCommand(String command) throws IOException {
-        mySession.execCommand(command);
-    }
-    
-    public void ping() throws IOException {
-        mySession.ping();
-    }
+    OutputStream getIn();
+
+    void waitForCondition(int code, long timeout);
+
+    void execCommand(String command) throws IOException;
+
+    void ping() throws IOException;
 }

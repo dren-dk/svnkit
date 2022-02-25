@@ -1,4 +1,4 @@
-package org.tmatesoft.svn.core.internal.io.svn.ssh;
+package org.tmatesoft.svn.core.internal.io.svn.ssh.trilead;
 
 import java.io.IOException;
 
@@ -18,16 +18,16 @@ public class SshConnection {
         myLastAccessTime = System.currentTimeMillis();
     }
     
-    public SshSession openSession() throws IOException {
+    public TrileadSshSession openSession() throws IOException {
         Session session = myConnection.openSession();
         if (session != null) {
             mySessionCount++;
-            return new SshSession(this, session);
+            return new TrileadSshSession(this, session);
         }
         return null;
     }
 
-    public void sessionClosed(SshSession sshSession) {
+    public void sessionClosed(TrileadSshSession sshSession) {
         myHost.lock();
         try {
             myLastAccessTime = System.currentTimeMillis();

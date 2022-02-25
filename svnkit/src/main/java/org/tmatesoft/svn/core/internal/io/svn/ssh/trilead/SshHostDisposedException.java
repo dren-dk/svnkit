@@ -1,4 +1,4 @@
-package org.tmatesoft.svn.core.internal.io.svn.ssh;
+package org.tmatesoft.svn.core.internal.io.svn.ssh.trilead;
 
 import java.io.IOException;
 

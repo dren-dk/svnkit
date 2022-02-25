@@ -1,6 +1,5 @@
 package org.tmatesoft.svn.core.internal.io.svn;
 
-import com.trilead.ssh2.StreamGobbler;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
@@ -29,7 +28,7 @@ public abstract class SVNAbstractTunnelConnector implements ISVNConnector {
             myProcess = Runtime.getRuntime().exec(process);
             myInputStream = new BufferedInputStream(myProcess.getInputStream());
             myOutputStream = new BufferedOutputStream(myProcess.getOutputStream());
-            new StreamGobbler(myProcess.getErrorStream());
+            StreamLogger.consume(myProcess.getErrorStream());
         } catch (IOException e) {
             try {
                 close(repository);
@@ -45,7 +44,7 @@ public abstract class SVNAbstractTunnelConnector implements ISVNConnector {
             myProcess = Runtime.getRuntime().exec(command);
             myInputStream = new BufferedInputStream(myProcess.getInputStream());
             myOutputStream = new BufferedOutputStream(myProcess.getOutputStream());
-            new StreamGobbler(myProcess.getErrorStream());
+            StreamLogger.consume(myProcess.getErrorStream());
         } catch (IOException e) {
             try {
                 close(repository);

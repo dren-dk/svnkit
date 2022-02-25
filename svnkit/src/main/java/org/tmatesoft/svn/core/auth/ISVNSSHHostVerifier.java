@@ -20,6 +20,5 @@ import org.tmatesoft.svn.core.SVNException;
  */
 public interface ISVNSSHHostVerifier {
     
-    public void verifyHostKey(String hostName, int port, String keyAlgorithm, byte[] hostKey) throws SVNException;
-
+    void verifyHostKey(String hostName, int port, String keyAlgorithm, byte[] hostKey) throws SVNException;
 }

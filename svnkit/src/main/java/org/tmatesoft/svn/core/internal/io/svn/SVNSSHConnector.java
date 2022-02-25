@@ -11,14 +11,13 @@
  */
 package org.tmatesoft.svn.core.internal.io.svn;
 
-import com.trilead.ssh2.ServerHostKeyVerifier;
-import com.trilead.ssh2.StreamGobbler;
 import com.trilead.ssh2.auth.AgentProxy;
 import org.tmatesoft.svn.core.SVNAuthenticationException;
 import org.tmatesoft.svn.core.SVNErrorCode;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.auth.*;
+import org.tmatesoft.svn.core.internal.io.svn.ssh.SessionPoolFactory;
 import org.tmatesoft.svn.core.internal.io.svn.ssh.SshAuthenticationException;
 import org.tmatesoft.svn.core.internal.io.svn.ssh.SshSession;
 import org.tmatesoft.svn.core.internal.io.svn.ssh.SshSessionPool;
@@ -42,7 +41,7 @@ public class SVNSSHConnector implements ISVNConnector {
     private static final String SVNSERVE_COMMAND_WITH_USER_NAME = "svnserve -t --tunnel-user ";
     
     private static final boolean ourIsUseSessionPing = Boolean.getBoolean("svnkit.ssh2.ping");
-    private static SshSessionPool ourSessionPool = new SshSessionPool();
+    private static SshSessionPool ourSessionPool = SessionPoolFactory.create();
     
     private SshSession mySession;
     private InputStream myInputStream;
@@ -109,17 +108,7 @@ public class SVNSSHConnector implements ISVNConnector {
                         final int connectTimeout = authManager.getConnectTimeout(repository);
                         final int readTimeout = authManager.getReadTimeout(repository);
                         
-                        ServerHostKeyVerifier v = new ServerHostKeyVerifier() {
-                            public boolean verifyServerHostKey(String hostname, int port,
-                                    String serverHostKeyAlgorithm, byte[] serverHostKey)
-                                    throws Exception {
-                                if (verifier != null) {
-                                    verifier.verifyHostKey(hostname, port, serverHostKeyAlgorithm, serverHostKey);
-                                }
-                                return true;
-                            }
-                        };
-                        connection = ourSessionPool.openSession(host, port, userName, privateKey, passphrase, password, agentProxy, v, connectTimeout, readTimeout);
+                        connection = ourSessionPool.openSession(host, port, userName, privateKey, passphrase, password, agentProxy, verifier, connectTimeout, readTimeout);
                         
                         if (connection == null) {
                             SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_SVN_CONNECTION_CLOSED, "Cannot connect to ''{0}''", repository.getLocation().setPath("", false));
@@ -179,7 +168,7 @@ public class SVNSSHConnector implements ISVNConnector {
                     myOutputStream = new BufferedOutputStream(myOutputStream, 16*1024);
                     myInputStream = mySession.getOut();
                     myInputStream = new BufferedInputStream(myInputStream, 16*1024);
-                    new StreamGobbler(mySession.getErr());
+                    StreamLogger.consume(mySession.getErr());
                     return;
                 } catch (SocketTimeoutException e) {
 	                SVNErrorMessage err = SVNErrorMessage.create(SVNErrorCode.RA_SVN_IO_ERROR, "timed out waiting for server", null, SVNErrorMessage.TYPE_ERROR, e);
@@ -259,5 +248,10 @@ public class SVNSSHConnector implements ISVNConnector {
 
     public void handleExceptionOnOpen(SVNRepositoryImpl repository, SVNException exception) throws SVNException {
         throw exception;
+    }
+
+    public static void recreateSessionPoolForTest() {
+        ourSessionPool.shutdown();
+        ourSessionPool = SessionPoolFactory.create();
     }
 }

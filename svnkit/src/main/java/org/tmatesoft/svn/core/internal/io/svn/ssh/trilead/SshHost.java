@@ -1,9 +1,10 @@
-package org.tmatesoft.svn.core.internal.io.svn.ssh;
+package org.tmatesoft.svn.core.internal.io.svn.ssh.trilead;
 
 import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.InteractiveCallback;
 import com.trilead.ssh2.ServerHostKeyVerifier;
 import com.trilead.ssh2.auth.AgentProxy;
+import org.tmatesoft.svn.core.internal.io.svn.ssh.SshAuthenticationException;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -138,8 +139,8 @@ public class SshHost {
         }
     }
     
-    public SshSession openSession() throws IOException {
-        SshSession session = useExistingConnection();
+    public TrileadSshSession openSession() throws IOException {
+        TrileadSshSession session = useExistingConnection();
         if (session != null) {
             return session;
         }        
@@ -171,7 +172,7 @@ public class SshHost {
         throw new IOException("Cannot establish SSH connection with " + myHost + ":" + myPort);
     }
 
-    private SshSession useExistingConnection() throws IOException {
+    private TrileadSshSession useExistingConnection() throws IOException {
         lock();
         try {
             if (isDisposed()) {
