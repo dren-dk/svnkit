@@ -111,4 +111,14 @@ public class SshConnection {
     public ClientSession getSession() {
         return session;
     }
+
+    public SshConnection reOpen() throws IOException {
+        try {
+            return new SshConnection(host);
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException("Failed to reopen connection");
+        }
+    }
 }

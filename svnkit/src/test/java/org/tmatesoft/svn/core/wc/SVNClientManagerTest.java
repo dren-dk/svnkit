@@ -12,6 +12,7 @@ import org.tmatesoft.svn.core.auth.SVNSSHAuthentication;
 import org.tmatesoft.svn.core.internal.io.svn.SVNSSHConnector;
 import org.tmatesoft.svn.core.internal.io.svn.ssh.SessionPoolFactory;
 import org.tmatesoft.svn.core.internal.io.svn.ssh.SshSessionPool;
+import org.tmatesoft.svn.core.internal.io.svn.ssh.apache.ApacheSshSession;
 import org.tmatesoft.svn.core.internal.io.svn.ssh.apache.ApacheSshSessionPool;
 import org.tmatesoft.svn.core.internal.io.svn.ssh.trilead.TrileadSshSessionPool;
 import org.tmatesoft.svn.core.wc2.SvnList;
@@ -30,7 +31,10 @@ public class SVNClientManagerTest {
 
     @Test
     public void testApacheSshStrict() throws SVNException {
+        final int execBefore = ApacheSshSession.getExecCount();
         testSsh(SessionPoolFactory.APACHE, ROOT_URL_OF_STRICT_SERVER);
+        final int execAfter = ApacheSshSession.getExecCount();
+        Assert.assertEquals(1, execAfter-execBefore);
     }
 
     @Test // This test always fails because trilead-ssh2 can't handle the strict server
@@ -40,7 +44,10 @@ public class SVNClientManagerTest {
 
     @Test
     public void testApacheSsh() throws SVNException {
+        final int execBefore = ApacheSshSession.getExecCount();
         testSsh(SessionPoolFactory.APACHE, ROOT_URL_OF_LAX_SERVER);
+        final int execAfter = ApacheSshSession.getExecCount();
+        Assert.assertEquals(1, execAfter-execBefore);
     }
 
     @Test
@@ -49,44 +56,48 @@ public class SVNClientManagerTest {
     }
 
     private void testSsh(String implementationName, String rootUrl) throws SVNException {
-        System.err.println("Testing ssh with "+implementationName+" against "+rootUrl);
+        System.err.println("Testing ssh with " + implementationName + " against " + rootUrl);
+        System.setProperty(SessionPoolFactory.SVNKIT_SSH_CLIENT, implementationName);
+        SVNSSHConnector.recreateSessionPoolForTest();
+
+        final SshSessionPool sshSessionPool = SessionPoolFactory.create();
+        if (implementationName.equals(SessionPoolFactory.APACHE)) {
+            Assert.assertTrue(sshSessionPool instanceof ApacheSshSessionPool);
+        } else {
+            Assert.assertTrue(sshSessionPool instanceof TrileadSshSessionPool);
+        }
+        sshSessionPool.shutdown();
+
+        SVNURL baseUrl = SVNURL.parseURIDecoded(rootUrl);
+        SvnOperationFactory operationFactory = new SvnOperationFactory();
+
+        File keyFile = new File(System.getProperty("user.home") + "/.ssh/id_rsa");
+        SVNSSHAuthentication sshCredentials = SVNSSHAuthentication.newInstance("nobody", keyFile, null, 22, true, baseUrl, false);
+        ISVNAuthenticationManager authManager = new BasicAuthenticationManager(new SVNAuthentication[]{sshCredentials});
+        operationFactory.setAuthenticationManager(authManager);
+
+        final SVNClientManager svnClientManager = SVNClientManager.newInstance(operationFactory);
+
         try {
-            System.setProperty(SessionPoolFactory.SVNKIT_SSH_CLIENT, implementationName);
-            SVNSSHConnector.recreateSessionPoolForTest();
+            for (int i = 0; i < 10; i++) {
 
-            final SshSessionPool sshSessionPool = SessionPoolFactory.create();
-            if (implementationName.equals(SessionPoolFactory.APACHE)) {
-                Assert.assertTrue(sshSessionPool instanceof ApacheSshSessionPool);
-            } else {
-                Assert.assertTrue(sshSessionPool instanceof TrileadSshSessionPool);
-            }
-            sshSessionPool.shutdown();
+                final SvnList list = svnClientManager.getOperationFactory().createList();
 
-            SVNURL baseUrl = SVNURL.parseURIDecoded(rootUrl);
-            SvnOperationFactory operationFactory = new SvnOperationFactory();
+                list.addTarget(SvnTarget.fromURL(baseUrl, SVNRevision.HEAD));
+                list.setRevision(SVNRevision.HEAD);
+                list.setIgnoreExternals(true);
+                final Collection<SVNDirEntry> entries = list.run(null);
 
-            File keyFile = new File(System.getProperty("user.home")+"/.ssh/id_rsa");
-            SVNSSHAuthentication sshCredentials = SVNSSHAuthentication.newInstance("nobody", keyFile, null, 22, true, baseUrl, false);
-            ISVNAuthenticationManager authManager = new BasicAuthenticationManager(new SVNAuthentication[]{sshCredentials});
-            operationFactory.setAuthenticationManager(authManager);
+                Assert.assertTrue(entries.size() > 5);
 
-            final SVNClientManager svnClientManager = SVNClientManager.newInstance(operationFactory);
-
-            final SvnList list = svnClientManager.getOperationFactory().createList();
-
-            list.addTarget(SvnTarget.fromURL(baseUrl, SVNRevision.HEAD));
-            list.setRevision(SVNRevision.HEAD);
-            list.setIgnoreExternals(true);
-            final Collection<SVNDirEntry> entries = list.run(null);
-
-            Assert.assertTrue(entries.size() > 5);
-
-            for (SVNDirEntry entry : entries) {
-                System.out.println(entry.getName());
+                for (SVNDirEntry entry : entries) {
+                    System.out.println(entry.getName());
+                }
             }
         } finally {
             System.clearProperty(SessionPoolFactory.SVNKIT_SSH_CLIENT);
         }
 
+        svnClientManager.dispose();
     }
 }

@@ -1,5 +1,5 @@
-group = 'org.tmatesoft.svnkit'
-version = '1.10.4'
+group = 'com.stibo.svnkit'
+version = '1.10.7'
 
 task wrapper(type: Wrapper) {
     gradleVersion = '3.0'
@@ -156,7 +156,7 @@ project(':svnkit') {
         enabled = true
         repositories.mavenDeployer {
             pom.artifactId = 'svnkit'
-            pom.groupId = 'org.tmatesoft.svnkit'
+            pom.groupId = rootProject.group
             pom.project {
                 name "SVNKit Java(tm) Subversion Library"
                 description "Java(tm) library to manage Subversion working copies and repositories"
@@ -210,7 +210,7 @@ project(':svnkit-javahl16') {
         enabled = true
         repositories.mavenDeployer {
             pom.artifactId = 'svnkit-javahl16'
-            pom.groupId = 'org.tmatesoft.svnkit'
+            pom.groupId = rootProject.group
             pom.project {
                 name "SVNKit Java(tm) Subversion JavaHL API implementation"
                 description "SVNKit Java(tm) Subversion JavaHL API implementation"
@@ -260,7 +260,7 @@ project(':svnkit-cli') {
         enabled = true
         repositories.mavenDeployer {
             pom.artifactId = 'svnkit-cli'
-            pom.groupId = 'org.tmatesoft.svnkit'
+            pom.groupId = rootProject.group
             pom.project {
                 name "SVNKit based Subversion command line client"
                 description "SVNKit based Subversion command line client"
@@ -312,7 +312,7 @@ project(':svnkit-dav') {
         enabled = true
         repositories.mavenDeployer {
             pom.artifactId = 'svnkit-dav'
-            pom.groupId = 'org.tmatesoft.svnkit'
+            pom.groupId = rootProject.group
             pom.project {
                 name "SVNKit based Subversion HTTP server (servlet)"
                 description "SVNKit based Subversion HTTP server (servlet)"
@@ -365,7 +365,7 @@ project(':svnkit-osgi') {
         enabled = true
         repositories.mavenDeployer {
             pom.artifactId = 'svnkit-osgi'
-            pom.groupId = 'org.tmatesoft.svnkit'
+            pom.groupId = rootProject.group
             pom.whenConfigured { p ->
                 p.dependencies.clear()
             }
