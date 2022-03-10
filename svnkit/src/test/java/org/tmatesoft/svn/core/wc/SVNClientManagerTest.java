@@ -45,6 +45,14 @@ public class SVNClientManagerTest {
         Assert.assertEquals(1, execAfter-execBefore);
     }
 
+    @Test
+    public void testApacheSshStrictEC() throws SVNException {
+        final int execBefore = ApacheSshSession.getExecCount();
+        testSsh(SessionPoolFactory.APACHE, ROOT_URL_OF_STRICT_SERVER, "id_ecdsa");
+        final int execAfter = ApacheSshSession.getExecCount();
+        Assert.assertEquals(1, execAfter-execBefore);
+    }
+
     @Test // This test always fails because trilead-ssh2 can't handle the strict server
     public void testTrileadSshStrictRSA() throws SVNException {
         testSsh(SessionPoolFactory.TRILEAD, ROOT_URL_OF_STRICT_SERVER, "id_rsa");
@@ -67,6 +75,14 @@ public class SVNClientManagerTest {
     }
 
     @Test
+    public void testApacheSshLaxEC() throws SVNException {
+        final int execBefore = ApacheSshSession.getExecCount();
+        testSsh(SessionPoolFactory.APACHE, ROOT_URL_OF_LAX_SERVER, "id_ecdsa");
+        final int execAfter = ApacheSshSession.getExecCount();
+        Assert.assertEquals(1, execAfter-execBefore);
+    }
+
+    @Test
     public void testTrileadSshLaxRSA() throws SVNException {
         testSsh(SessionPoolFactory.TRILEAD, ROOT_URL_OF_LAX_SERVER, "id_rsa");
     }
@@ -74,6 +90,11 @@ public class SVNClientManagerTest {
     @Test // This test always fails because trilead-ssh2 can't handle the ed25519 keys
     public void testTrileadSshLaxED() throws SVNException {
         testSsh(SessionPoolFactory.TRILEAD, ROOT_URL_OF_LAX_SERVER, "id_ed25519");
+    }
+
+    @Test // This test always fails because trilead-ssh2 can't handle the ed25519 keys
+    public void testTrileadSshLaxEC() throws SVNException {
+        testSsh(SessionPoolFactory.TRILEAD, ROOT_URL_OF_LAX_SERVER, "id_ecdsa");
     }
 
     private void testSsh(String implementationName, String rootUrl, String keyName) throws SVNException {
