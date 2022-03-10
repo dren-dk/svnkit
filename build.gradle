@@ -1,5 +1,5 @@
 group = 'com.stibo.svnkit'
-version = '1.10.7'
+version = '1.10.8'
 
 task wrapper(type: Wrapper) {
     gradleVersion = '3.0'
