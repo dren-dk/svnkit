@@ -71,7 +71,7 @@ public class SVNClientManagerTest {
         SVNURL baseUrl = SVNURL.parseURIDecoded(rootUrl);
         SvnOperationFactory operationFactory = new SvnOperationFactory();
 
-        File keyFile = new File(System.getProperty("user.home") + "/.ssh/id_rsa");
+        File keyFile = new File(System.getProperty("user.home") + "/.ssh/id_ed25519");
         SVNSSHAuthentication sshCredentials = SVNSSHAuthentication.newInstance("nobody", keyFile, null, 22, true, baseUrl, false);
         ISVNAuthenticationManager authManager = new BasicAuthenticationManager(new SVNAuthentication[]{sshCredentials});
         operationFactory.setAuthenticationManager(authManager);
