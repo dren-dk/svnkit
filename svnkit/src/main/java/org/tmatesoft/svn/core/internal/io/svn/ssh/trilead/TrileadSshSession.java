@@ -66,7 +66,7 @@ public class TrileadSshSession implements SshSession {
     public void ping() throws IOException {
 
         if (!pingEnabled) {
-            SVNDebugLog.getDefaultLog().logFine(SVNLogType.NETWORK, "SKIPPING CHANNEL PING, IT HAS BEEN DISABLED, jvm arg to enable: -DSVNKIT_SSH_2_PING=true");
+            SVNDebugLog.getDefaultLog().logFine(SVNLogType.NETWORK, "SKIPPING CHANNEL PING, IT HAS BEEN DISABLED, jvm arg to enable: -D"+SVNKIT_SSH_2_PING+"=true");
             return;
         }
 
