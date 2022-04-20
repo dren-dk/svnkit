@@ -92,7 +92,7 @@ public class SVNClientManagerTest {
         testSsh(SessionPoolFactory.TRILEAD, ROOT_URL_OF_LAX_SERVER, "id_ed25519");
     }
 
-    @Test // This test always fails because trilead-ssh2 can't handle the ed25519 keys
+    @Test // This test always fails because trilead-ssh2 can't handle the ecdsa keys
     public void testTrileadSshLaxEC() throws SVNException {
         testSsh(SessionPoolFactory.TRILEAD, ROOT_URL_OF_LAX_SERVER, "id_ecdsa");
     }

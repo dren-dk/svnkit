@@ -7,9 +7,13 @@ import java.io.OutputStream;
 import com.trilead.ssh2.ChannelCondition;
 import com.trilead.ssh2.Session;
 import org.tmatesoft.svn.core.internal.io.svn.ssh.SshSession;
+import org.tmatesoft.svn.util.SVNDebugLog;
+import org.tmatesoft.svn.util.SVNLogType;
 
 public class TrileadSshSession implements SshSession {
-    
+    public static final String SVNKIT_SSH_2_PING = "svnkit.ssh2.ping";
+    private final boolean pingEnabled = Boolean.getBoolean(SVNKIT_SSH_2_PING);
+
     private SshConnection myOwner;
     private Session mySession;
 
@@ -60,6 +64,12 @@ public class TrileadSshSession implements SshSession {
     
     @Override
     public void ping() throws IOException {
+
+        if (!pingEnabled) {
+            SVNDebugLog.getDefaultLog().logFine(SVNLogType.NETWORK, "SKIPPING CHANNEL PING, IT HAS BEEN DISABLED, jvm arg to enable: -DSVNKIT_SSH_2_PING=true");
+            return;
+        }
+
         mySession.ping();
     }
 }

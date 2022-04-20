@@ -21,6 +21,8 @@ import org.tmatesoft.svn.core.internal.io.svn.ssh.SessionPoolFactory;
 import org.tmatesoft.svn.core.internal.io.svn.ssh.SshAuthenticationException;
 import org.tmatesoft.svn.core.internal.io.svn.ssh.SshSession;
 import org.tmatesoft.svn.core.internal.io.svn.ssh.SshSessionPool;
+import org.tmatesoft.svn.core.internal.io.svn.ssh.apache.ApacheSshSession;
+import org.tmatesoft.svn.core.internal.io.svn.ssh.apache.ApacheSshSessionPool;
 import org.tmatesoft.svn.core.internal.wc.SVNErrorManager;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.util.SVNDebugLog;
@@ -39,8 +41,7 @@ public class SVNSSHConnector implements ISVNConnector {
 
     private static final String SVNSERVE_COMMAND = "svnserve -t";
     private static final String SVNSERVE_COMMAND_WITH_USER_NAME = "svnserve -t --tunnel-user ";
-    
-    private static final boolean ourIsUseSessionPing = Boolean.getBoolean("svnkit.ssh2.ping");
+
     private static SshSessionPool ourSessionPool = SessionPoolFactory.create();
     
     private SshSession mySession;
@@ -226,13 +227,6 @@ public class SVNSSHConnector implements ISVNConnector {
     public boolean isStale() {
         if (mySession == null) {
             return true;
-        }
-        if (!ourIsUseSessionPing) {
-            return false;
-        }
-        if (!myIsUseSessionPing) {
-            SVNDebugLog.getDefaultLog().logFine(SVNLogType.NETWORK, "SKIPPING CHANNEL PING, IT HAS BEEN DISABLED");
-            return false;
         }
         try {
             mySession.ping();
