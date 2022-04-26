@@ -40,7 +40,9 @@ public class StreamLogger implements Closeable {
                     }
                     emptyRead++;
                     if (buffy != null) {
-                        logger.log(level,"Discarded input from "+name+": "+ buffy);
+                        if (logger.isLoggable(level)) {
+                            logger.log(level, "Discarded input from " + name + ": " + buffy);
+                        }
                     }
                     Thread.sleep(100);
                 }
@@ -51,14 +53,20 @@ public class StreamLogger implements Closeable {
                 logger.log(level, name+ ": Failed while streaming "+e);
             } catch (InterruptedException e) {
                 logger.log(level, name+ ": Got interrupted");
+            } finally {
+                try {
+                    in.close();
+                } catch (Exception e) {
+                    logger.log(Level.FINE, "Got exception while closing the input stream", e);
+                }
             }
         });
         thread.setName("Piping "+name);
         thread.start();
     }
 
-    public static void consume(InputStream errorStream) {
-        new StreamLogger("consumer",errorStream, log, Level.FINE);
+    public static StreamLogger consume(InputStream errorStream) {
+        return new StreamLogger("consumer",errorStream, log, Level.FINE);
     }
 
     @Override

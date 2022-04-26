@@ -22,13 +22,14 @@ public abstract class SVNAbstractTunnelConnector implements ISVNConnector {
     private OutputStream myOutputStream;
     private InputStream myInputStream;
     private Process myProcess;
+    private StreamLogger stderrConsumer;
 
     public void open(SVNRepositoryImpl repository, String process) throws SVNException {
         try {
             myProcess = Runtime.getRuntime().exec(process);
             myInputStream = new BufferedInputStream(myProcess.getInputStream());
             myOutputStream = new BufferedOutputStream(myProcess.getOutputStream());
-            StreamLogger.consume(myProcess.getErrorStream());
+            stderrConsumer = StreamLogger.consume(myProcess.getErrorStream());
         } catch (IOException e) {
             try {
                 close(repository);
@@ -44,7 +45,7 @@ public abstract class SVNAbstractTunnelConnector implements ISVNConnector {
             myProcess = Runtime.getRuntime().exec(command);
             myInputStream = new BufferedInputStream(myProcess.getInputStream());
             myOutputStream = new BufferedOutputStream(myProcess.getOutputStream());
-            StreamLogger.consume(myProcess.getErrorStream());
+            stderrConsumer = StreamLogger.consume(myProcess.getErrorStream());
         } catch (IOException e) {
             try {
                 close(repository);
@@ -72,6 +73,10 @@ public abstract class SVNAbstractTunnelConnector implements ISVNConnector {
     }
 
     public void close(SVNRepositoryImpl repository) throws SVNException {
+        if (stderrConsumer != null) {
+            stderrConsumer.close();
+            stderrConsumer = null;
+        }
         if (myProcess != null) {
             if (myInputStream != null) {
                 repository.getDebugLog().flushStream(myInputStream);
