@@ -1,8 +1,8 @@
-group = 'org.tmatesoft.svnkit'
-version = '1.10.4'
+group = 'com.stibo.svnkit'
+version = '1.10.11'
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.14'
+    gradleVersion = '3.0'
 }
 
 def javaProjects() {
@@ -11,7 +11,7 @@ def javaProjects() {
 
 ext {
    release = project.hasProperty('release')
-   target = '1.6'
+   target = '1.8'
    compatibleSvnVersion = '1.10.0'
 
    if (!release) {
@@ -128,15 +128,22 @@ configure(javaProjects()) {
 
 project(':svnkit') {
     dependencies {
+        compile 'org.apache.sshd:sshd-core:2.8.0'
+        compile 'org.apache.sshd:sshd-common:2.8.0'
+        compile 'net.i2p.crypto:eddsa:0.3.0'
         compile 'de.regnis.q.sequence:sequence-library:1.0.4'
         compile 'org.tmatesoft.sqljet:sqljet:1.1.14'
         compile 'net.java.dev.jna:jna:5.6.0'
         compile 'net.java.dev.jna:jna-platform:5.6.0'
+
+        // TODO: Delete these abandoned dependencies: com.trilead, com.jcraft
         compile 'com.trilead:trilead-ssh2:1.0.0-build222'
         compile('com.jcraft:jsch.agentproxy.connector-factory:0.0.7') {
             exclude group: 'net.java.dev.jna'
         }
         compile 'com.jcraft:jsch.agentproxy.svnkit-trilead-ssh2:0.0.7'
+        // TODO: End of abandoned dependencies
+
         compile 'org.lz4:lz4-java:1.4.1'
 
         testCompile 'junit:junit:4.8'
@@ -150,7 +157,7 @@ project(':svnkit') {
         enabled = true
         repositories.mavenDeployer {
             pom.artifactId = 'svnkit'
-            pom.groupId = 'org.tmatesoft.svnkit'
+            pom.groupId = rootProject.group
             pom.project {
                 name "SVNKit Java(tm) Subversion Library"
                 description "Java(tm) library to manage Subversion working copies and repositories"
@@ -204,7 +211,7 @@ project(':svnkit-javahl16') {
         enabled = true
         repositories.mavenDeployer {
             pom.artifactId = 'svnkit-javahl16'
-            pom.groupId = 'org.tmatesoft.svnkit'
+            pom.groupId = rootProject.group
             pom.project {
                 name "SVNKit Java(tm) Subversion JavaHL API implementation"
                 description "SVNKit Java(tm) Subversion JavaHL API implementation"
@@ -254,7 +261,7 @@ project(':svnkit-cli') {
         enabled = true
         repositories.mavenDeployer {
             pom.artifactId = 'svnkit-cli'
-            pom.groupId = 'org.tmatesoft.svnkit'
+            pom.groupId = rootProject.group
             pom.project {
                 name "SVNKit based Subversion command line client"
                 description "SVNKit based Subversion command line client"
@@ -306,7 +313,7 @@ project(':svnkit-dav') {
         enabled = true
         repositories.mavenDeployer {
             pom.artifactId = 'svnkit-dav'
-            pom.groupId = 'org.tmatesoft.svnkit'
+            pom.groupId = rootProject.group
             pom.project {
                 name "SVNKit based Subversion HTTP server (servlet)"
                 description "SVNKit based Subversion HTTP server (servlet)"
@@ -359,7 +366,7 @@ project(':svnkit-osgi') {
         enabled = true
         repositories.mavenDeployer {
             pom.artifactId = 'svnkit-osgi'
-            pom.groupId = 'org.tmatesoft.svnkit'
+            pom.groupId = rootProject.group
             pom.whenConfigured { p ->
                 p.dependencies.clear()
             }

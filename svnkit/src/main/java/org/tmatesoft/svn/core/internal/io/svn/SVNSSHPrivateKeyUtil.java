@@ -1,19 +1,16 @@
 package org.tmatesoft.svn.core.internal.io.svn;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.lang.reflect.Method;
-
+import com.trilead.ssh2.auth.AgentProxy;
+import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.tmatesoft.svn.core.internal.wc.SVNFileUtil;
 import org.tmatesoft.svn.util.SVNDebugLog;
 import org.tmatesoft.svn.util.SVNLogType;
 
-import com.trilead.ssh2.auth.AgentProxy;
-import com.trilead.ssh2.crypto.PEMDecoder;
+import java.io.*;
+import java.lang.reflect.Method;
+import java.nio.charset.Charset;
+import java.security.KeyPair;
 
 public class SVNSSHPrivateKeyUtil {
     
@@ -21,6 +18,9 @@ public class SVNSSHPrivateKeyUtil {
     private static final String CONNECTOR_FACTORY_CLASS = "com.jcraft.jsch.agentproxy.ConnectorFactory";
     private static final String CONNECTOR_CLASS = "com.jcraft.jsch.agentproxy.Connector";
 
+    /**
+     * @deprecated This method uses the AgentProxy class which is part of trilead-ssh2 and thus abandoned
+     */
     public static AgentProxy createOptionalSSHAgentProxy() {
         try {
             final Class<?> connectorClass = Class.forName(CONNECTOR_CLASS);
@@ -74,13 +74,19 @@ public class SVNSSHPrivateKeyUtil {
     }
     
     public static boolean isValidPrivateKey(char[] privateKey, char[] passphrase) {
+
         try {
-            PEMDecoder.decode(privateKey, passphrase != null ? new String(passphrase) : null);
-        } catch (IOException e) {
+            final byte[] pkBytes = new String(privateKey).getBytes(Charset.defaultCharset());
+
+            final String password = passphrase != null ? new String(passphrase) : null;
+            final Iterable<KeyPair> keyPairs = SecurityUtils.loadKeyPairIdentities(null, () -> "byte array",
+                    new ByteArrayInputStream(pkBytes), FilePasswordProvider.of(password));
+            return keyPairs.iterator().hasNext();
+        } catch (Exception e) {
             SVNDebugLog.getDefaultLog().logFine(SVNLogType.NETWORK, e);
             return false;
-        }        
-        return true;
+        }
     }
+
 
 }
